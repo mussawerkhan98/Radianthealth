@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Doctors — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="doctors">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="hero" style="padding-bottom:2vh;">
+  <div class="container">
+    <span class="eyebrow">Our Doctors</span>
+    <h1>Meet the team <em>behind</em> your care</h1>
+    <p class="lead">Filter by department to find the right doctor, then book directly from their profile.</p>
+    <div style="margin-top:1.4rem; max-width:280px;">
+      <select id="deptFilter">
+        <option value="">All Departments</option>
+      </select>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="grid grid-4" id="doctorGrid">
+      <div class="empty-state">Loading doctors…</div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const initialDept = params.get('department') || '';
+  let departments = [];
+
+  async function loadDepartments() {
+    departments = await API.get('/api/departments');
+    const select = document.getElementById('deptFilter');
+    select.innerHTML = '<option value="">All Departments</option>' +
+      departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    select.value = initialDept;
+    select.addEventListener('change', () => loadDoctors(select.value));
+  }
+
+  async function loadDoctors(departmentId) {
+    const grid = document.getElementById('doctorGrid');
+    grid.innerHTML = '<div class="empty-state">Loading doctors…</div>';
+    try {
+      const url = departmentId ? `/api/doctors?department=${departmentId}` : '/api/doctors';
+      const doctors = await API.get(url);
+      if (doctors.length === 0) {
+        grid.innerHTML = '<div class="empty-state">No doctors found in this department yet.</div>';
+        return;
+      }
+      grid.innerHTML = doctors.map(d => {
+        const dept = departments.find(x => x.id === d.departmentId);
+        return `
+          <div class="card doctor-card">
+            ${avatarHtml(d)}
+            <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
+            <div class="doctor-specialty">${d.specialty}</div>
+            <p style="font-size:0.85rem; margin:0.6rem 0 0.9rem;">${dept ? dept.name : ''}</p>
+            <span class="badge" style="margin-bottom:0.8rem; display:inline-block;">${d.consultationFee > 0 ? 'AED ' + d.consultationFee : 'Free consultation'}</span><br>
+            <a href="book.html?doctor=${d.id}" class="btn btn-primary" style="padding:0.55rem 1.1rem; font-size:0.85rem;">Book Appointment</a>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      grid.innerHTML = '<div class="empty-state">Could not load doctors right now.</div>';
+    }
+  }
+
+  (async function () {
+    await loadDepartments();
+    await loadDoctors(initialDept);
+  })();
+</script>
+</body>
+</html>

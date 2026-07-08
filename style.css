@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doctor Portal — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="doctor-dashboard">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+  <div class="container">
+    <div class="dash-layout">
+      <aside class="dash-sidebar">
+        <p style="font-weight:800; margin-bottom:0.2rem;" id="welcomeName">Welcome</p>
+        <p style="font-size:0.82rem; margin-bottom:1.2rem;">Doctor Portal</p>
+        <a href="#" class="active" data-tab="schedule">My Schedule</a>
+        <a href="#" data-tab="patients">My Patients</a>
+        <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
+      </aside>
+
+      <div>
+        <div id="tab-schedule">
+          <h2>Upcoming Appointments</h2>
+          <div id="scheduleList"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div id="tab-patients" style="display:none;">
+          <h2>My Patients</h2>
+          <div id="patientsList"><div class="empty-state">Loading…</div></div>
+
+          <div id="patientDetail" style="display:none; margin-top:2rem;">
+            <div class="card" style="padding:1.6rem;">
+              <button class="btn btn-outline" id="backToPatients" style="margin-bottom:1.4rem; padding:0.4rem 0.9rem; font-size:0.8rem;">&larr; Back to patients</button>
+              <h3 id="patientDetailName"></h3>
+              <p id="patientDetailMeta" style="margin-bottom:1.4rem;"></p>
+
+              <h4>Add a Note</h4>
+              <div id="recordAlert" class="alert"></div>
+              <form id="recordForm">
+                <div class="form-group">
+                  <label for="diagnosis">Diagnosis (optional)</label>
+                  <input type="text" id="diagnosis">
+                </div>
+                <div class="form-group">
+                  <label for="notes">Notes</label>
+                  <textarea id="notes" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="prescription">Prescription (optional)</label>
+                  <input type="text" id="prescription">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Note</button>
+              </form>
+
+              <h4 style="margin-top:2rem;">History</h4>
+              <div id="patientHistoryList"><div class="empty-state">Loading…</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  const user = requireRole('doctor');
+  let currentPatientId = null;
+
+  document.getElementById('logoutLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    API.clearSession();
+    window.location.href = 'index.html';
+  });
+
+  const tabs = document.querySelectorAll('[data-tab]');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-schedule').style.display = tab.dataset.tab === 'schedule' ? 'block' : 'none';
+      document.getElementById('tab-patients').style.display = tab.dataset.tab === 'patients' ? 'block' : 'none';
+    });
+  });
+
+  async function loadSchedule() {
+    try {
+      const appts = await API.get('/api/doctors/me/appointments');
+      const now = new Date();
+      const upcoming = appts.filter(a => new Date(a.date + 'T' + a.time) >= now);
+      const el = document.getElementById('scheduleList');
+      el.innerHTML = upcoming.length
+        ? upcoming.map(a => `
+            <div class="list-item">
+              <div>
+                <strong>${a.patientName}</strong><br>
+                <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
+                ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${a.reason}</span>` : ''}
+              </div>
+              <span class="badge confirmed">confirmed</span>
+            </div>
+          `).join('')
+        : '<div class="empty-state">No upcoming appointments.</div>';
+    } catch (e) {
+      document.getElementById('scheduleList').innerHTML = '<div class="empty-state">Could not load schedule.</div>';
+    }
+  }
+
+  async function loadPatients() {
+    try {
+      const patients = await API.get('/api/doctors/me/patients');
+      const el = document.getElementById('patientsList');
+      el.innerHTML = patients.length
+        ? patients.map(p => `
+            <div class="list-item" style="cursor:pointer;" data-patient="${p.id}" data-name="${p.name}" data-meta="${p.email} ${p.phone ? '· ' + p.phone : ''}">
+              <div><strong>${p.name}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${p.email}</span></div>
+              <span class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;">View History</span>
+            </div>
+          `).join('')
+        : '<div class="empty-state">No patients yet — once someone books with you, they will appear here.</div>';
+
+      el.querySelectorAll('[data-patient]').forEach(row => {
+        row.addEventListener('click', () => openPatient(row.dataset.patient, row.dataset.name, row.dataset.meta));
+      });
+    } catch (e) {
+      document.getElementById('patientsList').innerHTML = '<div class="empty-state">Could not load patients.</div>';
+    }
+  }
+
+  async function openPatient(id, name, meta) {
+    currentPatientId = id;
+    document.getElementById('patientDetail').style.display = 'block';
+    document.getElementById('patientDetailName').textContent = name;
+    document.getElementById('patientDetailMeta').textContent = meta;
+    await loadPatientHistory();
+  }
+
+  document.getElementById('backToPatients').addEventListener('click', () => {
+    document.getElementById('patientDetail').style.display = 'none';
+    currentPatientId = null;
+  });
+
+  async function loadPatientHistory() {
+    const el = document.getElementById('patientHistoryList');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const records = await API.get(`/api/doctors/me/patients/${currentPatientId}/records`);
+      el.innerHTML = records.length
+        ? records.map(r => `
+            <div class="timeline-item">
+              <div class="timeline-date">${fmtDate(r.date)}</div>
+              ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
+              <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
+              ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
+            </div>
+          `).join('')
+        : '<div class="empty-state">No history yet for this patient.</div>';
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">Could not load history.</div>';
+    }
+  }
+
+  const recordForm = document.getElementById('recordForm');
+  const recordAlert = document.getElementById('recordAlert');
+  recordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert(recordAlert);
+    try {
+      await API.post(`/api/doctors/me/patients/${currentPatientId}/records`, {
+        diagnosis: document.getElementById('diagnosis').value,
+        notes: document.getElementById('notes').value,
+        prescription: document.getElementById('prescription').value
+      });
+      showAlert(recordAlert, 'Note saved.', 'success');
+      recordForm.reset();
+      loadPatientHistory();
+    } catch (err) {
+      showAlert(recordAlert, err.message, 'error');
+    }
+  });
+
+  document.getElementById('welcomeName').textContent = 'Welcome, ' + (user ? user.name : '');
+  loadSchedule();
+  loadPatients();
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radiant Health Alliance — Compassionate Care, Redefining Health</title>
+<meta name="description" content="A multi-department medical center. Book appointments online, meet our doctors, and manage your care with Radiant Health Alliance.">
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="home">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">Radiant Health Alliance</span>
+    <h1>Compassionate care for <em>every</em> stage of life</h1>
+    <p class="lead">Ten departments, a team of dedicated doctors, and a simple way to book your visit online — all in one place.</p>
+    <div class="hero-actions">
+      <a href="book.html" class="btn btn-amber">Book an Appointment</a>
+      <a href="doctors.html" class="btn btn-outline">Meet Our Doctors</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-title">
+      <span class="eyebrow">What we treat</span>
+      <h2>Care across <em>every</em> department</h2>
+      <p>From routine check-ups to specialist care, our team covers the full range of everyday health needs.</p>
+    </div>
+    <div class="grid grid-4" id="deptGrid">
+      <div class="empty-state">Loading departments…</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:#fff;">
+  <div class="container">
+    <div class="section-title">
+      <span class="eyebrow">Our team</span>
+      <h2>Meet a few of our <em>doctors</em></h2>
+    </div>
+    <div class="grid grid-4" id="doctorGrid">
+      <div class="empty-state">Loading doctors…</div>
+    </div>
+    <div style="text-align:center; margin-top:2rem;">
+      <a href="doctors.html" class="btn btn-outline">View All Doctors</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="card" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1.5rem; padding:2.5rem;">
+      <div>
+        <h2 style="margin-bottom:0.3rem;">Ready to see one of our doctors?</h2>
+        <p style="margin:0;">Booking takes less than two minutes.</p>
+      </div>
+      <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+        <a href="book.html" class="btn btn-amber">Book Appointment</a>
+        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="btn btn-whatsapp">WhatsApp Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  (async function () {
+    try {
+      const depts = await API.get('/api/departments');
+      const grid = document.getElementById('deptGrid');
+      grid.innerHTML = depts.slice(0, 8).map(d => `
+        <a class="card dept-card" href="doctors.html?department=${d.id}" style="text-decoration:none; color:inherit;">
+          <div class="icon-badge">+</div>
+          <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">${d.name}</h3>
+          <p style="font-size:0.88rem; margin:0;">${d.description}</p>
+        </a>
+      `).join('');
+    } catch (e) {
+      document.getElementById('deptGrid').innerHTML = '<div class="empty-state">Could not load departments right now.</div>';
+    }
+
+    try {
+      const team = await API.get('/api/team');
+      const grid = document.getElementById('doctorGrid');
+      grid.innerHTML = team.doctors.slice(0, 4).map(d => `
+        <div class="card doctor-card">
+          <div class="doctor-avatar">${initialsOf(d.name)}</div>
+          <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
+          <div class="doctor-specialty">${d.specialty}</div>
+          <a href="book.html?doctor=${d.id}" class="btn btn-outline" style="margin-top:1rem; padding:0.5rem 1rem; font-size:0.82rem;">Book</a>
+        </div>
+      `).join('');
+    } catch (e) {
+      document.getElementById('doctorGrid').innerHTML = '<div class="empty-state">Could not load doctors right now.</div>';
+    }
+  })();
+</script>
+</body>
+</html>

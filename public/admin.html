@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="admin">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+  <div class="container">
+    <div class="dash-layout">
+      <aside class="dash-sidebar">
+        <p style="font-weight:800; margin-bottom:0.2rem;">Admin</p>
+        <p style="font-size:0.82rem; margin-bottom:1.2rem;">Directory Management</p>
+        <a href="#" class="active" data-tab="depts">Departments</a>
+        <a href="#" data-tab="docs">Doctors</a>
+        <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
+      </aside>
+
+      <div>
+        <div id="tab-depts">
+          <h2>Departments</h2>
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+            <h4>Add a Department</h4>
+            <div id="deptAlert" class="alert"></div>
+            <form id="deptForm">
+              <div class="form-group">
+                <label for="deptName">Name</label>
+                <input type="text" id="deptName" required>
+              </div>
+              <div class="form-group">
+                <label for="deptDesc">Description</label>
+                <input type="text" id="deptDesc">
+              </div>
+              <button type="submit" class="btn btn-primary">Add Department</button>
+            </form>
+          </div>
+          <div id="deptList"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div id="tab-docs" style="display:none;">
+          <h2>Doctors</h2>
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+            <h4>Add a Doctor</h4>
+            <div id="docAlert" class="alert"></div>
+            <form id="docForm">
+              <div class="form-group">
+                <label for="docName">Full Name</label>
+                <input type="text" id="docName" required placeholder="Dr. Jane Doe">
+              </div>
+              <div class="form-group">
+                <label for="docDept">Department</label>
+                <select id="docDept" required></select>
+              </div>
+              <div class="form-group">
+                <label for="docSpecialty">Specialty</label>
+                <input type="text" id="docSpecialty">
+              </div>
+              <div class="form-group">
+                <label for="docEmail">Login Email</label>
+                <input type="email" id="docEmail" required>
+              </div>
+              <div class="form-group">
+                <label for="docPassword">Temporary Password</label>
+                <input type="text" id="docPassword" required value="ChangeMe123!">
+              </div>
+              <button type="submit" class="btn btn-primary">Add Doctor</button>
+            </form>
+          </div>
+          <div id="docList"><div class="empty-state">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  const user = requireRole('admin');
+
+  document.getElementById('logoutLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    API.clearSession();
+    window.location.href = 'index.html';
+  });
+
+  const tabs = document.querySelectorAll('[data-tab]');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-depts').style.display = tab.dataset.tab === 'depts' ? 'block' : 'none';
+      document.getElementById('tab-docs').style.display = tab.dataset.tab === 'docs' ? 'block' : 'none';
+    });
+  });
+
+  let departments = [];
+
+  async function loadDepartments() {
+    departments = await API.get('/api/departments');
+    document.getElementById('deptList').innerHTML = departments.map(d => `
+      <div class="list-item">
+        <div><strong>${d.name}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${d.description}</span></div>
+        <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
+      </div>
+    `).join('');
+    const select = document.getElementById('docDept');
+    select.innerHTML = departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+  }
+
+  async function loadDoctors() {
+    const doctors = await API.get('/api/doctors');
+    document.getElementById('docList').innerHTML = doctors.map(d => {
+      const dept = departments.find(x => x.id === d.departmentId);
+      return `
+        <div class="list-item">
+          <div><strong>${d.name}</strong> — ${d.specialty}<br><span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('deptForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('deptAlert');
+    hideAlert(alertEl);
+    try {
+      await API.post('/api/admin/departments', {
+        name: document.getElementById('deptName').value,
+        description: document.getElementById('deptDesc').value
+      });
+      document.getElementById('deptForm').reset();
+      showAlert(alertEl, 'Department added.', 'success');
+      await loadDepartments();
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+  });
+
+  document.getElementById('docForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('docAlert');
+    hideAlert(alertEl);
+    try {
+      await API.post('/api/admin/doctors', {
+        name: document.getElementById('docName').value,
+        departmentId: document.getElementById('docDept').value,
+        specialty: document.getElementById('docSpecialty').value,
+        email: document.getElementById('docEmail').value,
+        password: document.getElementById('docPassword').value
+      });
+      document.getElementById('docForm').reset();
+      document.getElementById('docPassword').value = 'ChangeMe123!';
+      showAlert(alertEl, 'Doctor added. Share their login email and temporary password with them directly — they will be asked to change it on first login.', 'success');
+      await loadDepartments();
+      await loadDoctors();
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+  });
+
+  (async function () {
+    await loadDepartments();
+    await loadDoctors();
+  })();
+</script>
+</body>
+</html>

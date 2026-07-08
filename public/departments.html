@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Departments — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="departments">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="hero" style="padding-bottom:2vh;">
+  <div class="container">
+    <span class="eyebrow">Our Departments</span>
+    <h1>Every department, <em>one</em> hospital</h1>
+    <p class="lead">Browse our departments to find the right specialist for your visit.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="grid grid-3" id="deptGrid">
+      <div class="empty-state">Loading departments…</div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  (async function () {
+    try {
+      const depts = await API.get('/api/departments');
+      const grid = document.getElementById('deptGrid');
+      if (depts.length === 0) {
+        grid.innerHTML = '<div class="empty-state">No departments yet.</div>';
+        return;
+      }
+      grid.innerHTML = depts.map(d => `
+        <a class="card dept-card" href="doctors.html?department=${d.id}" style="text-decoration:none; color:inherit;">
+          <div class="icon-badge">+</div>
+          <h3 style="margin-bottom:0.3rem;">${d.name}</h3>
+          <p style="margin-bottom:0.8rem;">${d.description}</p>
+          <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
+        </a>
+      `).join('');
+    } catch (e) {
+      document.getElementById('deptGrid').innerHTML = '<div class="empty-state">Could not load departments right now.</div>';
+    }
+  })();
+</script>
+</body>
+</html>

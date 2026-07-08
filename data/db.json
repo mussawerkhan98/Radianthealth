@@ -1,0 +1,344 @@
+{
+  "departments": [
+    {
+      "id": "dept_yau0aaot",
+      "name": "General Medicine",
+      "description": "Everyday health concerns, check-ups and referrals.",
+      "icon": "stethoscope"
+    },
+    {
+      "id": "dept_lll2m819",
+      "name": "Cardiology",
+      "description": "Heart health, blood pressure and cardiac screening.",
+      "icon": "heart"
+    },
+    {
+      "id": "dept_iyb2xlzw",
+      "name": "Pediatrics",
+      "description": "Care for infants, children and teenagers.",
+      "icon": "baby"
+    },
+    {
+      "id": "dept_3h2bm71e",
+      "name": "Orthopedics",
+      "description": "Bones, joints, muscles and sports injuries.",
+      "icon": "bone"
+    },
+    {
+      "id": "dept_vy5e3rcp",
+      "name": "Dermatology",
+      "description": "Skin, hair and nail conditions.",
+      "icon": "skin"
+    },
+    {
+      "id": "dept_to1q10o8",
+      "name": "Gynecology",
+      "description": "Women's health and reproductive care.",
+      "icon": "gyno"
+    },
+    {
+      "id": "dept_pb3x3fnr",
+      "name": "ENT",
+      "description": "Ear, nose and throat conditions.",
+      "icon": "ent"
+    },
+    {
+      "id": "dept_2gnovr01",
+      "name": "Dental",
+      "description": "Oral health, cleanings and dental procedures.",
+      "icon": "tooth"
+    },
+    {
+      "id": "dept_fftgtg47",
+      "name": "Ophthalmology",
+      "description": "Eye exams, vision correction and eye conditions.",
+      "icon": "eye"
+    },
+    {
+      "id": "dept_yhghky0e",
+      "name": "Radiology",
+      "description": "Diagnostic imaging: X-ray, ultrasound and scans.",
+      "icon": "scan"
+    }
+  ],
+  "doctors": [
+    {
+      "id": "doc_k6ie6h9f",
+      "name": "Dr. Amina Farouk",
+      "departmentId": "dept_yau0aaot",
+      "specialty": "Family & Internal Medicine",
+      "bio": "Dr. Amina Farouk is a family & internal medicine at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "amina.farouk@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_dk9ucdvh",
+      "name": "Dr. Yusuf Al Mansoori",
+      "departmentId": "dept_lll2m819",
+      "specialty": "Cardiologist",
+      "bio": "Dr. Yusuf Al Mansoori is a cardiologist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "yusuf.al.mansoori@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_dai8zhm2",
+      "name": "Dr. Layla Haddad",
+      "departmentId": "dept_iyb2xlzw",
+      "specialty": "Pediatrician",
+      "bio": "Dr. Layla Haddad is a pediatrician at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "layla.haddad@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_9wy597lr",
+      "name": "Dr. Omar Siddiqui",
+      "departmentId": "dept_3h2bm71e",
+      "specialty": "Orthopedic Surgeon",
+      "bio": "Dr. Omar Siddiqui is a orthopedic surgeon at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "omar.siddiqui@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_ulaaby3m",
+      "name": "Dr. Fatima Noor",
+      "departmentId": "dept_vy5e3rcp",
+      "specialty": "Dermatologist",
+      "bio": "Dr. Fatima Noor is a dermatologist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "fatima.noor@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_sqr4e63h",
+      "name": "Dr. Sara Abdullah",
+      "departmentId": "dept_to1q10o8",
+      "specialty": "Gynecologist",
+      "bio": "Dr. Sara Abdullah is a gynecologist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "sara.abdullah@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_5s7wlvze",
+      "name": "Dr. Karim El Sayed",
+      "departmentId": "dept_pb3x3fnr",
+      "specialty": "ENT Specialist",
+      "bio": "Dr. Karim El Sayed is a ent specialist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "karim.el.sayed@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_eic20hng",
+      "name": "Dr. Hana Youssef",
+      "departmentId": "dept_2gnovr01",
+      "specialty": "General Dentist",
+      "bio": "Dr. Hana Youssef is a general dentist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "hana.youssef@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_ayh6mdt6",
+      "name": "Dr. Bilal Rahman",
+      "departmentId": "dept_fftgtg47",
+      "specialty": "Ophthalmologist",
+      "bio": "Dr. Bilal Rahman is a ophthalmologist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "bilal.rahman@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_qnwcmnm8",
+      "name": "Dr. Nadia Khalil",
+      "departmentId": "dept_yhghky0e",
+      "specialty": "Radiologist",
+      "bio": "Dr. Nadia Khalil is a radiologist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "nadia.khalil@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_q8h9mq3i",
+      "name": "Dr. Tariq Aziz",
+      "departmentId": "dept_yau0aaot",
+      "specialty": "Family Medicine",
+      "bio": "Dr. Tariq Aziz is a family medicine at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "tariq.aziz@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "doc_n1jrpcsl",
+      "name": "Dr. Mona Reza",
+      "departmentId": "dept_lll2m819",
+      "specialty": "Interventional Cardiologist",
+      "bio": "Dr. Mona Reza is a interventional cardiologist at Radiant Health Alliance, focused on compassionate, evidence-based care.",
+      "email": "mona.reza@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true,
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00",
+        "slotMinutes": 30
+      },
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "staff": [
+    {
+      "id": "staff_dyfgie8s",
+      "role": "admin",
+      "name": "Front Desk Admin",
+      "email": "admin@radianthealthalliance.com",
+      "passwordHash": "$2a$10$JtQlFpRtN.QMd4q9QXNnvufpkY58md4p11Z.LePwpEI/uflpueBr6",
+      "mustChangePassword": true
+    }
+  ],
+  "patients": [],
+  "appointments": [],
+  "records": [],
+  "contactMessages": []
+}

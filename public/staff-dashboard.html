@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Portal — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="staff-dashboard">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+  <div class="container">
+    <div class="dash-layout">
+      <aside class="dash-sidebar">
+        <p style="font-weight:800; margin-bottom:0.2rem;" id="welcomeName">Welcome</p>
+        <p style="font-size:0.82rem; margin-bottom:1.2rem;">Staff Portal — Front Desk</p>
+        <a href="#" id="logoutLink" style="color:var(--danger);">Log Out</a>
+      </aside>
+
+      <div>
+        <h2>All Appointments</h2>
+        <p>Every booking across all doctors and departments.</p>
+        <div class="form-group" style="max-width:220px;">
+          <label for="filterSelect">Show</label>
+          <select id="filterSelect">
+            <option value="upcoming">Upcoming only</option>
+            <option value="all">All appointments</option>
+          </select>
+        </div>
+        <div id="apptList"><div class="empty-state">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  const user = requireRole('staff');
+
+  document.getElementById('logoutLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    API.clearSession();
+    window.location.href = 'index.html';
+  });
+
+  document.getElementById('welcomeName').textContent = 'Welcome, ' + (user ? user.name : '');
+
+  async function loadAppointments() {
+    const el = document.getElementById('apptList');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const all = await API.get('/api/admin/appointments');
+      const showAll = document.getElementById('filterSelect').value === 'all';
+      const now = new Date();
+      const filtered = showAll ? all : all.filter(a => a.status === 'confirmed' && new Date(a.date + 'T' + a.time) >= now);
+
+      el.innerHTML = filtered.length ? filtered.map(a => `
+        <div class="list-item">
+          <div>
+            <strong>${a.patientName}</strong> with <strong>${a.doctorName}</strong><br>
+            <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
+            ${a.patientPhone ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">${a.patientPhone} · ${a.patientEmail}</span>` : ''}
+            ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${a.reason}</span>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:0.7rem;">
+            <span class="badge ${a.status}">${a.status}</span>
+            ${a.status === 'confirmed' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel="${a.id}">Cancel</button>` : ''}
+          </div>
+        </div>
+      `).join('') : '<div class="empty-state">No appointments to show.</div>';
+
+      el.querySelectorAll('[data-cancel]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Cancel this appointment?')) return;
+          try {
+            await API.post(`/api/admin/appointments/${btn.dataset.cancel}/cancel`, {});
+            loadAppointments();
+          } catch (e) { alert(e.message); }
+        });
+      });
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">Could not load appointments.</div>';
+    }
+  }
+
+  document.getElementById('filterSelect').addEventListener('change', loadAppointments);
+  loadAppointments();
+</script>
+</body>
+</html>

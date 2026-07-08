@@ -23,17 +23,17 @@
 <section class="section">
   <div class="container">
     <div class="grid grid-3" style="margin-bottom:2.5rem;">
-      <a href="tel:+971543397906" class="card" style="text-align:center; text-decoration:none; color:inherit;">
+      <a href="tel:+971543397906" id="callCard" class="card" style="text-align:center; text-decoration:none; color:inherit;">
         <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">Call Us</h3>
-        <p style="margin:0;">+971 54 339 7906</p>
+        <p id="phoneText" style="margin:0;">+971 54 339 7906</p>
       </a>
-      <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="card" style="text-align:center; text-decoration:none; color:inherit;">
+      <a href="https://wa.me/971543397906" id="whatsappCard" target="_blank" rel="noopener" class="card" style="text-align:center; text-decoration:none; color:inherit;">
         <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">WhatsApp</h3>
         <p style="margin:0;">Chat with our team</p>
       </a>
-      <a href="mailto:hello@radianthealthalliance.com" class="card" style="text-align:center; text-decoration:none; color:inherit;">
+      <a href="mailto:hello@radianthealthalliance.com" id="emailCard" class="card" style="text-align:center; text-decoration:none; color:inherit;">
         <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">Email</h3>
-        <p style="margin:0;">hello@radianthealthalliance.com</p>
+        <p id="emailText" style="margin:0;">hello@radianthealthalliance.com</p>
       </a>
     </div>
 
@@ -63,6 +63,21 @@
 
 <script src="js/app.js"></script>
 <script>
+  (async function () {
+    try {
+      const s = await API.get('/api/settings');
+      if (s.phone) {
+        document.getElementById('callCard').href = 'tel:' + s.phone;
+        document.getElementById('phoneText').textContent = s.phone;
+      }
+      if (s.whatsapp) document.getElementById('whatsappCard').href = 'https://wa.me/' + s.whatsapp;
+      if (s.contactEmail) {
+        document.getElementById('emailCard').href = 'mailto:' + s.contactEmail;
+        document.getElementById('emailText').textContent = s.contactEmail;
+      }
+    } catch (e) { /* keep defaults already in the HTML */ }
+  })();
+
   const form = document.getElementById('contactForm');
   const formAlert = document.getElementById('formAlert');
   const submitBtn = document.getElementById('submitBtn');

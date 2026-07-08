@@ -96,6 +96,7 @@ function renderHeader(activePage) {
   if (user) {
     if (user.role === 'patient') portalLink = '<a href="patient-dashboard.html">My Account</a>';
     else if (user.role === 'doctor') portalLink = '<a href="doctor-dashboard.html">Doctor Portal</a>';
+    else if (user.role === 'staff') portalLink = '<a href="staff-dashboard.html">Staff Portal</a>';
     else portalLink = '<a href="admin.html">Admin</a>';
   }
 
@@ -125,9 +126,18 @@ function renderHeader(activePage) {
   }
 }
 
-function renderFooter() {
+async function renderFooter() {
   const el = document.getElementById('site-footer');
   if (!el) return;
+
+  let phone = '+971543397906', whatsapp = '971543397906', contactEmail = 'hello@radianthealthalliance.com';
+  try {
+    const settings = await API.get('/api/settings');
+    if (settings.phone) phone = settings.phone;
+    if (settings.whatsapp) whatsapp = settings.whatsapp;
+    if (settings.contactEmail) contactEmail = settings.contactEmail;
+  } catch (e) { /* fall back to defaults above if settings can't be loaded */ }
+
   el.innerHTML = `
     <div class="container">
       <div class="footer-grid">
@@ -147,9 +157,9 @@ function renderFooter() {
         <div>
           <h4>Contact</h4>
           <div class="footer-contact-links">
-            <a href="tel:+971543397906">+971 54 339 7906</a>
-            <a href="https://wa.me/971543397906" target="_blank" rel="noopener">WhatsApp Us</a>
-            <a href="mailto:hello@radianthealthalliance.com">hello@radianthealthalliance.com</a>
+            <a href="tel:${phone}">${phone}</a>
+            <a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener">WhatsApp Us</a>
+            <a href="mailto:${contactEmail}">${contactEmail}</a>
           </div>
         </div>
       </div>

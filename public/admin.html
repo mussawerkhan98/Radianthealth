@@ -20,7 +20,11 @@
         <p style="font-size:0.82rem; margin-bottom:1.2rem;">Directory Management</p>
         <a href="#" class="active" data-tab="depts">Departments</a>
         <a href="#" data-tab="docs">Doctors</a>
-        <a href="#" data-tab="team">Team &amp; Staff</a>
+        <a href="#" data-tab="team">Team &amp; Staff (Directory)</a>
+        <a href="#" data-tab="staffAccounts">Staff Logins</a>
+        <a href="#" data-tab="appointments">All Appointments</a>
+        <a href="#" data-tab="patients">Patient Reports</a>
+        <a href="#" data-tab="settings">Site Settings</a>
         <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
       </aside>
 
@@ -86,8 +90,8 @@
         </div>
 
         <div id="tab-team" style="display:none;">
-          <h2>Team &amp; Staff</h2>
-          <p>Anyone who isn't a doctor but should appear on your About page — nurses, receptionists, managers, etc. (They don't get a login here.)</p>
+          <h2>Team &amp; Staff Directory</h2>
+          <p>Anyone who isn't a doctor but should appear on your About page — nurses, receptionists, managers, etc. This is just a public bio listing — it does not create a login. For an actual login, use "Staff Logins" instead.</p>
           <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
             <h4>Add a Team Member</h4>
             <div id="teamAlert" class="alert"></div>
@@ -113,6 +117,143 @@
           </div>
           <div id="teamList"><div class="empty-state">Loading…</div></div>
         </div>
+
+        <div id="tab-staffAccounts" style="display:none;">
+          <h2>Staff Logins</h2>
+          <p>Create an actual login for front-desk staff (they'll see all appointments, but not doctors' medical notes) or for another admin.</p>
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+            <h4>Add a Staff Login</h4>
+            <div id="staffAlert" class="alert"></div>
+            <form id="staffForm">
+              <div class="form-group">
+                <label for="staffName">Full Name</label>
+                <input type="text" id="staffName" required>
+              </div>
+              <div class="form-group">
+                <label for="staffEmail">Login Email</label>
+                <input type="email" id="staffEmail" required>
+              </div>
+              <div class="form-group">
+                <label for="staffRole">Access Level</label>
+                <select id="staffRole">
+                  <option value="staff">Staff (front desk — appointments only)</option>
+                  <option value="admin">Admin (full access)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="staffPassword">Temporary Password</label>
+                <input type="text" id="staffPassword" required value="ChangeMe123!">
+              </div>
+              <button type="submit" class="btn btn-primary">Add Staff Login</button>
+            </form>
+          </div>
+          <div id="staffList"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div id="tab-appointments" style="display:none;">
+          <h2>All Appointments</h2>
+          <p>Every booking across every doctor and department.</p>
+          <div class="form-group" style="max-width:220px;">
+            <label for="apptFilter">Show</label>
+            <select id="apptFilter">
+              <option value="upcoming">Upcoming only</option>
+              <option value="all">All appointments</option>
+            </select>
+          </div>
+          <div id="apptList"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div id="tab-patients" style="display:none;">
+          <h2>Patient Reports</h2>
+          <p>See every registered patient, and drill into their full appointment and medical history across all doctors.</p>
+          <div id="patientsList"><div class="empty-state">Loading…</div></div>
+          <div id="patientDetail" style="display:none; margin-top:1.6rem;">
+            <div class="card" style="padding:1.6rem;">
+              <button class="btn btn-outline" id="backToPatientsList" style="margin-bottom:1.2rem; padding:0.4rem 0.9rem; font-size:0.8rem;">&larr; Back to all patients</button>
+              <h3 id="patientReportName"></h3>
+              <p id="patientReportMeta"></p>
+              <h4 style="margin-top:1.6rem;">Appointments</h4>
+              <div id="patientReportAppts"></div>
+              <h4 style="margin-top:1.6rem;">Medical History</h4>
+              <div id="patientReportRecords"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-settings" style="display:none;">
+          <h2>Site Settings</h2>
+
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+            <h4>Contact Info</h4>
+            <p>Used across the site — header, footer, and contact page.</p>
+            <div id="contactSettingsAlert" class="alert"></div>
+            <form id="contactSettingsForm">
+              <div class="form-group">
+                <label for="setPhone">Phone Number</label>
+                <input type="text" id="setPhone" placeholder="+971543397906">
+              </div>
+              <div class="form-group">
+                <label for="setWhatsapp">WhatsApp Number (digits only, with country code)</label>
+                <input type="text" id="setWhatsapp" placeholder="971543397906">
+              </div>
+              <div class="form-group">
+                <label for="setContactEmail">Public Contact Email</label>
+                <input type="email" id="setContactEmail" placeholder="hello@radianthealthalliance.com">
+              </div>
+              <button type="submit" class="btn btn-primary">Save Contact Info</button>
+            </form>
+          </div>
+
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+            <h4>Booking Email Notifications</h4>
+            <p>Whenever a patient books, we email them a confirmation, and email these addresses a notification (the assigned doctor is always notified automatically — add front-desk or admin emails here too).</p>
+            <div id="notifyAlert" class="alert"></div>
+            <div class="form-group">
+              <label for="notifyEmailInput">Add an email to notify</label>
+              <div style="display:flex; gap:0.6rem;">
+                <input type="email" id="notifyEmailInput" placeholder="frontdesk@radianthealthalliance.com">
+                <button class="btn btn-outline" id="addNotifyEmailBtn" type="button" style="white-space:nowrap;">Add</button>
+              </div>
+            </div>
+            <div id="notifyEmailList"></div>
+          </div>
+
+          <div class="card" style="padding:1.6rem;">
+            <h4>SMTP (Email Sending)</h4>
+            <p>Your email provider's outgoing mail settings — this is what lets the site actually send booking emails. Ask your email/hosting provider for these details if you don't have them. Common example (Gmail with an App Password): host <code>smtp.gmail.com</code>, port <code>587</code>.</p>
+            <div id="smtpAlert" class="alert"></div>
+            <form id="smtpForm">
+              <div class="form-group">
+                <label for="smtpHost">SMTP Host</label>
+                <input type="text" id="smtpHost" placeholder="smtp.yourprovider.com">
+              </div>
+              <div class="form-group">
+                <label for="smtpPort">Port</label>
+                <input type="number" id="smtpPort" placeholder="587">
+              </div>
+              <div class="form-group">
+                <label><input type="checkbox" id="smtpSecure" style="width:auto; display:inline-block; margin-right:0.5rem;"> Use SSL (usually only for port 465)</label>
+              </div>
+              <div class="form-group">
+                <label for="smtpUser">SMTP Username</label>
+                <input type="text" id="smtpUser" placeholder="you@yourdomain.com">
+              </div>
+              <div class="form-group">
+                <label for="smtpPass">SMTP Password</label>
+                <input type="password" id="smtpPass" placeholder="Leave blank to keep current password">
+              </div>
+              <div class="form-group">
+                <label for="smtpFrom">"From" Address Shown to Patients</label>
+                <input type="text" id="smtpFrom" placeholder="Radiant Health Alliance <no-reply@radianthealthalliance.com>">
+              </div>
+              <button type="submit" class="btn btn-primary">Save SMTP Settings</button>
+            </form>
+            <div style="margin-top:1.2rem; display:flex; gap:0.6rem; align-items:center;">
+              <input type="email" id="testEmailInput" placeholder="Send a test email to…" style="max-width:280px;">
+              <button class="btn btn-outline" id="sendTestEmailBtn" type="button">Send Test Email</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -131,14 +272,19 @@
   });
 
   const tabs = document.querySelectorAll('[data-tab]');
+  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'appointments', 'patients', 'settings'];
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       e.preventDefault();
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      ['depts', 'docs', 'team'].forEach(name => {
+      tabNames.forEach(name => {
         document.getElementById('tab-' + name).style.display = (name === tab.dataset.tab) ? 'block' : 'none';
       });
+      if (tab.dataset.tab === 'appointments') loadAppointments();
+      if (tab.dataset.tab === 'patients') loadPatients();
+      if (tab.dataset.tab === 'staffAccounts') loadStaffAccounts();
+      if (tab.dataset.tab === 'settings') loadSettings();
     });
   });
 
@@ -149,11 +295,24 @@
     document.getElementById('deptList').innerHTML = departments.map(d => `
       <div class="list-item">
         <div><strong>${d.name}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${d.description}</span></div>
-        <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
+        <div style="display:flex; align-items:center; gap:0.7rem;">
+          <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
+          <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-delete-dept="${d.id}">Delete</button>
+        </div>
       </div>
     `).join('');
     const select = document.getElementById('docDept');
     select.innerHTML = departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+
+    document.querySelectorAll('[data-delete-dept]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this department? This cannot be undone.')) return;
+        try {
+          await API.del(`/api/admin/departments/${btn.dataset.deleteDept}`);
+          await loadDepartments();
+        } catch (err) { alert(err.message); }
+      });
+    });
   }
 
   async function loadDoctors() {
@@ -169,10 +328,13 @@
               <span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span>
             </div>
           </div>
-          <label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
-            ${d.photo ? 'Change Photo' : 'Add Photo'}
-            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" data-doctor-photo="${d.id}">
-          </label>
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
+              Photo
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" data-doctor-photo="${d.id}">
+            </label>
+            <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-delete-doctor="${d.id}">Delete</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -184,15 +346,24 @@
           if (!dataUrl) return;
           await API.patch(`/api/admin/doctors/${input.dataset.doctorPhoto}`, { photo: dataUrl });
           await loadDoctors();
-        } catch (err) {
-          alert(err.message);
-        }
+        } catch (err) { alert(err.message); }
+      });
+    });
+
+    document.querySelectorAll('[data-delete-doctor]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this doctor? Their login will stop working. Past appointments/records are kept for your records.')) return;
+        try {
+          await API.del(`/api/admin/doctors/${btn.dataset.deleteDoctor}`);
+          await loadDepartments();
+          await loadDoctors();
+        } catch (err) { alert(err.message); }
       });
     });
   }
 
   async function loadTeam() {
-    const members = await API.get('/api/team-members').catch(async () => (await API.get('/api/team')).staffMembers || []);
+    const members = await API.get('/api/team-members');
     document.getElementById('teamList').innerHTML = members.length ? members.map(m => `
       <div class="list-item">
         <div style="display:flex; align-items:center; gap:0.9rem;">
@@ -216,6 +387,231 @@
       });
     });
   }
+
+  async function loadStaffAccounts() {
+    const el = document.getElementById('staffList');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const accounts = await API.get('/api/admin/staff-accounts');
+      el.innerHTML = accounts.length ? accounts.map(a => `
+        <div class="list-item">
+          <div><strong>${a.name}</strong> — <span class="badge">${a.role}</span><br><span style="color:var(--ink-soft); font-size:0.85rem;">${a.email}</span></div>
+          ${a.email !== 'admin@radianthealthalliance.com' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-remove-staff="${a.id}">Remove</button>` : ''}
+        </div>
+      `).join('') : '<div class="empty-state">No staff accounts yet.</div>';
+
+      document.querySelectorAll('[data-remove-staff]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Remove this login?')) return;
+          try {
+            await API.del(`/api/admin/staff-accounts/${btn.dataset.removeStaff}`);
+            loadStaffAccounts();
+          } catch (err) { alert(err.message); }
+        });
+      });
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">Could not load staff accounts.</div>';
+    }
+  }
+
+  async function loadAppointments() {
+    const el = document.getElementById('apptList');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const all = await API.get('/api/admin/appointments');
+      const showAll = document.getElementById('apptFilter').value === 'all';
+      const now = new Date();
+      const filtered = showAll ? all : all.filter(a => a.status === 'confirmed' && new Date(a.date + 'T' + a.time) >= now);
+      el.innerHTML = filtered.length ? filtered.map(a => `
+        <div class="list-item">
+          <div>
+            <strong>${a.patientName}</strong> with <strong>${a.doctorName}</strong><br>
+            <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
+            ${a.patientPhone ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">${a.patientPhone} · ${a.patientEmail}</span>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:0.7rem;">
+            <span class="badge ${a.status}">${a.status}</span>
+            ${a.status === 'confirmed' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel-appt="${a.id}">Cancel</button>` : ''}
+          </div>
+        </div>
+      `).join('') : '<div class="empty-state">No appointments to show.</div>';
+
+      document.querySelectorAll('[data-cancel-appt]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Cancel this appointment?')) return;
+          try {
+            await API.post(`/api/admin/appointments/${btn.dataset.cancelAppt}/cancel`, {});
+            loadAppointments();
+          } catch (err) { alert(err.message); }
+        });
+      });
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">Could not load appointments.</div>';
+    }
+  }
+  document.getElementById('apptFilter').addEventListener('change', loadAppointments);
+
+  async function loadPatients() {
+    const el = document.getElementById('patientsList');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const patients = await API.get('/api/admin/patients');
+      el.innerHTML = patients.length ? patients.map(p => `
+        <div class="list-item" style="cursor:pointer;" data-patient="${p.id}">
+          <div><strong>${p.name}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${p.email}${p.phone ? ' · ' + p.phone : ''}</span></div>
+          <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'} · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}</span>
+        </div>
+      `).join('') : '<div class="empty-state">No patients registered yet.</div>';
+
+      document.querySelectorAll('[data-patient]').forEach(row => {
+        row.addEventListener('click', () => openPatientReport(row.dataset.patient));
+      });
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">Could not load patients.</div>';
+    }
+  }
+
+  async function openPatientReport(id) {
+    try {
+      const { patient, appointments, records } = await API.get(`/api/admin/patients/${id}`);
+      document.getElementById('patientsList').style.display = 'none';
+      document.getElementById('patientDetail').style.display = 'block';
+      document.getElementById('patientReportName').textContent = patient.name;
+      document.getElementById('patientReportMeta').textContent = `${patient.email}${patient.phone ? ' · ' + patient.phone : ''}${patient.dob ? ' · DOB ' + patient.dob : ''}`;
+
+      document.getElementById('patientReportAppts').innerHTML = appointments.length ? appointments.map(a => `
+        <div class="list-item">
+          <div><strong>${a.doctorName}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span></div>
+          <span class="badge ${a.status}">${a.status}</span>
+        </div>
+      `).join('') : '<div class="empty-state">No appointments.</div>';
+
+      document.getElementById('patientReportRecords').innerHTML = records.length ? records.map(r => `
+        <div class="timeline-item">
+          <div class="timeline-date">${fmtDate(r.date)} — ${r.doctorName}</div>
+          ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
+          <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
+          ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
+        </div>
+      `).join('') : '<div class="empty-state">No medical history.</div>';
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  document.getElementById('backToPatientsList').addEventListener('click', () => {
+    document.getElementById('patientDetail').style.display = 'none';
+    document.getElementById('patientsList').style.display = 'block';
+  });
+
+  let currentNotifyEmails = [];
+
+  async function loadSettings() {
+    try {
+      const s = await API.get('/api/admin/settings');
+      document.getElementById('setPhone').value = s.phone || '';
+      document.getElementById('setWhatsapp').value = s.whatsapp || '';
+      document.getElementById('setContactEmail').value = s.contactEmail || '';
+      currentNotifyEmails = s.notifyEmails || [];
+      renderNotifyEmails();
+      document.getElementById('smtpHost').value = s.smtp.host || '';
+      document.getElementById('smtpPort').value = s.smtp.port || 587;
+      document.getElementById('smtpSecure').checked = !!s.smtp.secure;
+      document.getElementById('smtpUser').value = s.smtp.user || '';
+      document.getElementById('smtpPass').value = '';
+      document.getElementById('smtpPass').placeholder = s.smtp.pass ? 'Leave blank to keep current password' : 'No password set yet';
+      document.getElementById('smtpFrom').value = s.smtp.from || '';
+    } catch (e) {
+      showAlert(document.getElementById('contactSettingsAlert'), 'Could not load settings.', 'error');
+    }
+  }
+
+  function renderNotifyEmails() {
+    const el = document.getElementById('notifyEmailList');
+    el.innerHTML = currentNotifyEmails.length ? currentNotifyEmails.map(email => `
+      <div class="list-item" style="padding:0.6rem 1rem;">
+        <span>${email}</span>
+        <button class="btn btn-danger" style="padding:0.3rem 0.7rem; font-size:0.75rem;" data-remove-notify="${email}">Remove</button>
+      </div>
+    `).join('') : '<p style="font-size:0.85rem; color:var(--ink-soft);">No extra addresses yet — only doctors get notified.</p>';
+
+    el.querySelectorAll('[data-remove-notify]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        currentNotifyEmails = currentNotifyEmails.filter(e => e !== btn.dataset.removeNotify);
+        await saveNotifyEmails();
+      });
+    });
+  }
+
+  async function saveNotifyEmails() {
+    try {
+      await API.patch('/api/admin/settings', { notifyEmails: currentNotifyEmails });
+      renderNotifyEmails();
+      showAlert(document.getElementById('notifyAlert'), 'Saved.', 'success');
+    } catch (err) {
+      showAlert(document.getElementById('notifyAlert'), err.message, 'error');
+    }
+  }
+
+  document.getElementById('addNotifyEmailBtn').addEventListener('click', async () => {
+    const input = document.getElementById('notifyEmailInput');
+    const email = input.value.trim();
+    if (!email) return;
+    if (!currentNotifyEmails.includes(email)) currentNotifyEmails.push(email);
+    input.value = '';
+    await saveNotifyEmails();
+  });
+
+  document.getElementById('contactSettingsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('contactSettingsAlert');
+    hideAlert(alertEl);
+    try {
+      await API.patch('/api/admin/settings', {
+        phone: document.getElementById('setPhone').value,
+        whatsapp: document.getElementById('setWhatsapp').value,
+        contactEmail: document.getElementById('setContactEmail').value
+      });
+      showAlert(alertEl, 'Contact info saved.', 'success');
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+  });
+
+  document.getElementById('smtpForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('smtpAlert');
+    hideAlert(alertEl);
+    try {
+      await API.patch('/api/admin/settings', {
+        smtp: {
+          host: document.getElementById('smtpHost').value,
+          port: document.getElementById('smtpPort').value,
+          secure: document.getElementById('smtpSecure').checked,
+          user: document.getElementById('smtpUser').value,
+          pass: document.getElementById('smtpPass').value,
+          from: document.getElementById('smtpFrom').value
+        }
+      });
+      showAlert(alertEl, 'SMTP settings saved.', 'success');
+      loadSettings();
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+  });
+
+  document.getElementById('sendTestEmailBtn').addEventListener('click', async () => {
+    const to = document.getElementById('testEmailInput').value.trim();
+    const alertEl = document.getElementById('smtpAlert');
+    if (!to) return showAlert(alertEl, 'Enter an email address to test with first.', 'error');
+    hideAlert(alertEl);
+    try {
+      await API.post('/api/admin/settings/test-email', { to });
+      showAlert(alertEl, `Test email sent to ${to} — check that inbox.`, 'success');
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+  });
 
   document.getElementById('deptForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -283,6 +679,26 @@
       showAlert(alertEl, err.message, 'error');
     }
     submitBtn.disabled = false;
+  });
+
+  document.getElementById('staffForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('staffAlert');
+    hideAlert(alertEl);
+    try {
+      await API.post('/api/admin/staff-accounts', {
+        name: document.getElementById('staffName').value,
+        email: document.getElementById('staffEmail').value,
+        role: document.getElementById('staffRole').value,
+        password: document.getElementById('staffPassword').value
+      });
+      document.getElementById('staffForm').reset();
+      document.getElementById('staffPassword').value = 'ChangeMe123!';
+      showAlert(alertEl, 'Staff login created. Share the email and temporary password with them directly.', 'success');
+      await loadStaffAccounts();
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
   });
 
   (async function () {

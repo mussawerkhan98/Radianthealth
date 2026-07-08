@@ -1,6 +1,10 @@
 // server.js — Radiant Health Alliance backend.
 // Express + a JSON file database (see db.js). Serves the static
 // frontend from /public and exposes a small REST API under /api.
+//
+// Photos (doctor and team) are stored as base64 data URLs directly in
+// the database record — deliberately avoids adding a file-upload
+// dependency, so this stays a zero-native-dependency, easy-to-redeploy app.
 
 require('dotenv').config();
 const express = require('express');
@@ -20,7 +24,9 @@ if (JWT_SECRET === 'CHANGE_THIS_SECRET_BEFORE_GOING_LIVE') {
 }
 
 app.use(cors());
-app.use(express.json());
+// Raised limit (default is 100kb) so a base64-encoded photo can fit in
+// a normal JSON request body.
+app.use(express.json({ limit: '6mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function newId(prefix) {
@@ -47,6 +53,11 @@ function auth(requiredRoles) {
       return res.status(401).json({ error: 'Your session has expired. Please log in again.' });
     }
   };
+}
+
+function isValidPhoto(photo) {
+  if (photo === null || photo === undefined || photo === '') return true;
+  return typeof photo === 'string' && /^data:image\/(png|jpeg|jpg|webp|gif);base64,/.test(photo);
 }
 
 // ---------- AUTH ----------
@@ -162,14 +173,16 @@ app.get('/api/doctors/:id', (req, res) => {
 });
 
 app.post('/api/admin/doctors', auth(['admin']), async (req, res) => {
-  const { name, departmentId, specialty, bio, email, password } = req.body || {};
+  const { name, departmentId, specialty, bio, email, password, photo } = req.body || {};
   if (!name || !departmentId || !email || !password) {
     return res.status(400).json({ error: 'Name, department, email and password are required.' });
   }
+  if (!isValidPhoto(photo)) return res.status(400).json({ error: 'Photo must be a JPG, PNG, WEBP, or GIF image.' });
   const db = readDb();
   const passwordHash = await bcrypt.hash(password, 10);
   const doctor = {
     id: newId('doc'), name, departmentId, specialty: specialty || '', bio: bio || '',
+    photo: photo || null,
     email: email.toLowerCase(), passwordHash, mustChangePassword: true,
     workingHours: { start: '09:00', end: '17:00', slotMinutes: 30 },
     workingDays: [1, 2, 3, 4, 5]
@@ -177,6 +190,25 @@ app.post('/api/admin/doctors', auth(['admin']), async (req, res) => {
   db.doctors.push(doctor);
   await writeDb(db);
   const { passwordHash: _drop, ...safe } = doctor;
+  res.json(safe);
+});
+
+// Update an existing doctor's profile (name, specialty, bio, department, photo).
+app.patch('/api/admin/doctors/:id', auth(['admin']), async (req, res) => {
+  const { name, specialty, bio, photo, departmentId } = req.body || {};
+  if (photo !== undefined && !isValidPhoto(photo)) {
+    return res.status(400).json({ error: 'Photo must be a JPG, PNG, WEBP, or GIF image.' });
+  }
+  const db = readDb();
+  const doctor = db.doctors.find(d => d.id === req.params.id);
+  if (!doctor) return res.status(404).json({ error: 'Doctor not found.' });
+  if (name !== undefined) doctor.name = name;
+  if (specialty !== undefined) doctor.specialty = specialty;
+  if (bio !== undefined) doctor.bio = bio;
+  if (photo !== undefined) doctor.photo = photo || null;
+  if (departmentId !== undefined) doctor.departmentId = departmentId;
+  await writeDb(db);
+  const { passwordHash, ...safe } = doctor;
   res.json(safe);
 });
 
@@ -315,12 +347,56 @@ app.post('/api/doctors/me/patients/:patientId/records', auth(['doctor']), async 
   res.json(record);
 });
 
-// ---------- TEAM (public) ----------
+// ---------- TEAM / STAFF (doctors + non-doctor staff, public read) ----------
 
 app.get('/api/team', (req, res) => {
   const db = readDb();
   const doctors = db.doctors.map(({ passwordHash, email, ...rest }) => rest);
-  res.json({ doctors });
+  res.json({ doctors, staffMembers: db.teamMembers || [] });
+});
+
+app.get('/api/team-members', (req, res) => {
+  const db = readDb();
+  res.json(db.teamMembers || []);
+});
+
+app.post('/api/admin/team-members', auth(['admin']), async (req, res) => {
+  const { name, role, bio, photo } = req.body || {};
+  if (!name || !role) return res.status(400).json({ error: 'Name and role are required.' });
+  if (!isValidPhoto(photo)) return res.status(400).json({ error: 'Photo must be a JPG, PNG, WEBP, or GIF image.' });
+  const db = readDb();
+  const member = { id: newId('team'), name, role, bio: bio || '', photo: photo || null, createdAt: new Date().toISOString() };
+  db.teamMembers = db.teamMembers || [];
+  db.teamMembers.push(member);
+  await writeDb(db);
+  res.json(member);
+});
+
+app.patch('/api/admin/team-members/:id', auth(['admin']), async (req, res) => {
+  const { name, role, bio, photo } = req.body || {};
+  if (photo !== undefined && !isValidPhoto(photo)) {
+    return res.status(400).json({ error: 'Photo must be a JPG, PNG, WEBP, or GIF image.' });
+  }
+  const db = readDb();
+  db.teamMembers = db.teamMembers || [];
+  const member = db.teamMembers.find(m => m.id === req.params.id);
+  if (!member) return res.status(404).json({ error: 'Team member not found.' });
+  if (name !== undefined) member.name = name;
+  if (role !== undefined) member.role = role;
+  if (bio !== undefined) member.bio = bio;
+  if (photo !== undefined) member.photo = photo || null;
+  await writeDb(db);
+  res.json(member);
+});
+
+app.delete('/api/admin/team-members/:id', auth(['admin']), async (req, res) => {
+  const db = readDb();
+  db.teamMembers = db.teamMembers || [];
+  const idx = db.teamMembers.findIndex(m => m.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Team member not found.' });
+  db.teamMembers.splice(idx, 1);
+  await writeDb(db);
+  res.json({ ok: true });
 });
 
 // ---------- CONTACT ----------
@@ -340,6 +416,14 @@ app.get(/^(?!\/api\/).*/, (req, res, next) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
     if (err) next();
   });
+});
+
+// Returns clean JSON instead of an HTML error page for oversized/malformed bodies.
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'That photo is too large. Please use an image under 4MB.' });
+  }
+  next(err);
 });
 
 app.listen(PORT, () => {

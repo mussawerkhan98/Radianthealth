@@ -20,6 +20,7 @@
         <p style="font-size:0.82rem; margin-bottom:1.2rem;">Directory Management</p>
         <a href="#" class="active" data-tab="depts">Departments</a>
         <a href="#" data-tab="docs">Doctors</a>
+        <a href="#" data-tab="team">Team &amp; Staff</a>
         <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
       </aside>
 
@@ -51,6 +52,10 @@
             <div id="docAlert" class="alert"></div>
             <form id="docForm">
               <div class="form-group">
+                <label for="docPhoto">Photo (optional)</label>
+                <input type="file" id="docPhoto" accept="image/png,image/jpeg,image/webp,image/gif">
+              </div>
+              <div class="form-group">
                 <label for="docName">Full Name</label>
                 <input type="text" id="docName" required placeholder="Dr. Jane Doe">
               </div>
@@ -61,6 +66,10 @@
               <div class="form-group">
                 <label for="docSpecialty">Specialty</label>
                 <input type="text" id="docSpecialty">
+              </div>
+              <div class="form-group">
+                <label for="docBio">Short Bio (optional)</label>
+                <textarea id="docBio"></textarea>
               </div>
               <div class="form-group">
                 <label for="docEmail">Login Email</label>
@@ -74,6 +83,35 @@
             </form>
           </div>
           <div id="docList"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div id="tab-team" style="display:none;">
+          <h2>Team &amp; Staff</h2>
+          <p>Anyone who isn't a doctor but should appear on your About page — nurses, receptionists, managers, etc. (They don't get a login here.)</p>
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+            <h4>Add a Team Member</h4>
+            <div id="teamAlert" class="alert"></div>
+            <form id="teamForm">
+              <div class="form-group">
+                <label for="teamPhoto">Photo (optional)</label>
+                <input type="file" id="teamPhoto" accept="image/png,image/jpeg,image/webp,image/gif">
+              </div>
+              <div class="form-group">
+                <label for="teamName">Full Name</label>
+                <input type="text" id="teamName" required>
+              </div>
+              <div class="form-group">
+                <label for="teamRole">Role / Title</label>
+                <input type="text" id="teamRole" required placeholder="e.g. Head Nurse, Front Desk Manager">
+              </div>
+              <div class="form-group">
+                <label for="teamBio">Short Bio (optional)</label>
+                <textarea id="teamBio"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Add Team Member</button>
+            </form>
+          </div>
+          <div id="teamList"><div class="empty-state">Loading…</div></div>
         </div>
       </div>
     </div>
@@ -98,8 +136,9 @@
       e.preventDefault();
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById('tab-depts').style.display = tab.dataset.tab === 'depts' ? 'block' : 'none';
-      document.getElementById('tab-docs').style.display = tab.dataset.tab === 'docs' ? 'block' : 'none';
+      ['depts', 'docs', 'team'].forEach(name => {
+        document.getElementById('tab-' + name).style.display = (name === tab.dataset.tab) ? 'block' : 'none';
+      });
     });
   });
 
@@ -123,10 +162,59 @@
       const dept = departments.find(x => x.id === d.departmentId);
       return `
         <div class="list-item">
-          <div><strong>${d.name}</strong> — ${d.specialty}<br><span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span></div>
+          <div style="display:flex; align-items:center; gap:0.9rem;">
+            ${avatarHtml(d, 'doctor-avatar-sm')}
+            <div>
+              <strong>${d.name}</strong> — ${d.specialty}<br>
+              <span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span>
+            </div>
+          </div>
+          <label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
+            ${d.photo ? 'Change Photo' : 'Add Photo'}
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" data-doctor-photo="${d.id}">
+          </label>
         </div>
       `;
     }).join('');
+
+    document.querySelectorAll('[data-doctor-photo]').forEach(input => {
+      input.addEventListener('change', async () => {
+        try {
+          const dataUrl = await fileToDataUrl(input);
+          if (!dataUrl) return;
+          await API.patch(`/api/admin/doctors/${input.dataset.doctorPhoto}`, { photo: dataUrl });
+          await loadDoctors();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
+
+  async function loadTeam() {
+    const members = await API.get('/api/team-members').catch(async () => (await API.get('/api/team')).staffMembers || []);
+    document.getElementById('teamList').innerHTML = members.length ? members.map(m => `
+      <div class="list-item">
+        <div style="display:flex; align-items:center; gap:0.9rem;">
+          ${avatarHtml(m, 'doctor-avatar-sm')}
+          <div>
+            <strong>${m.name}</strong> — ${m.role}<br>
+            ${m.bio ? `<span style="color:var(--ink-soft); font-size:0.85rem;">${m.bio}</span>` : ''}
+          </div>
+        </div>
+        <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-remove-team="${m.id}">Remove</button>
+      </div>
+    `).join('') : '<div class="empty-state">No team members added yet.</div>';
+
+    document.querySelectorAll('[data-remove-team]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove this team member from the About page?')) return;
+        try {
+          await API.del(`/api/admin/team-members/${btn.dataset.removeTeam}`);
+          loadTeam();
+        } catch (err) { alert(err.message); }
+      });
+    });
   }
 
   document.getElementById('deptForm').addEventListener('submit', async (e) => {
@@ -150,13 +238,18 @@
     e.preventDefault();
     const alertEl = document.getElementById('docAlert');
     hideAlert(alertEl);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
     try {
+      const photo = await fileToDataUrl(document.getElementById('docPhoto'));
       await API.post('/api/admin/doctors', {
         name: document.getElementById('docName').value,
         departmentId: document.getElementById('docDept').value,
         specialty: document.getElementById('docSpecialty').value,
+        bio: document.getElementById('docBio').value,
         email: document.getElementById('docEmail').value,
-        password: document.getElementById('docPassword').value
+        password: document.getElementById('docPassword').value,
+        photo
       });
       document.getElementById('docForm').reset();
       document.getElementById('docPassword').value = 'ChangeMe123!';
@@ -166,11 +259,36 @@
     } catch (err) {
       showAlert(alertEl, err.message, 'error');
     }
+    submitBtn.disabled = false;
+  });
+
+  document.getElementById('teamForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('teamAlert');
+    hideAlert(alertEl);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    try {
+      const photo = await fileToDataUrl(document.getElementById('teamPhoto'));
+      await API.post('/api/admin/team-members', {
+        name: document.getElementById('teamName').value,
+        role: document.getElementById('teamRole').value,
+        bio: document.getElementById('teamBio').value,
+        photo
+      });
+      document.getElementById('teamForm').reset();
+      showAlert(alertEl, 'Team member added.', 'success');
+      await loadTeam();
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+    submitBtn.disabled = false;
   });
 
   (async function () {
     await loadDepartments();
     await loadDoctors();
+    await loadTeam();
   })();
 </script>
 </body>

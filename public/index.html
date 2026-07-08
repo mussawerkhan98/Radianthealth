@@ -94,7 +94,7 @@
       const grid = document.getElementById('doctorGrid');
       grid.innerHTML = team.doctors.slice(0, 4).map(d => `
         <div class="card doctor-card">
-          <div class="doctor-avatar">${initialsOf(d.name)}</div>
+          ${avatarHtml(d)}
           <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
           <div class="doctor-specialty">${d.specialty}</div>
           <a href="book.html?doctor=${d.id}" class="btn btn-outline" style="margin-top:1rem; padding:0.5rem 1rem; font-size:0.82rem;">Book</a>

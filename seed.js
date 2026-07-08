@@ -36,7 +36,8 @@ async function seed() {
     { id: id('dept'), name: 'ENT', description: 'Ear, nose and throat conditions.', icon: 'ent' },
     { id: id('dept'), name: 'Dental', description: 'Oral health, cleanings and dental procedures.', icon: 'tooth' },
     { id: id('dept'), name: 'Ophthalmology', description: 'Eye exams, vision correction and eye conditions.', icon: 'eye' },
-    { id: id('dept'), name: 'Radiology', description: 'Diagnostic imaging: X-ray, ultrasound and scans.', icon: 'scan' }
+    { id: id('dept'), name: 'Radiology', description: 'Diagnostic imaging: X-ray, ultrasound and scans.', icon: 'scan' },
+    { id: id('dept'), name: 'Physiotherapy', description: 'Rehabilitation, mobility and pain management.', icon: 'physio' }
   ];
 
   const byName = (n) => departments.find(d => d.name === n).id;
@@ -53,7 +54,8 @@ async function seed() {
     ['Dr. Bilal Rahman', 'Ophthalmology', 'Ophthalmologist'],
     ['Dr. Nadia Khalil', 'Radiology', 'Radiologist'],
     ['Dr. Tariq Aziz', 'General Medicine', 'Family Medicine'],
-    ['Dr. Mona Reza', 'Cardiology', 'Interventional Cardiologist']
+    ['Dr. Mona Reza', 'Cardiology', 'Interventional Cardiologist'],
+    ['Dr. Zainab Hussain', 'Physiotherapy', 'Physiotherapist']
   ];
 
   const doctors = doctorSeeds.map(([name, dept, specialty]) => {
@@ -67,6 +69,7 @@ async function seed() {
       email: `${slug}@radianthealthalliance.com`,
       passwordHash,
       mustChangePassword: true,
+      photo: null,
       workingHours: { start: '09:00', end: '17:00', slotMinutes: 30 },
       workingDays: [1, 2, 3, 4, 5] // Mon–Fri (0=Sun)
     };
@@ -90,7 +93,8 @@ async function seed() {
     patients: [],
     appointments: [],
     records: [],
-    contactMessages: []
+    contactMessages: [],
+    teamMembers: []
   };
 
   await writeDb(data);

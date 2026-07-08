@@ -25,19 +25,28 @@ function emptyShape() {
     patients: [],
     appointments: [],
     records: [],
-    contactMessages: []
+    contactMessages: [],
+    teamMembers: []
   };
 }
 
 function readDb() {
   ensureDb();
   const raw = fs.readFileSync(DB_PATH, 'utf-8');
+  let data;
   try {
-    return JSON.parse(raw);
+    data = JSON.parse(raw);
   } catch (e) {
     console.error('db.json is corrupted, resetting to empty shape.', e);
-    return emptyShape();
+    data = emptyShape();
   }
+  // Backfill any collections added in later versions of this app so an
+  // existing live database doesn't break when the code is updated.
+  const defaults = emptyShape();
+  for (const key of Object.keys(defaults)) {
+    if (!Array.isArray(data[key])) data[key] = defaults[key];
+  }
+  return data;
 }
 
 // Very small in-process write queue so concurrent requests don't

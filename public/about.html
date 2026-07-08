@@ -42,12 +42,22 @@
 <section class="section" style="background:#fff;">
   <div class="container">
     <div class="section-title">
-      <span class="eyebrow">Our Team</span>
-      <h2>The people behind your <em>care</em></h2>
+      <span class="eyebrow">Our Doctors</span>
+      <h2>The specialists behind your <em>care</em></h2>
     </div>
     <div class="grid grid-4" id="teamGrid">
       <div class="empty-state">Loading team…</div>
     </div>
+  </div>
+</section>
+
+<section class="section" id="staffSection" style="display:none;">
+  <div class="container">
+    <div class="section-title">
+      <span class="eyebrow">Our Team</span>
+      <h2>The people who <em>support</em> your visit</h2>
+    </div>
+    <div class="grid grid-4" id="staffGrid"></div>
   </div>
 </section>
 
@@ -59,13 +69,25 @@
     try {
       const team = await API.get('/api/team');
       const grid = document.getElementById('teamGrid');
-      grid.innerHTML = team.doctors.map(d => `
+      grid.innerHTML = team.doctors.length ? team.doctors.map(d => `
         <div class="card doctor-card">
-          <div class="doctor-avatar">${initialsOf(d.name)}</div>
+          ${avatarHtml(d)}
           <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${d.name}</h3>
           <div class="doctor-specialty">${d.specialty}</div>
         </div>
-      `).join('');
+      `).join('') : '<div class="empty-state">No doctors added yet.</div>';
+
+      if (team.staffMembers && team.staffMembers.length) {
+        document.getElementById('staffSection').style.display = 'block';
+        document.getElementById('staffGrid').innerHTML = team.staffMembers.map(m => `
+          <div class="card doctor-card">
+            ${avatarHtml(m)}
+            <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${m.name}</h3>
+            <div class="doctor-specialty">${m.role}</div>
+            ${m.bio ? `<p style="font-size:0.85rem; margin-top:0.6rem;">${m.bio}</p>` : ''}
+          </div>
+        `).join('');
+      }
     } catch (e) {
       document.getElementById('teamGrid').innerHTML = '<div class="empty-state">Could not load team right now.</div>';
     }

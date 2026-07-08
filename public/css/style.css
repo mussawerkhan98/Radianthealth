@@ -189,7 +189,17 @@ nav.main-nav a.active, nav.main-nav a:hover { color: var(--blue-deep); }
   background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
   color: #fff; display: flex; align-items: center; justify-content: center;
   font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.4rem;
+  object-fit: cover;
 }
+.doctor-avatar-photo { object-fit: cover; }
+.doctor-avatar-sm {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.95rem;
+  object-fit: cover; flex-shrink: 0;
+}
+.doctor-avatar-sm-photo { object-fit: cover; }
 .doctor-specialty { color: var(--teal-deep); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
 .badge {

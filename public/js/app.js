@@ -29,11 +29,40 @@ const API = {
     return data;
   },
   get(path) { return API.request(path); },
-  post(path, body) { return API.request(path, { method: 'POST', body: JSON.stringify(body) }); }
+  post(path, body) { return API.request(path, { method: 'POST', body: JSON.stringify(body) }); },
+  patch(path, body) { return API.request(path, { method: 'PATCH', body: JSON.stringify(body) }); },
+  del(path) { return API.request(path, { method: 'DELETE' }); }
 };
+
+// Reads a <input type="file"> selection and resolves to a base64 data URL,
+// or null if no file was selected. Used for doctor/team photo uploads —
+// keeps the whole app dependency-free (no server-side upload library needed).
+function fileToDataUrl(fileInput) {
+  return new Promise((resolve, reject) => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return resolve(null);
+    if (file.size > 4 * 1024 * 1024) {
+      return reject(new Error('Please choose an image under 4MB.'));
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read that file.'));
+    reader.readAsDataURL(file);
+  });
+}
 
 function initialsOf(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+// Renders either a photo (if present) or an initials circle, for a
+// doctor or team member object with { name, photo }.
+function avatarHtml(person, extraClass) {
+  const cls = 'doctor-avatar' + (extraClass ? ' ' + extraClass : '');
+  if (person.photo) {
+    return `<div class="${cls}" style="background:none; padding:0; overflow:hidden;"><img src="${person.photo}" alt="${person.name}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;"></div>`;
+  }
+  return `<div class="${cls}">${initialsOf(person.name)}</div>`;
 }
 
 function fmtDate(dateStr) {
@@ -126,6 +155,8 @@ function renderFooter() {
       </div>
       <div class="footer-bottom">
         &copy; <span id="footerYear"></span> Radiant Health Alliance. All rights reserved.
+        &nbsp;·&nbsp;
+        Powered by <a href="https://www.byteflow.ae" target="_blank" rel="noopener" style="font-weight:700;">ByteFlow Technology</a>
       </div>
     </div>
   `;

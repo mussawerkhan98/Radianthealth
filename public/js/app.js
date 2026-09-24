@@ -96,7 +96,7 @@ function renderHeader(activePage) {
   if (user) {
     if (user.role === 'patient') portalLink = '<a href="patient-dashboard.html">My Account</a>';
     else if (user.role === 'doctor') portalLink = '<a href="doctor-dashboard.html">Doctor Portal</a>';
-    else if (user.role === 'staff') portalLink = '<a href="staff-dashboard.html">Staff Portal</a>';
+    else if (user.role === 'staff') portalLink = '<a href="admin.html">Staff Portal</a>';
     else portalLink = '<a href="admin.html">Admin</a>';
   }
 
@@ -173,9 +173,11 @@ async function renderFooter() {
   document.getElementById('footerYear').textContent = new Date().getFullYear();
 }
 
+// requireRole('doctor') or requireRole(['admin', 'staff'])
 function requireRole(role) {
   const user = API.user();
-  if (!user || user.role !== role) {
+  const allowed = Array.isArray(role) ? role : [role];
+  if (!user || !allowed.includes(user.role)) {
     window.location.href = 'login.html';
     return null;
   }

@@ -48,6 +48,7 @@ model Doctor {
   slotMinutes        Int             @default(30)
   workingDays        String          @default("1,2,3,4,5") // comma-separated, 0 = Sunday
   active             Boolean         @default(true)           // "deleted" doctors are deactivated so history is kept
+  offersVideo        Boolean         @default(false)          // can be booked for video appointments
   createdAt          DateTime        @default(now())
   appointments       Appointment[]
   records            MedicalRecord[]
@@ -92,6 +93,13 @@ model Appointment {
   time      String   // HH:MM
   reason    String   @default("")
   status    String   @default("confirmed") // "confirmed" | "cancelled"
+  visitType String   @default("in_person") // "in_person" | "video"
+  // Video visits: secret keys in the patient's and doctor's join links, and
+  // the Daily.co room (created the first time someone joins).
+  videoPatientKey String @default("")
+  videoDoctorKey  String @default("")
+  videoRoom       String @default("")
+  videoRoomUrl    String @default("")
   createdAt DateTime @default(now())
 
   // A partial unique index (one active booking per doctor/date/time) is

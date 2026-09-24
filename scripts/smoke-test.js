@@ -177,6 +177,10 @@ function check(name, cond, extra) {
   const rm = await call('DELETE', `/api/doctors/me/files/${up.data.id}`, null, D);
   check('uploader removes file', rm.status === 200, rm);
 
+  const inv = await call('POST', `/api/admin/appointments/${book.data.id}/send-invite`, {}, A);
+  check('send-invite answers (400 without Brevo, 200 with)', inv.status === 400 || inv.status === 200, inv);
+  const invP = await call('POST', `/api/admin/appointments/${book.data.id}/send-invite`, {}, P);
+  check('patient cannot trigger invites', invP.status === 403, invP);
   const cancel = await call('POST', `/api/admin/appointments/${book.data.id}/cancel`, {}, S);
   check('staff cancels appointment', cancel.data.status === 'cancelled', cancel);
   const rebook = await call('POST', '/api/appointments', { doctorId: newDoc.data.id, date: tomorrow, time: slot }, P);

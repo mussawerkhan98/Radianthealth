@@ -150,8 +150,33 @@ const apptOut = a => ({
 const recordOut = r => ({
   id: r.id, patientId: r.patientId, doctorId: r.doctorId, date: r.date, diagnosis: r.diagnosis,
   notes: r.notes, prescription: r.prescription, createdAt: r.createdAt,
-  ...(r.doctor ? { doctorName: r.doctor.name } : {})
+  ...(r.doctor ? { doctorName: r.doctor.name } : {}),
+  ...(r.files ? { files: r.files.map(fileOut) } : {})
 });
+
+// ---------- record file attachments ----------
+// Metadata only — never select the file bytes when listing records.
+const FILE_META = { select: { id: true, filename: true, mimeType: true, size: true, uploadedById: true, createdAt: true }, orderBy: { createdAt: 'asc' } };
+const fileOut = f => ({ id: f.id, filename: f.filename, mimeType: f.mimeType, size: f.size, uploadedById: f.uploadedById, createdAt: f.createdAt });
+const MAX_FILE_BYTES = 3 * 1024 * 1024; // Vercel limits a request to 4.5 MB; base64 adds ~33%
+const MAX_FILES_PER_RECORD = 20;
+// Allowed types, checked against the file's real first bytes (not just its name).
+const FILE_TYPES = {
+  pdf:  { mime: 'application/pdf', magic: b => b.subarray(0, 5).toString('latin1') === '%PDF-' },
+  jpg:  { mime: 'image/jpeg', magic: b => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+  jpeg: { mime: 'image/jpeg', magic: b => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+  png:  { mime: 'image/png', magic: b => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
+  gif:  { mime: 'image/gif', magic: b => b.subarray(0, 4).toString('latin1') === 'GIF8' },
+  webp: { mime: 'image/webp', magic: b => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP' },
+  docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', magic: b => b[0] === 0x50 && b[1] === 0x4b },
+  xlsx: { mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', magic: b => b[0] === 0x50 && b[1] === 0x4b },
+  doc:  { mime: 'application/msword', magic: b => b.subarray(0, 4).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0])) }
+};
+function cleanFilename(name) {
+  const base = String(name || '').split(/[\\/]/).pop().replace(/[\x00-\x1f\x7f"<>|:*?]/g, '').trim();
+  return base.slice(-150) || 'file';
+}
+
 
 // "Now" in the clinic's timezone, as YYYY-MM-DD and HH:MM.
 function clinicNow() {
@@ -333,7 +358,7 @@ app.get('/api/doctors/me/patients/:patientId/records', auth(['doctor']), wrap(as
   await assertDoctorPatient(req.user.sub, req.params.patientId);
   const records = await prisma.medicalRecord.findMany({
     where: { patientId: req.params.patientId },
-    include: { doctor: { select: { name: true } } },
+    include: { doctor: { select: { name: true } }, files: FILE_META },
     orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
   });
   res.json(records.map(recordOut));
@@ -349,7 +374,56 @@ app.post('/api/doctors/me/patients/:patientId/records', auth(['doctor']), wrap(a
       diagnosis: diagnosis || '', notes, prescription: prescription || ''
     }
   });
-  res.json(recordOut(r));
+  res.json({ ...recordOut(r), files: [] });
+}));
+
+// Attach one file to a record (one request per file so each can be up to 3 MB).
+// Body: { filename, data } where data is a base64 data URL or plain base64.
+app.post('/api/doctors/me/records/:recordId/files', auth(['doctor']), wrap(async (req, res) => {
+  const record = await prisma.medicalRecord.findUnique({ where: { id: req.params.recordId } });
+  if (!record || record.doctorId !== req.user.sub) throw new HttpError(404, 'Record not found.');
+  const { filename, data } = req.body || {};
+  const name = cleanFilename(filename);
+  const ext = (name.match(/\.([a-z0-9]+)$/i) || [])[1];
+  const type = ext && FILE_TYPES[ext.toLowerCase()];
+  if (!type) throw new HttpError(400, `"${name}": only PDF, JPG, PNG, WEBP, GIF, Word (DOC/DOCX) and Excel (XLSX) files are allowed.`);
+  const b64 = String(data || '').replace(/^data:[^;,]*;base64,/, '');
+  if (!b64 || !/^[A-Za-z0-9+/=\s]+$/.test(b64)) throw new HttpError(400, `"${name}" could not be read. Please try again.`);
+  const buf = Buffer.from(b64, 'base64');
+  if (!buf.length) throw new HttpError(400, `"${name}" is empty.`);
+  if (buf.length > MAX_FILE_BYTES) throw new HttpError(413, `"${name}" is larger than 3 MB. Please compress it or split it into smaller files.`);
+  if (!type.magic(buf)) throw new HttpError(400, `"${name}" doesn't look like a real .${ext.toLowerCase()} file.`);
+  if ((await prisma.recordFile.count({ where: { recordId: record.id } })) >= MAX_FILES_PER_RECORD) {
+    throw new HttpError(400, `A note can have at most ${MAX_FILES_PER_RECORD} files. Add a new note for more.`);
+  }
+  const f = await prisma.recordFile.create({
+    data: { id: newId('file'), recordId: record.id, patientId: record.patientId, uploadedById: req.user.sub,
+      filename: name, mimeType: type.mime, size: buf.length, data: buf }
+  });
+  res.json(fileOut(f));
+}));
+
+// Remove a file you uploaded by mistake.
+app.delete('/api/doctors/me/files/:id', auth(['doctor']), wrap(async (req, res) => {
+  const f = await prisma.recordFile.findUnique({ where: { id: req.params.id }, select: { id: true, uploadedById: true } });
+  if (!f || f.uploadedById !== req.user.sub) throw new HttpError(404, 'File not found.');
+  await prisma.recordFile.delete({ where: { id: f.id } });
+  res.json({ ok: true });
+}));
+
+// Download: admins, or a doctor who has seen this patient. Never patients/staff.
+app.get('/api/files/:id', auth(['doctor', 'admin']), wrap(async (req, res) => {
+  const f = await prisma.recordFile.findUnique({ where: { id: req.params.id } });
+  if (!f) throw new HttpError(404, 'File not found.');
+  if (req.user.role === 'doctor') await assertDoctorPatient(req.user.sub, f.patientId);
+  res.set({
+    'Content-Type': f.mimeType,
+    'Content-Length': String(f.data.length),
+    'Content-Disposition': `attachment; filename="${f.filename.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(f.filename)}`,
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff'
+  });
+  res.end(Buffer.from(f.data));
 }));
 
 app.get('/api/doctors/:id', wrap(async (req, res) => {
@@ -620,7 +694,7 @@ app.get('/api/admin/patients/:id', auth(['admin']), wrap(async (req, res) => {
   if (!p) throw new HttpError(404, 'Patient not found.');
   const [appointments, records] = await Promise.all([
     prisma.appointment.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } } }, orderBy: [{ date: 'desc' }, { time: 'desc' }] }),
-    prisma.medicalRecord.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } } }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }] })
+    prisma.medicalRecord.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } }, files: FILE_META }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }] })
   ]);
   res.json({
     patient: { id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt },

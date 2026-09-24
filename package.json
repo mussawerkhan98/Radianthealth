@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "prisma generate && node scripts/migrate.js && node scripts/seed.js",
+    "build": "prisma generate && node scripts/migrate.js && node scripts/backfill-phone-keys.js && node scripts/seed.js",
     "postinstall": "prisma generate",
     "db:migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",

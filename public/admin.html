@@ -797,12 +797,21 @@
         </div>
         <div style="display:flex; gap:0.5rem; align-items:flex-start; flex-wrap:wrap;">
           ${p.id ? `<button type="button" class="btn btn-outline" id="calOpenPatient" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Patient report</button>` : ''}
+          <button type="button" class="btn btn-outline" id="calSendInvite" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Send invite to doctor</button>
           <button type="button" class="btn btn-danger" id="calCancelAppt" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Cancel appointment</button>
           <button type="button" class="btn btn-outline" id="calCloseDetail" style="padding:0.4rem 0.9rem; font-size:0.8rem;" aria-label="Close details">Close</button>
         </div>
       </div></div>`;
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     document.getElementById('calCloseDetail').addEventListener('click', () => { box.innerHTML = ''; });
+    document.getElementById('calSendInvite').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-color:rgba(61,125,183,0.3); border-top-color:var(--blue);"></span> Sending…';
+      try {
+        const r = await API.post(`/api/admin/appointments/${a.id}/send-invite`, {});
+        btn.textContent = 'Invite sent to ' + r.to;
+      } catch (err) { alert(err.message); btn.disabled = false; btn.textContent = 'Send invite to doctor'; }
+    });
     document.getElementById('calCancelAppt').addEventListener('click', async () => {
       if (!confirm(`Cancel ${p.name || 'this patient'}'s appointment on ${fmtDate(date)} at ${fmtTime(a.time)}? The patient and doctor will be notified.`)) return;
       try {

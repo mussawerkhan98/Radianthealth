@@ -73,6 +73,7 @@ model Patient {
   dob          String          @default("")
   gender       String          @default("")
   passwordHash String
+  isGuest      Boolean         @default(false) // booked without creating an account
   createdAt    DateTime        @default(now())
   appointments Appointment[]
   records      MedicalRecord[]

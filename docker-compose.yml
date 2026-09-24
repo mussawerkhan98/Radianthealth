@@ -1,0 +1,16 @@
+# Local development / VPS Postgres. Start with: docker compose up -d
+# Then use DATABASE_URL=DIRECT_URL=postgresql://rha:rha_password@localhost:5432/rha
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rha
+      POSTGRES_PASSWORD: rha_password   # change on a VPS
+      POSTGRES_DB: rha
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - rha_pgdata:/var/lib/postgresql/data
+volumes:
+  rha_pgdata:

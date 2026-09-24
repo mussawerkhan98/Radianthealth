@@ -38,7 +38,7 @@ async function send({ to, subject, text }, { throwOnError = false } = {}) {
   }
 }
 
-async function notifyBooking({ appointment, doctor, patient, departmentName }) {
+async function notifyBooking({ appointment, doctor, patient, departmentName, skipPatient = false }) {
   const cfg = await transport().catch(() => null);
   if (!cfg) return;
   const when = `${appointment.date} at ${appointment.time}`;
@@ -50,7 +50,7 @@ async function notifyBooking({ appointment, doctor, patient, departmentName }) {
     (appointment.reason ? `Reason: ${appointment.reason}\n` : '');
   await Promise.all([
     send({ to: [doctor.email, ...cfg.notifyEmails], subject: `New appointment: ${patient.name} — ${when}`, text: staffText }),
-    send({
+    skipPatient ? Promise.resolve() : send({
       to: patient.email,
       subject: 'Your appointment at Radiant Health Alliance is confirmed',
       text: `Hello ${patient.name},\n\nYour appointment with ${doctor.name} is confirmed for ${when}.\n\nIf you need to cancel, log in to your account at radianthealthalliance.com.\n\nRadiant Health Alliance`

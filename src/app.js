@@ -13,6 +13,7 @@ const path = require('path');
 const prisma = require('./db');
 const settings = require('./settings');
 const mailer = require('./mailer');
+const brevo = require('./brevo');
 const { newId } = require('./ids');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -34,6 +35,7 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false 
 if (process.env.CORS_ORIGIN) app.use(cors({ origin: process.env.CORS_ORIGIN.split(',') }));
 // Photos are sent as base64 data URLs inside JSON, hence the raised limit.
 app.use(express.json({ limit: '6mb' }));
+app.use(express.urlencoded({ extended: false, limit: '100kb' })); // for plain HTML form posts (/api/book)
 
 // Strip < and > from text inputs so names/notes can't inject HTML into the
 // pages (the frontend renders with innerHTML). Passwords/photos untouched.
@@ -63,6 +65,9 @@ class HttpError extends Error {
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many attempts. Please wait a few minutes and try again.' } });
+// Public booking-request endpoint sends email to any address, so keep it tight.
+const bookLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many booking requests from this device. Please try again later or call us.' } });
 const formLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.' } });
 
@@ -423,10 +428,60 @@ app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, r
     if (e.code === 'P2002') throw new HttpError(409, 'That slot was just booked by someone else. Please pick another.');
     throw e;
   }
-  await mailer.notifyBooking({
-    appointment: appt, doctor, patient: req.account, departmentName: doctor.department && doctor.department.name
-  }).catch(err => console.error('notifyBooking:', err.message));
-  res.json(apptOut(appt));
+  const departmentName = doctor.department && doctor.department.name;
+  const patient = req.account;
+  let emailSent = false;
+  if (brevo.isConfigured() && !(req.body && req.body.website)) {
+    // Brevo: template auto-reply to the patient + notification to the clinic.
+    const r = await brevo.sendBookingEmails({
+      name: patient.name, email: patient.email, phone: patient.phone,
+      date: formatWhen(date, time),
+      service: [departmentName, doctor.name].filter(Boolean).join(' — '),
+      message: reason || ''
+    });
+    emailSent = r.autoReply;
+  }
+  // SMTP (if configured in Admin → Settings) still notifies the doctor and
+  // extra addresses; the patient email is skipped when Brevo already sent one.
+  await mailer.notifyBooking({ appointment: appt, doctor, patient, departmentName, skipPatient: emailSent })
+    .catch(err => console.error('notifyBooking:', err.message));
+  res.json({ ...apptOut(appt), emailSent });
+}));
+
+// "Thursday, 1 October 2026 at 10:30 AM" for emails.
+function formatWhen(date, time) {
+  if (!DATE_RE.test(String(date || ''))) return String(date || '');
+  const d = new Date(date + 'T00:00:00Z');
+  const day = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  if (!TIME_RE.test(String(time || ''))) return day;
+  const [h, m] = time.split(':').map(Number);
+  return `${day} at ${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+// Public appointment-request endpoint (JSON or form-urlencoded):
+// name, email, phone, date, service, message (+ hidden honeypot "website").
+// Sends the Brevo auto-reply to the requester and a notification to the clinic.
+app.post('/api/book', bookLimiter, wrap(async (req, res) => {
+  const b = req.body || {};
+  const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  if (str(b.website, 200)) return res.json({ ok: true }); // bot filled the honeypot: pretend success
+  const name = str(b.name, 120).replace(/[\r\n]+/g, ' ');
+  const email = normEmail(b.email);
+  if (!name) throw new HttpError(400, 'Please tell us your name.');
+  if (!isEmail(email) || email.length > 254) throw new HttpError(400, 'Please enter a valid email address so we can send your confirmation.');
+  const date = str(b.date, 60);
+  const fields = {
+    name, email,
+    phone: str(b.phone, 40),
+    date: DATE_RE.test(date) ? formatWhen(date, str(b.time, 5)) : date,
+    service: str(b.service, 120),
+    message: str(b.message, 2000)
+  };
+  const r = await brevo.sendBookingEmails(fields);
+  if (!r.autoReply) {
+    throw new HttpError(502, "Sorry, we couldn't send your confirmation right now. Please try again in a few minutes, or call us.");
+  }
+  res.json({ ok: true, message: "Thanks! We've emailed you a confirmation." });
 }));
 
 app.get('/api/patients/me/appointments', auth(['patient']), wrap(async (req, res) => {

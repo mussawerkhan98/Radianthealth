@@ -45,8 +45,13 @@ function check(name, cond, extra) {
   const email = `patient.${stamp}@example.com`;
   const reg = await call('POST', '/api/register', { name: 'Test Patient', email, phone: '0500000000', password: 'Patient123!' });
   check('register', reg.status === 200, reg);
-  const dup = await call('POST', '/api/register', { name: 'X', email: email.toUpperCase(), password: 'Patient123!' });
+  const dup = await call('POST', '/api/register', { name: 'X', email: email.toUpperCase(), phone: '0559998887', password: 'Patient123!' });
   check('duplicate email rejected', dup.status === 409, dup);
+  const noPhone = await call('POST', '/api/register', { name: 'X', email: `nophone.${stamp}@example.com`, password: 'Patient123!' });
+  check('register needs a phone (Patient ID)', noPhone.status === 400, noPhone);
+  const dupPhone = await call('POST', '/api/register', { name: 'Y', email: `dupphone.${stamp}@example.com`, phone: '+971 50 000 0000', password: 'Patient123!' });
+  check('same phone in another format rejected', dupPhone.status === 409, dupPhone);
+  check('register returns Patient ID', reg.data.user.patientId === '+971500000000', reg.data.user);
   const P = reg.data.token;
 
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -99,8 +104,64 @@ function check(name, cond, extra) {
   const S = sl.data.token;
   const sAppts = await call('GET', '/api/admin/appointments', null, S);
   check('staff sees appointments', sAppts.status === 200, sAppts);
-  const sBlocked = await call('GET', '/api/admin/patients', null, S);
-  check('staff blocked from patient records', sBlocked.status === 403, sBlocked);
+  const sPatients = await call('GET', '/api/admin/patients?q=0500000000', null, S);
+  check('reception can search patients by phone', sPatients.status === 200 && sPatients.data.length === 1 && sPatients.data[0].patientId === '+971500000000', sPatients.data);
+  const sReport = await call('GET', `/api/admin/patients/${sPatients.data[0].id}`, null, S);
+  check('reception sees visits but not medical records', sReport.status === 200 && sReport.data.records.length === 0 && sReport.data.canViewRecords === false, sReport.data);
+  const sSettings = await call('GET', '/api/admin/settings', null, S);
+  check('reception blocked from settings', sSettings.status === 403, sSettings);
+  const sStaff = await call('GET', '/api/admin/staff-accounts', null, S);
+  check('reception blocked from staff management', sStaff.status === 403, sStaff);
+  const meS = await call('GET', '/api/me', null, S);
+  check('/api/me lists reception permissions', meS.data.roleId === 'reception' && meS.data.permissions.includes('appointments.book') && !meS.data.permissions.includes('records.view'), meS.data);
+
+  // ---- roles & permissions ----
+  const roles = await call('GET', '/api/admin/roles', null, A);
+  check('roles list with built-ins', ['admin', 'reception', 'nurse', 'manager'].every(id => roles.data.roles.some(r => r.id === id)) && roles.data.permissions.length >= 10, roles.data.roles.map(r => r.id));
+  const lab = await call('POST', '/api/admin/roles', { name: `Lab ${stamp}`, permissions: ['records.view', 'records.write', 'bogus.perm'] }, A);
+  check('create custom role (unknown perms dropped)', lab.status === 200 && lab.data.permissions.length === 2, lab);
+  const editAdmin = await call('PATCH', '/api/admin/roles/admin', { permissions: [] }, A);
+  check('admin role cannot be edited', editAdmin.status === 400, editAdmin);
+  const labEmail = `lab.${stamp}@example.com`;
+  const labUser = await call('POST', '/api/admin/staff-accounts', { name: 'Lab Tech', email: labEmail, role: lab.data.id, password: 'LabTech123!' }, A);
+  check('create staff login with custom role', labUser.status === 200 && labUser.data.roleName === `Lab ${stamp}`, labUser);
+  const labLogin = await call('POST', '/api/login', { email: labEmail, password: 'LabTech123!' });
+  const L = labLogin.data.token;
+  const labAppts = await call('GET', '/api/admin/appointments', null, L);
+  check('custom role without appointments.view is blocked', labAppts.status === 403, labAppts);
+  await call('PATCH', `/api/admin/roles/${lab.data.id}`, { permissions: ['records.view', 'records.write', 'appointments.view'] }, A);
+  const labAppts2 = await call('GET', '/api/admin/appointments', null, L);
+  check('permission change applies immediately', labAppts2.status === 200, labAppts2);
+  const delUsed = await call('DELETE', `/api/admin/roles/${lab.data.id}`, null, A);
+  check("role in use can't be deleted", delUsed.status === 409, delUsed);
+  const moveRole = await call('PATCH', `/api/admin/staff-accounts/${labUser.data.id}`, { role: 'nurse' }, A);
+  check('change staff role', moveRole.status === 200 && moveRole.data.role === 'nurse', moveRole);
+  const delRole = await call('DELETE', `/api/admin/roles/${lab.data.id}`, null, A);
+  check('delete unused custom role', delRole.status === 200, delRole);
+  const toAdmin = await call('PATCH', `/api/admin/staff-accounts/${labUser.data.id}`, { role: 'admin' }, S);
+  check('non-admin cannot grant admin', toAdmin.status === 403, toAdmin);
+  const rpw = await call('POST', `/api/admin/staff-accounts/${labUser.data.id}/reset-password`, { password: 'Reset12345!' }, A);
+  const rpwLogin = await call('POST', '/api/login', { email: labEmail, password: 'Reset12345!' });
+  check('reset staff password', rpw.status === 200 && rpwLogin.data.user.mustChangePassword === true, rpwLogin);
+  await call('DELETE', `/api/admin/staff-accounts/${labUser.data.id}`, null, A);
+
+  // ---- reception books for a patient (phone = Patient ID) ----
+  const newPhone = '05' + String(stamp).slice(-8);
+  const look0 = await call('GET', `/api/admin/patients/lookup?phone=${newPhone}`, null, S);
+  check('lookup unknown phone -> no patient', look0.status === 200 && look0.data.patient === null, look0);
+  const slotsR = await call('GET', `/api/doctors/${newDoc.data.id}/slots?date=${tomorrow}`);
+  const rBook = await call('POST', '/api/admin/appointments', { phone: newPhone, name: 'Walk In', doctorId: newDoc.data.id, date: tomorrow, time: slotsR.data.available[1] }, S);
+  check('reception books walk-in without email', rBook.status === 200 && rBook.data.patient.patientId === '+971' + newPhone.slice(1) && rBook.data.patient.email === '', rBook);
+  const look1 = await call('GET', `/api/admin/patients/lookup?phone=%2B971${newPhone.slice(1)}`, null, S);
+  check('lookup same phone in +971 format finds them', look1.data.patient && look1.data.patient.name === 'Walk In', look1);
+  const rBook2 = await call('POST', '/api/admin/appointments', { phone: newPhone, name: 'Walk In', email: `walkin.${stamp}@example.com`, doctorId: newDoc.data.id, date: tomorrow, time: slotsR.data.available[2] }, S);
+  check('second booking reuses the same patient', rBook2.status === 200 && rBook2.data.patient.id === rBook.data.patient.id && rBook2.data.patient.email === `walkin.${stamp}@example.com`, rBook2);
+  const edit = await call('PATCH', `/api/admin/patients/${rBook.data.patient.id}`, { phone: '0500000000' }, S);
+  check("can't take another patient's phone", edit.status === 409, edit);
+  const pBook = await call('POST', '/api/admin/appointments', { phone: newPhone, name: 'x', doctorId: newDoc.data.id, date: tomorrow, time: slotsR.data.available[3] }, P);
+  check('patients cannot use reception booking', pBook.status === 403, pBook);
+  await call('POST', `/api/admin/appointments/${rBook.data.id}/cancel`, {}, S);
+  await call('POST', `/api/admin/appointments/${rBook2.data.id}/cancel`, {}, S);
   // ---- record file attachments ----
   // ---- admin: manage doctor ----
   const dDetail = await call('GET', `/api/admin/doctors/${newDoc.data.id}`, null, A);

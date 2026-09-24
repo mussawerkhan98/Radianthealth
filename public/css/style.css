@@ -338,3 +338,13 @@ footer.site-footer a:hover { color: #fff; }
 .doc-stats div { background: var(--paper); border-radius: 10px; padding: 0.5rem 0.9rem; font-size: 0.82rem; color: var(--ink-soft); }
 .doc-stats b { color: var(--ink); font-size: 1rem; margin-right: 0.25rem; }
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 1rem; }
+
+/* Booking: visit type choice */
+.visit-types { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.visit-type { display: flex; gap: 0.6rem; align-items: flex-start; border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem 0.9rem; cursor: pointer; background: #fff; }
+.visit-type input { width: auto; flex: 0 0 auto; margin: 0.2rem 0 0; accent-color: var(--blue); }
+.visit-type span { display: flex; flex-direction: column; }
+.visit-type small { color: var(--ink-soft); font-size: 0.8rem; }
+.visit-type:has(input:checked) { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; background: rgba(61,125,183,0.04); }
+.badge.video { background: rgba(61,125,183,0.12); color: var(--blue-deep); }
+@media (max-width: 420px) { .visit-types { grid-template-columns: 1fr; } }

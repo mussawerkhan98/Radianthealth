@@ -537,19 +537,16 @@
           ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
           <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
           ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
-          ${(r.files || []).map(f => `<div style="display:flex; align-items:center; gap:0.5rem; margin:0.25rem 0; font-size:0.88rem;"><span style="color:var(--ink-soft); display:inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><a href="#" data-admin-file="${f.id}" data-filename="${escAttr(f.filename)}">${escAttr(f.filename)}</a><span style="color:var(--ink-soft);">${f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB'}</span><a href="#" data-admin-remove-file="${f.id}" style="color:var(--danger); font-size:0.8rem;">Remove</a></div>`).join('')}
+          ${(r.files || []).map(f => `<div style="display:flex; align-items:center; gap:0.5rem; margin:0.25rem 0; font-size:0.88rem;"><span style="color:var(--ink-soft); display:inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><a href="#" data-admin-view="${f.id}" data-filename="${escAttr(f.filename)}" data-mime="${escAttr(f.mimeType)}" title="View">${escAttr(f.filename)}</a><span style="color:var(--ink-soft);">${f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB'}</span><a href="#" data-admin-file="${f.id}" data-filename="${escAttr(f.filename)}" style="font-size:0.8rem;">Download</a><a href="#" data-admin-remove-file="${f.id}" style="color:var(--danger); font-size:0.8rem;">Remove</a></div>`).join('')}
         </div>
       `).join('') : '<div class="empty-state">No medical history.</div>';
+      document.querySelectorAll('[data-admin-view]').forEach(a => a.addEventListener('click', (e) => {
+        e.preventDefault();
+        openFileViewer(a.dataset.adminView, a.dataset.filename, a.dataset.mime);
+      }));
       document.querySelectorAll('[data-admin-file]').forEach(a => a.addEventListener('click', async (e) => {
         e.preventDefault();
-        try {
-          const res = await fetch(`/api/files/${a.dataset.adminFile}`, { headers: { Authorization: 'Bearer ' + API.token() } });
-          if (!res.ok) throw new Error('Could not download this file.');
-          const url = URL.createObjectURL(await res.blob());
-          const link = document.createElement('a'); link.href = url; link.download = a.dataset.filename || 'file';
-          document.body.appendChild(link); link.click(); link.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
-        } catch (err) { alert(err.message); }
+        try { await downloadPrivateFile(a.dataset.adminFile, a.dataset.filename); } catch (err) { alert(err.message); }
       }));
       document.querySelectorAll('[data-admin-remove-file]').forEach(a => a.addEventListener('click', async (e) => {
         e.preventDefault();

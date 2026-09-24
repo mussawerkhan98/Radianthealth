@@ -102,6 +102,30 @@ function check(name, cond, extra) {
   const sBlocked = await call('GET', '/api/admin/patients', null, S);
   check('staff blocked from patient records', sBlocked.status === 403, sBlocked);
   // ---- record file attachments ----
+  // ---- admin: manage doctor ----
+  const dDetail = await call('GET', `/api/admin/doctors/${newDoc.data.id}`, null, A);
+  check('admin doctor detail + stats', dDetail.status === 200 && dDetail.data.stats.upcoming >= 1 && dDetail.data.email === docEmail, dDetail);
+  const cal = await call('GET', `/api/admin/doctors/${newDoc.data.id}/calendar?start=${tomorrow}&days=7`, null, A);
+  const calSlot = cal.data.days[0].slots.find(x => x.time === slot);
+  check('calendar shows booking in slot', calSlot && calSlot.status === 'booked' && calSlot.appointment.patient.name === 'Test Patient', calSlot);
+  check('calendar has 7 days', cal.data.days.length === 7, cal.data.days.length);
+  const pCal = await call('GET', `/api/admin/doctors/${newDoc.data.id}/calendar`, null, P);
+  check('patient cannot see doctor calendar', pCal.status === 403, pCal);
+  const badHours = await call('PATCH', `/api/admin/doctors/${newDoc.data.id}`, { workingHours: { start: '17:00', end: '09:00' } }, A);
+  check('end before start rejected', badHours.status === 400, badHours);
+  const dupEmail = await call('PATCH', `/api/admin/doctors/${newDoc.data.id}`, { email: ADMIN_EMAIL }, A);
+  check('doctor email clash rejected', dupEmail.status === 409, dupEmail);
+  const newDocEmail = `renamed.${stamp}@example.com`;
+  const chEmail = await call('PATCH', `/api/admin/doctors/${newDoc.data.id}`, { email: newDocEmail }, A);
+  check('admin changes doctor email', chEmail.status === 200 && chEmail.data.email === newDocEmail, chEmail);
+  const rp = await call('POST', `/api/admin/doctors/${newDoc.data.id}/reset-password`, { password: 'TempReset123!' }, A);
+  check('admin resets doctor password', rp.status === 200, rp);
+  const rpLogin = await call('POST', '/api/login', { email: newDocEmail, password: 'TempReset123!' });
+  check('doctor logs in with reset password (must change)', rpLogin.status === 200 && rpLogin.data.user.mustChangePassword === true, rpLogin);
+  const cp2 = await call('POST', '/api/change-password', { currentPassword: 'TempReset123!', newPassword: 'NewDoctor123!' }, rpLogin.data.token);
+  check('doctor sets own password again', cp2.status === 200, cp2);
+  await call('PATCH', `/api/admin/doctors/${newDoc.data.id}`, { email: docEmail }, A); // restore for later checks
+
   const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
   const up = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'lab-report.pdf', data: 'data:application/pdf;base64,' + pdf.toString('base64') }, D);
   check('doctor uploads PDF', up.status === 200 && up.data.size === pdf.length, up);

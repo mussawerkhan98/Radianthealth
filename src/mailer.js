@@ -27,7 +27,7 @@ async function send({ to, subject, text }, { throwOnError = false } = {}) {
       if (throwOnError) throw new Error('SMTP is not configured yet. Fill in and save the SMTP settings first.');
       return false;
     }
-    const recipients = [].concat(to).filter(Boolean);
+    const recipients = [].concat(to).filter(r => r && !String(r).toLowerCase().endsWith('.invalid'));
     if (!recipients.length) return false;
     await cfg.t.sendMail({ from: cfg.from, to: recipients.join(', '), subject, text });
     return true;

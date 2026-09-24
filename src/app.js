@@ -15,6 +15,8 @@ const settings = require('./settings');
 const mailer = require('./mailer');
 const brevo = require('./brevo');
 const { newId } = require('./ids');
+const { normalizePhone, displayPatientId } = require('./phone');
+const { PERMISSIONS, VALID: VALID_PERMS, parsePerms, permsForRole } = require('./permissions');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
@@ -102,15 +104,28 @@ function auth(requiredRoles) {
     }
     const account = await findAccount(decoded.role, decoded.sub);
     if (!account) return res.status(401).json({ error: 'Your session has expired. Please log in again.' });
-    const role = (decoded.role === 'admin' || decoded.role === 'staff') ? account.role : decoded.role;
+    const isStaff = decoded.role === 'admin' || decoded.role === 'staff';
+    // Staff: "admin" role = admin; any other role = "staff" with its own permissions.
+    const role = isStaff ? (account.role === 'admin' ? 'admin' : 'staff') : decoded.role;
     if (requiredRoles && !requiredRoles.includes(role)) {
       return res.status(403).json({ error: 'You do not have permission to do that.' });
     }
-    req.user = { ...decoded, role };
+    req.user = { ...decoded, role, roleId: isStaff ? account.role : role };
+    req.perms = isStaff ? await permsForRole(prisma, account.role) : new Set();
     req.account = account;
     next();
   });
 }
+
+// perm('patients.view') — any staff login whose role has that permission.
+function perm(key) {
+  return [auth(['admin', 'staff']), (req, res, next) => {
+    if (req.perms.has(key)) return next();
+    const p = PERMISSIONS.find(x => x.key === key);
+    res.status(403).json({ error: `Your role doesn't allow this (${p ? p.label.toLowerCase() : key}). Ask an admin to change your permissions.` });
+  }];
+}
+const staffCan = (req, key) => !!(req.perms && req.perms.has(key));
 
 function isValidPhoto(photo) {
   if (photo === null || photo === undefined || photo === '') return true;
@@ -230,34 +245,60 @@ app.post('/api/register', authLimiter, wrap(async (req, res) => {
   const email = normEmail(req.body && req.body.email);
   if (!name || !email || !password) throw new HttpError(400, 'Name, email and password are required.');
   if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  const phoneKey = normalizePhone(phone);
+  if (!phoneKey) throw new HttpError(400, 'Please enter a valid mobile number — it becomes your Patient ID.');
   if (String(password).length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
-  const guest = await prisma.patient.findFirst({ where: { email, isGuest: true }, include: { _count: { select: { records: true } } } });
+  const [byPhone, byEmail] = await Promise.all([
+    prisma.patient.findUnique({ where: { phoneKey }, include: { _count: { select: { records: true } } } }),
+    prisma.patient.findUnique({ where: { email }, include: { _count: { select: { records: true } } } })
+  ]);
+  if (byPhone && !byPhone.isGuest) throw new HttpError(409, 'An account with this phone number already exists. Please log in instead.');
+  if (byEmail && !byEmail.isGuest) throw new HttpError(409, 'An account with this email already exists.');
+  if (byPhone && byEmail && byPhone.id !== byEmail.id) {
+    throw new HttpError(409, 'This phone number and email belong to two different bookings. Please contact the clinic to join them.');
+  }
+  if (!byPhone && !byEmail && await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
+  const guest = byPhone || byEmail;
   let patient;
   if (guest) {
     // Someone who booked as a guest is now creating an account: their past
-    // bookings move into it. If a doctor has already written medical notes for
-    // this email, we don't hand those over without the clinic checking first.
+    // bookings move into it. If a doctor has already written medical notes,
+    // we don't hand those over without the clinic checking first.
     if (guest._count.records > 0) {
-      throw new HttpError(409, 'We already have records for this email. Please contact the clinic to activate your account.');
+      throw new HttpError(409, 'We already have records for you. Please contact the clinic to activate your account.');
+    }
+    if (guest.phoneKey && guest.phoneKey !== phoneKey) {
+      throw new HttpError(409, 'This email was used before with a different phone number. Please use that number, or contact the clinic.');
     }
     patient = await prisma.patient.update({
       where: { id: guest.id },
       data: {
-        name: String(name).trim(), phone: phone || guest.phone, dob: dob || '', gender: gender || '',
+        name: String(name).trim(), email, phone: String(phone).trim(), phoneKey, dob: dob || '', gender: gender || '',
         passwordHash: await bcrypt.hash(password, 10), isGuest: false
       }
     });
   } else {
-    if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
     patient = await prisma.patient.create({
       data: {
-        id: newId('pt'), name: String(name).trim(), email, phone: phone || '', dob: dob || '', gender: gender || '',
+        id: newId('pt'), name: String(name).trim(), email, phone: String(phone).trim(), phoneKey, dob: dob || '', gender: gender || '',
         passwordHash: await bcrypt.hash(password, 10)
       }
     });
   }
   const token = signToken({ sub: patient.id, role: 'patient', name: patient.name });
-  res.json({ token, user: { id: patient.id, name: patient.name, email: patient.email, role: 'patient' } });
+  res.json({ token, user: { id: patient.id, name: patient.name, email: patient.email, role: 'patient', patientId: displayPatientId(patient.phoneKey) } });
+}));
+
+// Who am I + what may I do (the admin panel uses this to show the right tabs).
+app.get('/api/me', auth(), wrap(async (req, res) => {
+  const a = req.account;
+  const out = { id: a.id, name: a.name, email: a.email, role: req.user.role };
+  if (req.user.role === 'admin' || req.user.role === 'staff') {
+    const r = await prisma.role.findUnique({ where: { id: req.user.roleId } });
+    Object.assign(out, { roleId: req.user.roleId, roleName: r ? r.name : req.user.roleId, permissions: [...req.perms] });
+  }
+  if (req.user.role === 'patient') Object.assign(out, { phone: a.phone, patientId: displayPatientId(a.phoneKey) });
+  res.json(out);
 }));
 
 app.post('/api/login', authLimiter, wrap(async (req, res) => {
@@ -270,13 +311,21 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
     prisma.doctor.findFirst({ where: { email, active: true } }),
     prisma.staff.findUnique({ where: { email } })
   ]);
-  const candidates = [[patient, 'patient'], [doctor, 'doctor'], [staff, staff && staff.role]];
+  const candidates = [[patient, 'patient'], [doctor, 'doctor'], [staff, staff && (staff.role === 'admin' ? 'admin' : 'staff')]];
   for (const [user, role] of candidates) {
     if (!user) continue;
     if (await bcrypt.compare(password, user.passwordHash)) {
+      const extra = {};
+      if (user === staff) {
+        const r = await prisma.role.findUnique({ where: { id: staff.role } });
+        extra.roleId = staff.role;
+        extra.roleName = r ? r.name : staff.role;
+        extra.permissions = [...(await permsForRole(prisma, staff.role))];
+      }
+      if (user === patient) extra.patientId = displayPatientId(patient.phoneKey);
       return res.json({
         token: signToken({ sub: user.id, role, name: user.name }),
-        user: { id: user.id, name: user.name, email: user.email, role, mustChangePassword: !!user.mustChangePassword }
+        user: { id: user.id, name: user.name, email: user.email, role, mustChangePassword: !!user.mustChangePassword, ...extra }
       });
     }
   }
@@ -315,7 +364,7 @@ app.get('/api/departments', wrap(async (req, res) => {
   res.json(depts.map(d => ({ id: d.id, name: d.name, description: d.description, icon: d.icon, doctorCount: d._count.doctors })));
 }));
 
-app.post('/api/admin/departments', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/departments', perm('directory.manage'), wrap(async (req, res) => {
   const { name, description, icon } = req.body || {};
   if (!name) throw new HttpError(400, 'Department name is required.');
   const count = await prisma.department.count();
@@ -325,7 +374,7 @@ app.post('/api/admin/departments', auth(['admin']), wrap(async (req, res) => {
   res.json({ id: d.id, name: d.name, description: d.description, icon: d.icon });
 }));
 
-app.delete('/api/admin/departments/:id', auth(['admin']), wrap(async (req, res) => {
+app.delete('/api/admin/departments/:id', perm('directory.manage'), wrap(async (req, res) => {
   const dept = await prisma.department.findUnique({ where: { id: req.params.id } });
   if (!dept || !dept.active) throw new HttpError(404, 'Department not found.');
   const activeDoctors = await prisma.doctor.count({ where: { departmentId: dept.id, active: true } });
@@ -360,7 +409,7 @@ app.get('/api/doctors/me/patients', auth(['doctor']), wrap(async (req, res) => {
     where: { appointments: { some: { doctorId: req.user.sub } } },
     orderBy: { name: 'asc' }
   });
-  res.json(patients.map(p => ({ id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender })));
+  res.json(patients.map(patientOut));
 }));
 
 // A doctor may only see/add records for patients who have booked with them.
@@ -434,10 +483,11 @@ app.delete('/api/doctors/me/files/:id', auth(['doctor']), wrap(async (req, res) 
 }));
 
 // Download: admins, or a doctor who has seen this patient. Never patients/staff.
-app.get('/api/files/:id', auth(['doctor', 'admin']), wrap(async (req, res) => {
+app.get('/api/files/:id', auth(['doctor', 'admin', 'staff']), wrap(async (req, res) => {
   const f = await prisma.recordFile.findUnique({ where: { id: req.params.id } });
   if (!f) throw new HttpError(404, 'File not found.');
   if (req.user.role === 'doctor') await assertDoctorPatient(req.user.sub, f.patientId);
+  else if (!staffCan(req, 'records.view')) throw new HttpError(403, "Your role doesn't allow opening medical files.");
   res.set({
     'Content-Type': f.mimeType,
     'Content-Length': String(f.data.length),
@@ -466,7 +516,7 @@ app.get('/api/doctors/:id/slots', wrap(async (req, res) => {
   res.json({ date, available: generateSlots(d, date).filter(s => !takenSet.has(s)) });
 }));
 
-app.post('/api/admin/doctors', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/doctors', perm('doctors.manage'), wrap(async (req, res) => {
   const { name, departmentId, specialty, bio, password, photo } = req.body || {};
   const email = normEmail(req.body && req.body.email);
   if (!name || !departmentId || !email || !password) throw new HttpError(400, 'Name, department, email and password are required.');
@@ -485,7 +535,7 @@ app.post('/api/admin/doctors', auth(['admin']), wrap(async (req, res) => {
   res.json(doctorOut(d));
 }));
 
-app.patch('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
+app.patch('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, res) => {
   const { name, specialty, bio, photo, departmentId, workingHours, workingDays } = req.body || {};
   if (photo !== undefined && !isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
   const existing = await prisma.doctor.findUnique({ where: { id: req.params.id } });
@@ -521,7 +571,7 @@ app.patch('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
 }));
 
 // Set a new temporary password; the doctor must change it at next login.
-app.post('/api/admin/doctors/:id/reset-password', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/doctors/:id/reset-password', perm('doctors.manage'), wrap(async (req, res) => {
   const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
   if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
   const password = String((req.body && req.body.password) || '');
@@ -531,7 +581,7 @@ app.post('/api/admin/doctors/:id/reset-password', auth(['admin']), wrap(async (r
 }));
 
 // Doctor profile + quick stats for the admin "manage doctor" page.
-app.get('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
+app.get('/api/admin/doctors/:id', perm('doctors.view'), wrap(async (req, res) => {
   const d = await prisma.doctor.findUnique({ where: { id: req.params.id }, include: { department: true } });
   if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
   const today = clinicNow().date;
@@ -548,7 +598,7 @@ app.get('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
 
 // Week (or any range up to 31 days) of a doctor's calendar: every working slot
 // marked free / booked / past, plus bookings that fall outside current hours.
-app.get('/api/admin/doctors/:id/calendar', auth(['admin', 'staff']), wrap(async (req, res) => {
+app.get('/api/admin/doctors/:id/calendar', perm('doctors.view'), wrap(async (req, res) => {
   const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
   if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
   const start = DATE_RE.test(String(req.query.start || '')) ? String(req.query.start) : clinicNow().date;
@@ -557,13 +607,13 @@ app.get('/api/admin/doctors/:id/calendar', auth(['admin', 'staff']), wrap(async 
   for (let i = 0; i < n; i++) dates.push(new Date(Date.parse(start + 'T00:00:00Z') + i * 864e5).toISOString().slice(0, 10));
   const appts = await prisma.appointment.findMany({
     where: { doctorId: d.id, date: { gte: dates[0], lte: dates[dates.length - 1] } },
-    include: { patient: { select: { id: true, name: true, phone: true, email: true, isGuest: true } } },
+    include: { patient: { select: { id: true, name: true, phone: true, email: true, isGuest: true, phoneKey: true } } },
     orderBy: [{ date: 'asc' }, { time: 'asc' }]
   });
   const now = clinicNow();
   const apptView = a => ({
     id: a.id, time: a.time, status: a.status, reason: a.reason,
-    patient: a.patient ? { id: a.patient.id, name: a.patient.name, phone: a.patient.phone, email: a.patient.email, isGuest: a.patient.isGuest } : null
+    patient: a.patient ? { id: a.patient.id, patientId: displayPatientId(a.patient.phoneKey), name: a.patient.name, phone: a.patient.phone, email: hasRealEmail(a.patient.email) ? a.patient.email : '', isGuest: a.patient.isGuest } : null
   });
   const days = dates.map(date => {
     const slots = daySlots(d, date);
@@ -585,7 +635,7 @@ app.get('/api/admin/doctors/:id/calendar', auth(['admin', 'staff']), wrap(async 
 }));
 
 // "Delete" = deactivate: login stops working, past appointments/records are kept.
-app.delete('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
+app.delete('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, res) => {
   const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
   if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
   await prisma.$transaction([
@@ -653,6 +703,61 @@ app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, r
 const guestLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many bookings from this device. Please try again later or call us.' } });
 
+// Placeholder address for patients without email (reception bookings).
+// Nothing is ever sent to *.invalid addresses.
+const NO_EMAIL_DOMAIN = 'no-email.invalid';
+const hasRealEmail = e => !!e && !String(e).toLowerCase().endsWith('.invalid');
+
+// Patient summary used everywhere staff/doctors see patients.
+const patientOut = p => ({
+  id: p.id, patientId: displayPatientId(p.phoneKey), name: p.name,
+  email: hasRealEmail(p.email) ? p.email : '', phone: p.phone, dob: p.dob, gender: p.gender,
+  isGuest: p.isGuest, createdAt: p.createdAt
+});
+
+// Find the patient by phone (the Patient ID); otherwise by email; otherwise
+// create a guest patient. Returns the patient record.
+async function findOrCreatePatient({ name, email, phone, allowNoEmail = false, updateGuest = true }) {
+  const phoneKey = normalizePhone(phone);
+  if (!phoneKey) throw new HttpError(400, 'Please enter a valid mobile number (it is used as the Patient ID).');
+  if (email && !isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  if (!email && !allowNoEmail) throw new HttpError(400, 'Please enter a valid email address so we can send your confirmation.');
+  let patient = await prisma.patient.findUnique({ where: { phoneKey } });
+  if (patient) {
+    if (patient.isGuest && updateGuest) {
+      const data = { name, phone };
+      // Take the new email if we had none (or a placeholder) and it's free.
+      if (email && email !== patient.email && (!hasRealEmail(patient.email) || patient.isGuest)) {
+        const clash = await prisma.patient.findUnique({ where: { email } });
+        if (!clash && !(await emailTaken(email))) data.email = email;
+      }
+      patient = await prisma.patient.update({ where: { id: patient.id }, data });
+    }
+    return patient;
+  }
+  if (email) {
+    const byEmail = await prisma.patient.findUnique({ where: { email } });
+    if (byEmail) {
+      if (byEmail.phoneKey && byEmail.phoneKey !== phoneKey) {
+        throw new HttpError(409, 'This email is already registered with a different phone number. Please use that number, or contact the clinic.');
+      }
+      return prisma.patient.update({ where: { id: byEmail.id }, data: { phoneKey, phone, ...(byEmail.isGuest && updateGuest ? { name } : {}) } });
+    }
+    const [doc, staff] = await Promise.all([
+      prisma.doctor.findUnique({ where: { email } }), prisma.staff.findUnique({ where: { email } })
+    ]);
+    if (doc || staff) throw new HttpError(409, 'This email belongs to a clinic account. Please use a personal email.');
+  }
+  try {
+    return await prisma.patient.create({
+      data: { id: newId('pt'), name, email: email || `${phoneKey}@${NO_EMAIL_DOMAIN}`, phone, phoneKey, isGuest: true, passwordHash: '!guest-no-password' }
+    });
+  } catch (e) {
+    if (e.code === 'P2002') return prisma.patient.findUnique({ where: { phoneKey } }); // created a moment ago
+    throw e;
+  }
+}
+
 app.post('/api/appointments/guest', guestLimiter, wrap(async (req, res) => {
   const b = req.body || {};
   const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
@@ -662,22 +767,31 @@ app.post('/api/appointments/guest', guestLimiter, wrap(async (req, res) => {
   const phone = str(b.phone, 40);
   if (!name) throw new HttpError(400, 'Please enter your full name.');
   if (!isEmail(email) || email.length > 254) throw new HttpError(400, 'Please enter a valid email address so we can send your confirmation.');
-  if (phone.replace(/\D/g, '').length < 7) throw new HttpError(400, 'Please enter a phone number so the clinic can reach you.');
+  if (!normalizePhone(phone)) throw new HttpError(400, 'Please enter a valid mobile number so the clinic can reach you.');
+  const patient = await findOrCreatePatient({ name, email, phone });
+  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000) });
+  res.json({ ...out, patientId: displayPatientId(patient.phoneKey) });
+}));
 
-  let patient = await prisma.patient.findUnique({ where: { email } });
-  if (!patient) {
-    const [doc, staff] = await Promise.all([
-      prisma.doctor.findUnique({ where: { email } }), prisma.staff.findUnique({ where: { email } })
-    ]);
-    if (doc || staff) throw new HttpError(409, 'This email belongs to a clinic account. Please use your personal email.');
-    patient = await prisma.patient.create({
-      data: { id: newId('pt'), name, email, phone, isGuest: true, passwordHash: '!guest-no-password' }
-    });
-  } else if (patient.isGuest) {
-    patient = await prisma.patient.update({ where: { id: patient.id }, data: { name, phone } });
-  }
-  // (Existing full accounts keep their saved name/phone; the booking just links to them.)
-  res.json(await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000) }));
+// Reception / staff book on behalf of a patient (phone or walk-in).
+// Body: { phone, name, email?, doctorId, date, time, reason? }
+app.post('/api/admin/appointments', perm('appointments.book'), wrap(async (req, res) => {
+  const b = req.body || {};
+  const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  const name = str(b.name, 120).replace(/[\r\n]+/g, ' ');
+  const email = normEmail(b.email);
+  if (!name) throw new HttpError(400, "Please enter the patient's full name.");
+  const patient = await findOrCreatePatient({ name, email: email || '', phone: str(b.phone, 40), allowNoEmail: true, updateGuest: true });
+  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000) });
+  res.json({ ...out, patient: patientOut(patient), bookedBy: req.account.name });
+}));
+
+// Look up one patient by phone (reception's "find patient" box).
+app.get('/api/admin/patients/lookup', perm('patients.view'), wrap(async (req, res) => {
+  const phoneKey = normalizePhone(req.query.phone);
+  if (!phoneKey) throw new HttpError(400, 'Enter a valid mobile number.');
+  const p = await prisma.patient.findUnique({ where: { phoneKey } });
+  res.json({ patientId: displayPatientId(phoneKey), patient: p ? patientOut(p) : null });
 }));
 
 // "Thursday, 1 October 2026 at 10:30 AM" for emails.
@@ -716,6 +830,10 @@ app.post('/api/book', bookLimiter, wrap(async (req, res) => {
   res.json({ ok: true, message: "Thanks! We've emailed you a confirmation." });
 }));
 
+app.get('/api/patients/me', auth(['patient']), wrap(async (req, res) => {
+  res.json(patientOut(req.account));
+}));
+
 app.get('/api/patients/me/appointments', auth(['patient']), wrap(async (req, res) => {
   const appts = await prisma.appointment.findMany({
     where: { patientId: req.user.sub },
@@ -750,22 +868,23 @@ app.post('/api/patients/me/appointments/:id/cancel', auth(['patient']), wrap(asy
 }));
 
 // Admin + front-desk staff: every booking.
-app.get('/api/admin/appointments', auth(['admin', 'staff']), wrap(async (req, res) => {
+app.get('/api/admin/appointments', perm('appointments.view'), wrap(async (req, res) => {
   const appts = await prisma.appointment.findMany({
-    include: { doctor: { select: { name: true } }, patient: { select: { name: true, phone: true, email: true } } },
+    include: { doctor: { select: { name: true } }, patient: { select: { name: true, phone: true, email: true, phoneKey: true } } },
     orderBy: [{ date: 'asc' }, { time: 'asc' }]
   });
   res.json(appts.map(a => ({
     ...apptOut(a),
     doctorName: a.doctor ? a.doctor.name : 'Unknown',
     patientName: a.patient ? a.patient.name : 'Unknown patient',
+    patientId: a.patient ? displayPatientId(a.patient.phoneKey) : '',
     patientPhone: a.patient ? a.patient.phone : '',
-    patientEmail: a.patient ? a.patient.email : ''
+    patientEmail: a.patient && hasRealEmail(a.patient.email) ? a.patient.email : ''
   })));
 }));
 
 // Re-send the calendar invite to the doctor (e.g. after fixing their email).
-app.post('/api/admin/appointments/:id/send-invite', auth(['admin', 'staff']), wrap(async (req, res) => {
+app.post('/api/admin/appointments/:id/send-invite', perm('appointments.book'), wrap(async (req, res) => {
   const appt = await prisma.appointment.findUnique({
     where: { id: req.params.id }, include: { doctor: { include: { department: true } }, patient: true }
   });
@@ -779,7 +898,7 @@ app.post('/api/admin/appointments/:id/send-invite', auth(['admin', 'staff']), wr
   res.json({ ok: true, to: appt.doctor.email });
 }));
 
-app.post('/api/admin/appointments/:id/cancel', auth(['admin', 'staff']), wrap(async (req, res) => {
+app.post('/api/admin/appointments/:id/cancel', perm('appointments.cancel'), wrap(async (req, res) => {
   const a = await cancelAppointment({ id: req.params.id }, 'the clinic');
   res.json(apptOut(a));
 }));
@@ -797,26 +916,81 @@ app.get('/api/patients/me/records', auth(['patient']), wrap(async (req, res) => 
 
 // ---------- ADMIN: PATIENTS ----------
 
-app.get('/api/admin/patients', auth(['admin']), wrap(async (req, res) => {
+// ?q= searches Patient ID / phone, name and email.
+app.get('/api/admin/patients', perm('patients.view'), wrap(async (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 100);
+  let where;
+  if (q) {
+    const digits = q.replace(/\D/g, '');
+    const key = normalizePhone(q);
+    const or = [{ name: { contains: q } }, { email: { contains: q.toLowerCase() } }];
+    if (digits.length >= 3) {
+      or.push({ phoneKey: { contains: digits.replace(/^0+/, '') } });
+      if (key) or.push({ phoneKey: key });
+    }
+    where = { OR: or };
+  }
   const patients = await prisma.patient.findMany({
-    orderBy: { createdAt: 'desc' },
+    where, orderBy: { createdAt: 'desc' }, take: q ? 50 : 500,
     include: { _count: { select: { appointments: true, records: true } } }
   });
-  res.json(patients.map(p => ({
-    id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt, isGuest: p.isGuest,
-    appointmentCount: p._count.appointments, recordCount: p._count.records
-  })));
+  res.json(patients.map(p => ({ ...patientOut(p), appointmentCount: p._count.appointments, recordCount: p._count.records })));
 }));
 
-app.get('/api/admin/patients/:id', auth(['admin']), wrap(async (req, res) => {
+// Edit a patient's contact details. Changing the phone changes the Patient ID.
+app.patch('/api/admin/patients/:id', perm('patients.edit'), wrap(async (req, res) => {
   const p = await prisma.patient.findUnique({ where: { id: req.params.id } });
   if (!p) throw new HttpError(404, 'Patient not found.');
+  const b = req.body || {};
+  const data = {};
+  if (b.name !== undefined) {
+    const name = String(b.name).trim().slice(0, 120);
+    if (!name) throw new HttpError(400, 'Name cannot be empty.');
+    data.name = name;
+  }
+  if (b.phone !== undefined) {
+    const phoneKey = normalizePhone(b.phone);
+    if (!phoneKey) throw new HttpError(400, 'Please enter a valid mobile number.');
+    if (phoneKey !== p.phoneKey) {
+      const other = await prisma.patient.findUnique({ where: { phoneKey } });
+      if (other) throw new HttpError(409, `That number is already the Patient ID of ${other.name}.`);
+    }
+    data.phone = String(b.phone).trim().slice(0, 40);
+    data.phoneKey = phoneKey;
+  }
+  if (b.email !== undefined) {
+    const email = normEmail(b.email);
+    if (email) {
+      if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+      if (email !== p.email && ((await prisma.patient.findUnique({ where: { email } })) || (await emailTaken(email)))) {
+        throw new HttpError(409, 'Another account already uses this email.');
+      }
+      data.email = email;
+    } else if (p.isGuest) {
+      data.email = `${data.phoneKey || p.phoneKey || p.id}@${NO_EMAIL_DOMAIN}`;
+    } else {
+      throw new HttpError(400, 'This patient has an online account, so they need an email address.');
+    }
+  }
+  if (b.dob !== undefined) data.dob = String(b.dob).slice(0, 20);
+  if (b.gender !== undefined) data.gender = String(b.gender).slice(0, 30);
+  const updated = await prisma.patient.update({ where: { id: p.id }, data });
+  res.json(patientOut(updated));
+}));
+
+app.get('/api/admin/patients/:id', perm('patients.view'), wrap(async (req, res) => {
+  const p = await prisma.patient.findUnique({ where: { id: req.params.id } });
+  if (!p) throw new HttpError(404, 'Patient not found.');
+  const canRecords = staffCan(req, 'records.view');
   const [appointments, records] = await Promise.all([
     prisma.appointment.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } } }, orderBy: [{ date: 'desc' }, { time: 'desc' }] }),
-    prisma.medicalRecord.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } }, files: FILE_META }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }] })
+    canRecords
+      ? prisma.medicalRecord.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } }, files: FILE_META }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }] })
+      : Promise.resolve([])
   ]);
   res.json({
-    patient: { id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt },
+    patient: patientOut(p),
+    canViewRecords: canRecords,
     appointments: appointments.map(a => ({ ...apptOut(a), doctorName: a.doctor ? a.doctor.name : 'Unknown' })),
     records: records.map(r => ({ ...recordOut(r), doctorName: r.doctor ? r.doctor.name : 'Unknown' }))
   });
@@ -824,7 +998,7 @@ app.get('/api/admin/patients/:id', auth(['admin']), wrap(async (req, res) => {
 
 // Admin adds a report to a patient's history on behalf of a doctor (e.g. a
 // walk-in, or results that came in by email). The record shows who entered it.
-app.post('/api/admin/patients/:id/records', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/patients/:id/records', perm('records.write'), wrap(async (req, res) => {
   const p = await prisma.patient.findUnique({ where: { id: req.params.id } });
   if (!p) throw new HttpError(404, 'Patient not found.');
   const { doctorId, diagnosis, notes, prescription, date } = req.body || {};
@@ -842,13 +1016,13 @@ app.post('/api/admin/patients/:id/records', auth(['admin']), wrap(async (req, re
   res.json({ ...recordOut(r), doctorName: doctor.name, files: [] });
 }));
 
-app.post('/api/admin/records/:recordId/files', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/records/:recordId/files', perm('records.write'), wrap(async (req, res) => {
   const record = await prisma.medicalRecord.findUnique({ where: { id: req.params.recordId } });
   if (!record) throw new HttpError(404, 'Record not found.');
   res.json(await saveRecordFile(record, req.user.sub, req.body));
 }));
 
-app.delete('/api/admin/files/:id', auth(['admin']), wrap(async (req, res) => {
+app.delete('/api/admin/files/:id', perm('records.write'), wrap(async (req, res) => {
   const f = await prisma.recordFile.findUnique({ where: { id: req.params.id }, select: { id: true } });
   if (!f) throw new HttpError(404, 'File not found.');
   await prisma.recordFile.delete({ where: { id: f.id } });
@@ -857,30 +1031,83 @@ app.delete('/api/admin/files/:id', auth(['admin']), wrap(async (req, res) => {
 
 // ---------- ADMIN: STAFF ACCOUNTS ----------
 
-app.get('/api/admin/staff-accounts', auth(['admin']), wrap(async (req, res) => {
-  const staff = await prisma.staff.findMany({ orderBy: { createdAt: 'asc' } });
-  res.json(staff.map(s => ({ id: s.id, name: s.name, email: s.email, role: s.role, createdAt: s.createdAt })));
+const staffOut = (s, roles) => {
+  const r = roles.find(x => x.id === s.role);
+  return { id: s.id, name: s.name, email: s.email, role: s.role, roleName: r ? r.name : s.role, mustChangePassword: s.mustChangePassword, createdAt: s.createdAt };
+};
+
+// Only an admin may create admins or change an admin's account.
+async function assertCanAssignRole(req, roleId) {
+  const role = await prisma.role.findUnique({ where: { id: String(roleId || '') } });
+  if (!role) throw new HttpError(400, 'Please choose a valid role.');
+  if (role.id === 'admin' && req.user.role !== 'admin') throw new HttpError(403, 'Only an admin can give someone the Admin role.');
+  return role;
+}
+
+app.get('/api/admin/staff-accounts', perm('staff.manage'), wrap(async (req, res) => {
+  const [staff, roles] = await Promise.all([prisma.staff.findMany({ orderBy: { createdAt: 'asc' } }), prisma.role.findMany()]);
+  res.json(staff.map(s => staffOut(s, roles)));
 }));
 
-app.post('/api/admin/staff-accounts', auth(['admin']), wrap(async (req, res) => {
-  const { name, role, password } = req.body || {};
+app.post('/api/admin/staff-accounts', perm('staff.manage'), wrap(async (req, res) => {
+  const { name, password } = req.body || {};
+  const roleId = (req.body && req.body.role) === 'staff' ? 'reception' : req.body && req.body.role; // old form value
   const email = normEmail(req.body && req.body.email);
   if (!name || !email || !password) throw new HttpError(400, 'Name, email and temporary password are required.');
   if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
-  if (!['admin', 'staff'].includes(role)) throw new HttpError(400, 'Access level must be Staff or Admin.');
+  const role = await assertCanAssignRole(req, roleId);
   if (String(password).length < 8) throw new HttpError(400, 'Temporary password must be at least 8 characters.');
   if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
   const s = await prisma.staff.create({
-    data: { id: newId('staff'), name, email, role, passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true }
+    data: { id: newId('staff'), name, email, role: role.id, passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true }
   });
-  res.json({ id: s.id, name: s.name, email: s.email, role: s.role });
+  res.json(staffOut(s, [role]));
 }));
 
-app.delete('/api/admin/staff-accounts/:id', auth(['admin']), wrap(async (req, res) => {
+// Change a staff member's role, name or email.
+app.patch('/api/admin/staff-accounts/:id', perm('staff.manage'), wrap(async (req, res) => {
+  const s = await prisma.staff.findUnique({ where: { id: req.params.id } });
+  if (!s) throw new HttpError(404, 'Account not found.');
+  if (s.role === 'admin' && req.user.role !== 'admin') throw new HttpError(403, "Only an admin can change an admin's account.");
+  const b = req.body || {};
+  const data = {};
+  if (b.role !== undefined && b.role !== s.role) {
+    await assertCanAssignRole(req, b.role);
+    if (s.id === req.user.sub) throw new HttpError(400, "You can't change your own role.");
+    if (s.email === PRIMARY_ADMIN_EMAIL) throw new HttpError(400, 'The main admin account must stay Admin.');
+    if (s.role === 'admin' && (await prisma.staff.count({ where: { role: 'admin' } })) <= 1) throw new HttpError(400, 'At least one admin account must remain.');
+    data.role = b.role;
+  }
+  if (b.name !== undefined) { const n = String(b.name).trim(); if (!n) throw new HttpError(400, 'Name cannot be empty.'); data.name = n; }
+  if (b.email !== undefined) {
+    const email = normEmail(b.email);
+    if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+    if (email !== s.email) {
+      if (s.email === PRIMARY_ADMIN_EMAIL) throw new HttpError(400, "The main admin account's email can't be changed.");
+      if (await emailTaken(email)) throw new HttpError(409, 'Another account already uses this email.');
+      data.email = email;
+    }
+  }
+  const updated = await prisma.staff.update({ where: { id: s.id }, data });
+  res.json(staffOut(updated, await prisma.role.findMany()));
+}));
+
+app.post('/api/admin/staff-accounts/:id/reset-password', perm('staff.manage'), wrap(async (req, res) => {
+  const s = await prisma.staff.findUnique({ where: { id: req.params.id } });
+  if (!s) throw new HttpError(404, 'Account not found.');
+  if (s.role === 'admin' && req.user.role !== 'admin') throw new HttpError(403, "Only an admin can reset an admin's password.");
+  const password = String((req.body && req.body.password) || '');
+  if (password.length < 8) throw new HttpError(400, 'Temporary password must be at least 8 characters.');
+  await prisma.staff.update({ where: { id: s.id }, data: { passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true } });
+  res.json({ ok: true });
+}));
+
+app.delete('/api/admin/staff-accounts/:id', perm('staff.manage'), wrap(async (req, res) => {
   const s = await prisma.staff.findUnique({ where: { id: req.params.id } });
   if (!s) throw new HttpError(404, 'Account not found.');
   if (s.id === req.user.sub) throw new HttpError(400, "You can't remove your own account while logged in.");
   if (s.email === PRIMARY_ADMIN_EMAIL) throw new HttpError(400, 'The main admin account cannot be removed.');
+  if (s.role === 'admin' && req.user.role !== 'admin') throw new HttpError(403, 'Only an admin can remove an admin.');
   if (s.role === 'admin' && (await prisma.staff.count({ where: { role: 'admin' } })) <= 1) {
     throw new HttpError(400, 'At least one admin account must remain.');
   }
@@ -888,15 +1115,74 @@ app.delete('/api/admin/staff-accounts/:id', auth(['admin']), wrap(async (req, re
   res.json({ ok: true });
 }));
 
+// ---------- ADMIN: ROLES & PERMISSIONS ----------
+
+const roleOut = (r, counts) => ({
+  id: r.id, name: r.name, builtIn: r.builtIn, locked: r.id === 'admin',
+  permissions: [...parsePerms(r.permissions)], staffCount: counts[r.id] || 0
+});
+
+app.get('/api/admin/roles', perm('staff.manage'), wrap(async (req, res) => {
+  const [roles, staff] = await Promise.all([prisma.role.findMany({ orderBy: { createdAt: 'asc' } }), prisma.staff.findMany({ select: { role: true } })]);
+  const counts = staff.reduce((m, x) => ((m[x.role] = (m[x.role] || 0) + 1), m), {});
+  const order = ['admin', 'reception', 'nurse', 'manager'];
+  roles.sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
+  res.json({ permissions: PERMISSIONS, roles: roles.map(r => roleOut(r, counts)) });
+}));
+
+const cleanPerms = list => [...new Set((Array.isArray(list) ? list : []).filter(k => VALID_PERMS.has(k)))].join(',');
+
+app.post('/api/admin/roles', perm('staff.manage'), wrap(async (req, res) => {
+  const name = String((req.body && req.body.name) || '').trim().slice(0, 60);
+  if (!name) throw new HttpError(400, 'Please give the role a name, e.g. "Lab technician".');
+  const all = await prisma.role.findMany();
+  if (all.some(r => r.name.toLowerCase() === name.toLowerCase())) throw new HttpError(409, 'A role with this name already exists.');
+  const r = await prisma.role.create({ data: { id: newId('role'), name, permissions: cleanPerms(req.body.permissions) } });
+  res.json(roleOut(r, {}));
+}));
+
+app.patch('/api/admin/roles/:id', perm('staff.manage'), wrap(async (req, res) => {
+  const r = await prisma.role.findUnique({ where: { id: req.params.id } });
+  if (!r) throw new HttpError(404, 'Role not found.');
+  if (r.id === 'admin') throw new HttpError(400, 'The Admin role always has every permission and cannot be changed.');
+  const data = {};
+  if (req.body.name !== undefined) {
+    const name = String(req.body.name).trim().slice(0, 60);
+    if (!name) throw new HttpError(400, 'Role name cannot be empty.');
+    data.name = name;
+  }
+  if (req.body.permissions !== undefined) {
+    const next = cleanPerms(req.body.permissions);
+    // Don't let someone remove "manage staff" from their own role and lock themselves out.
+    if (req.user.roleId === r.id && !next.split(',').includes('staff.manage')) {
+      throw new HttpError(400, "You can't remove 'Manage staff' from your own role.");
+    }
+    data.permissions = next;
+  }
+  const updated = await prisma.role.update({ where: { id: r.id }, data });
+  const count = await prisma.staff.count({ where: { role: r.id } });
+  res.json(roleOut(updated, { [r.id]: count }));
+}));
+
+app.delete('/api/admin/roles/:id', perm('staff.manage'), wrap(async (req, res) => {
+  const r = await prisma.role.findUnique({ where: { id: req.params.id } });
+  if (!r) throw new HttpError(404, 'Role not found.');
+  if (r.builtIn) throw new HttpError(400, 'Built-in roles can be edited but not deleted.');
+  const count = await prisma.staff.count({ where: { role: r.id } });
+  if (count) throw new HttpError(409, `${count} staff login${count === 1 ? '' : 's'} still use this role. Move them to another role first.`);
+  await prisma.role.delete({ where: { id: r.id } });
+  res.json({ ok: true });
+}));
+
 // ---------- ADMIN: SETTINGS ----------
 
-app.get('/api/admin/settings', auth(['admin']), wrap(async (req, res) => {
+app.get('/api/admin/settings', perm('settings.manage'), wrap(async (req, res) => {
   const s = await settings.getAll();
   // Never send the SMTP password back — just whether one is set.
   res.json({ ...s, smtp: { ...s.smtp, pass: s.smtp.pass ? true : '' } });
 }));
 
-app.patch('/api/admin/settings', auth(['admin']), wrap(async (req, res) => {
+app.patch('/api/admin/settings', perm('settings.manage'), wrap(async (req, res) => {
   const body = req.body || {};
   for (const k of ['phone', 'whatsapp', 'contactEmail']) {
     if (body[k] !== undefined) await settings.setKey(k, String(body[k]).trim());
@@ -923,7 +1209,7 @@ app.patch('/api/admin/settings', auth(['admin']), wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-app.post('/api/admin/settings/test-email', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/settings/test-email', perm('settings.manage'), wrap(async (req, res) => {
   const to = normEmail(req.body && req.body.to);
   if (!isEmail(to)) throw new HttpError(400, 'Enter a valid email address to test with.');
   try {
@@ -951,7 +1237,7 @@ app.get('/api/team-members', wrap(async (req, res) => {
   res.json((await prisma.teamMember.findMany({ orderBy: teamOrder })).map(teamOut));
 }));
 
-app.post('/api/admin/team-members', auth(['admin']), wrap(async (req, res) => {
+app.post('/api/admin/team-members', perm('directory.manage'), wrap(async (req, res) => {
   const { name, role, bio, photo } = req.body || {};
   if (!name || !role) throw new HttpError(400, 'Name and role are required.');
   if (!isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
@@ -960,7 +1246,7 @@ app.post('/api/admin/team-members', auth(['admin']), wrap(async (req, res) => {
   res.json(teamOut(m));
 }));
 
-app.patch('/api/admin/team-members/:id', auth(['admin']), wrap(async (req, res) => {
+app.patch('/api/admin/team-members/:id', perm('directory.manage'), wrap(async (req, res) => {
   const { name, role, bio, photo } = req.body || {};
   if (photo !== undefined && !isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
   const existing = await prisma.teamMember.findUnique({ where: { id: req.params.id } });
@@ -973,7 +1259,7 @@ app.patch('/api/admin/team-members/:id', auth(['admin']), wrap(async (req, res) 
   res.json(teamOut(await prisma.teamMember.update({ where: { id: existing.id }, data })));
 }));
 
-app.delete('/api/admin/team-members/:id', auth(['admin']), wrap(async (req, res) => {
+app.delete('/api/admin/team-members/:id', perm('directory.manage'), wrap(async (req, res) => {
   const existing = await prisma.teamMember.findUnique({ where: { id: req.params.id } });
   if (!existing) throw new HttpError(404, 'Team member not found.');
   await prisma.teamMember.delete({ where: { id: existing.id } });
@@ -999,7 +1285,7 @@ app.post('/api/contact', formLimiter, wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-app.get('/api/admin/contact-messages', auth(['admin']), wrap(async (req, res) => {
+app.get('/api/admin/contact-messages', perm('settings.manage'), wrap(async (req, res) => {
   res.json(await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' }, take: 500 }));
 }));
 

@@ -39,13 +39,14 @@ async function sendBookingEmails({ name, email, phone, date, service, message })
     console.error('Brevo: BREVO_API_KEY is not set — booking emails not sent.');
     return { autoReply: false, clinic: false };
   }
+  const realEmail = !!email && !String(email).toLowerCase().endsWith('.invalid');
   const rows = [
-    ['Name', name], ['Email', email], ['Phone', phone], ['Date', date], ['Service', service], ['Message', message]
+    ['Name', name], ['Email', realEmail ? email : '(no email)'], ['Phone', phone], ['Date', date], ['Service', service], ['Message', message]
   ].map(([k, v]) => `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">${k}</td>` +
     `<td style="padding:6px 12px;white-space:pre-wrap">${esc(v) || '—'}</td></tr>`).join('');
 
   const [autoReply, clinic] = await Promise.all([
-    brevoSend({
+    !realEmail ? Promise.resolve(false) : brevoSend({
       templateId: AUTO_REPLY_TEMPLATE_ID,
       to: [{ email, name }],
       replyTo: CLINIC,
@@ -54,7 +55,7 @@ async function sendBookingEmails({ name, email, phone, date, service, message })
     brevoSend({
       sender: { email: CLINIC.email, name: 'Website Booking' },
       to: [{ email: CLINIC.email, name: CLINIC.name }],
-      replyTo: { email, name },
+      replyTo: realEmail ? { email, name } : CLINIC,
       subject: `New appointment request – ${name}`,
       htmlContent: `<p>A new appointment request came in from the website:</p><table style="border-collapse:collapse">${rows}</table>`
     }, 'clinic notification')
@@ -144,7 +145,7 @@ async function sendDoctorInvite({ kind, appointment, doctor, patient, department
   const description = [
     `Patient: ${patient.name}`,
     patient.phone ? `Phone: ${patient.phone}` : '',
-    patient.email ? `Email: ${patient.email}` : '',
+    patient.email && !/\.invalid$/i.test(patient.email) ? `Email: ${patient.email}` : '',
     departmentName ? `Department: ${departmentName}` : '',
     appointment.reason ? `Reason: ${appointment.reason}` : '',
     '',
@@ -157,7 +158,7 @@ async function sendDoctorInvite({ kind, appointment, doctor, patient, department
     start, end, summary, description, doctor
   });
   const rows = [
-    ['Patient', patient.name], ['Phone', patient.phone], ['Email', patient.email],
+    ['Patient', patient.name], ['Phone', patient.phone], ['Email', /\.invalid$/i.test(patient.email || '') ? '' : patient.email],
     ['When', whenText], ['Department', departmentName], ['Reason', appointment.reason]
   ].filter(([, v]) => v).map(([k, v]) => `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">${k}</td><td style="padding:6px 12px;white-space:pre-wrap">${esc(v)}</td></tr>`).join('');
   return brevoSend({

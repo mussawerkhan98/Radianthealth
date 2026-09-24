@@ -191,6 +191,20 @@ function clinicNow() {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
 
+// Every slot in a doctor's working day (including past ones) — for calendars.
+function daySlots(doctor, dateStr) {
+  const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getUTCDay();
+  if (!parseDays(doctor.workingDays).includes(dayOfWeek)) return [];
+  const [sh, sm] = doctor.workStart.split(':').map(Number);
+  const [eh, em] = doctor.workEnd.split(':').map(Number);
+  const step = doctor.slotMinutes || 30;
+  const out = [];
+  for (let c = sh * 60 + sm; c + step <= eh * 60 + em; c += step) {
+    out.push(`${String(Math.floor(c / 60)).padStart(2, '0')}:${String(c % 60).padStart(2, '0')}`);
+  }
+  return out;
+}
+
 function generateSlots(doctor, dateStr) {
   if (!DATE_RE.test(dateStr)) return [];
   const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getUTCDay();
@@ -492,8 +506,82 @@ app.patch('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
     if (workingHours.slotMinutes) data.slotMinutes = Math.max(5, Math.min(240, Number(workingHours.slotMinutes) || 30));
   }
   if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort().join(',');
+  const start = data.workStart || existing.workStart, end = data.workEnd || existing.workEnd;
+  if (start >= end) throw new HttpError(400, 'Finishing time must be after the starting time.');
+  if (req.body && req.body.email !== undefined) {
+    const email = normEmail(req.body.email);
+    if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+    if (email !== existing.email) {
+      if (await emailTaken(email)) throw new HttpError(409, 'Another account already uses this email.');
+      data.email = email;
+    }
+  }
   const d = await prisma.doctor.update({ where: { id: existing.id }, data });
   res.json(doctorOut(d));
+}));
+
+// Set a new temporary password; the doctor must change it at next login.
+app.post('/api/admin/doctors/:id/reset-password', auth(['admin']), wrap(async (req, res) => {
+  const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+  if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
+  const password = String((req.body && req.body.password) || '');
+  if (password.length < 8) throw new HttpError(400, 'Temporary password must be at least 8 characters.');
+  await prisma.doctor.update({ where: { id: d.id }, data: { passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true } });
+  res.json({ ok: true });
+}));
+
+// Doctor profile + quick stats for the admin "manage doctor" page.
+app.get('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
+  const d = await prisma.doctor.findUnique({ where: { id: req.params.id }, include: { department: true } });
+  if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
+  const today = clinicNow().date;
+  const [upcoming, patients, records] = await Promise.all([
+    prisma.appointment.count({ where: { doctorId: d.id, status: 'confirmed', date: { gte: today } } }),
+    prisma.appointment.findMany({ where: { doctorId: d.id }, distinct: ['patientId'], select: { patientId: true } }),
+    prisma.medicalRecord.count({ where: { doctorId: d.id } })
+  ]);
+  res.json({
+    ...doctorOut(d), departmentName: d.department ? d.department.name : '',
+    stats: { upcoming, patients: patients.length, records }
+  });
+}));
+
+// Week (or any range up to 31 days) of a doctor's calendar: every working slot
+// marked free / booked / past, plus bookings that fall outside current hours.
+app.get('/api/admin/doctors/:id/calendar', auth(['admin', 'staff']), wrap(async (req, res) => {
+  const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+  if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
+  const start = DATE_RE.test(String(req.query.start || '')) ? String(req.query.start) : clinicNow().date;
+  const n = Math.max(1, Math.min(31, Number(req.query.days) || 7));
+  const dates = [];
+  for (let i = 0; i < n; i++) dates.push(new Date(Date.parse(start + 'T00:00:00Z') + i * 864e5).toISOString().slice(0, 10));
+  const appts = await prisma.appointment.findMany({
+    where: { doctorId: d.id, date: { gte: dates[0], lte: dates[dates.length - 1] } },
+    include: { patient: { select: { id: true, name: true, phone: true, email: true, isGuest: true } } },
+    orderBy: [{ date: 'asc' }, { time: 'asc' }]
+  });
+  const now = clinicNow();
+  const apptView = a => ({
+    id: a.id, time: a.time, status: a.status, reason: a.reason,
+    patient: a.patient ? { id: a.patient.id, name: a.patient.name, phone: a.patient.phone, email: a.patient.email, isGuest: a.patient.isGuest } : null
+  });
+  const days = dates.map(date => {
+    const slots = daySlots(d, date);
+    const active = appts.filter(a => a.date === date && a.status !== 'cancelled');
+    const byTime = new Map(active.map(a => [a.time, a]));
+    const isPast = t => date < now.date || (date === now.date && t <= now.time);
+    return {
+      date,
+      working: slots.length > 0,
+      slots: slots.map(t => byTime.has(t)
+        ? { time: t, status: 'booked', appointment: apptView(byTime.get(t)) }
+        : { time: t, status: isPast(t) ? 'past' : 'free' }),
+      // bookings made before hours changed, so they don't fit today's grid
+      outside: active.filter(a => !slots.includes(a.time)).map(apptView),
+      cancelled: appts.filter(a => a.date === date && a.status === 'cancelled').map(apptView)
+    };
+  });
+  res.json({ doctor: { id: d.id, name: d.name }, today: now.date, days });
 }));
 
 // "Delete" = deactivate: login stops working, past appointments/records are kept.

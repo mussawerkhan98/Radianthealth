@@ -2,24 +2,25 @@
   "name": "radiant-health-alliance",
   "version": "2.0.0",
   "private": true,
-  "description": "Radiant Health Alliance - medical center website (Express + Prisma + PostgreSQL)",
+  "description": "Radiant Health Alliance - medical center website (Express + Prisma + Turso/libSQL)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "prisma generate",
+    "build": "prisma generate && node scripts/migrate.js && node scripts/seed.js",
     "postinstall": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev",
-    "db:studio": "prisma studio",
+    "db:migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "import:json": "node scripts/import-json.js",
-    "test": "node scripts/smoke-test.js"
+    "test": "node scripts/smoke-test.js",
+    "db:new-migration": "node scripts/new-migration.js"
   },
   "engines": {
     "node": ">=18.18.0"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "@prisma/adapter-libsql": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",

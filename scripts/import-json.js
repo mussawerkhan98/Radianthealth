@@ -1,5 +1,5 @@
 // scripts/import-json.js — copies everything from the OLD site's
-// data/db.json into PostgreSQL. Keeps the same ids and password hashes,
+// data/db.json into the Turso database. Keeps the same ids and password hashes,
 // so every existing login keeps working. Safe to re-run (skips rows that
 // already exist).
 //
@@ -20,8 +20,12 @@ async function main() {
   const result = {};
   const run = async (label, model, rows) => {
     if (!rows.length) { result[label] = 0; return; }
-    const r = await model.createMany({ data: rows, skipDuplicates: true });
-    result[label] = r.count;
+    let n = 0;
+    for (const data of rows) {
+      try { await model.create({ data }); n++; }
+      catch (e) { if (e.code !== 'P2002') throw e; } // already imported
+    }
+    result[label] = n;
   };
 
   await run('departments', prisma.department, arr('departments').map((d, i) => ({
@@ -35,7 +39,7 @@ async function main() {
     workStart: (d.workingHours && d.workingHours.start) || '09:00',
     workEnd: (d.workingHours && d.workingHours.end) || '17:00',
     slotMinutes: (d.workingHours && d.workingHours.slotMinutes) || 30,
-    workingDays: Array.isArray(d.workingDays) ? d.workingDays : [1, 2, 3, 4, 5]
+    workingDays: (Array.isArray(d.workingDays) ? d.workingDays : [1, 2, 3, 4, 5]).join(',')
   })));
 
   await run('staff', prisma.staff, arr('staff').map(s => ({

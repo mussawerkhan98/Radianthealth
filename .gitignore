@@ -5,3 +5,5 @@ node_modules/
 data/
 .vercel
 *.log
+*.db
+*.db-journal

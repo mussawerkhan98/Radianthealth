@@ -1,4 +1,4 @@
-// src/app.js — Radiant Health Alliance API (Express + Prisma/PostgreSQL).
+// src/app.js — Radiant Health Alliance API (Express + Prisma + Turso/libSQL).
 // Same API paths and response shapes as the original JSON-file version, so
 // the existing frontend in /public works unchanged — plus the admin/staff
 // endpoints the frontend already called but the old server never had.
@@ -121,12 +121,14 @@ async function emailTaken(email) {
   return !!(p || d || s);
 }
 
+const parseDays = v => String(v || '').split(',').filter(x => x !== '').map(Number);
+
 function doctorOut(d, { includeEmail = true } = {}) {
   const out = {
     id: d.id, name: d.name, departmentId: d.departmentId, specialty: d.specialty, bio: d.bio,
     photo: d.photo, mustChangePassword: d.mustChangePassword,
     workingHours: { start: d.workStart, end: d.workEnd, slotMinutes: d.slotMinutes },
-    workingDays: d.workingDays
+    workingDays: parseDays(d.workingDays)
   };
   if (includeEmail) out.email = d.email;
   return out;
@@ -158,7 +160,7 @@ const TIME_RE = /^\d{2}:\d{2}$/;
 function generateSlots(doctor, dateStr) {
   if (!DATE_RE.test(dateStr)) return [];
   const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getUTCDay();
-  if (Number.isNaN(dayOfWeek) || !doctor.workingDays.includes(dayOfWeek)) return [];
+  if (Number.isNaN(dayOfWeek) || !parseDays(doctor.workingDays).includes(dayOfWeek)) return [];
   const [sh, sm] = doctor.workStart.split(':').map(Number);
   const [eh, em] = doctor.workEnd.split(':').map(Number);
   const step = doctor.slotMinutes || 30;
@@ -381,7 +383,7 @@ app.patch('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
     if (workingHours.end && TIME_RE.test(workingHours.end)) data.workEnd = workingHours.end;
     if (workingHours.slotMinutes) data.slotMinutes = Math.max(5, Math.min(240, Number(workingHours.slotMinutes) || 30));
   }
-  if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => n >= 0 && n <= 6))];
+  if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort().join(',');
   const d = await prisma.doctor.update({ where: { id: existing.id }, data });
   res.json(doctorOut(d));
 }));

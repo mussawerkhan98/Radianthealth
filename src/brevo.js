@@ -34,14 +34,15 @@ async function brevoSend(payload, label) {
 
 // Sends (a) the template auto-reply to the patient and (b) a notification to
 // the clinic. Returns { autoReply: boolean, clinic: boolean }.
-async function sendBookingEmails({ name, email, phone, date, service, message }) {
+async function sendBookingEmails({ name, email, phone, date, service, message, videoLink, doctorName }) {
   if (!isConfigured()) {
     console.error('Brevo: BREVO_API_KEY is not set — booking emails not sent.');
     return { autoReply: false, clinic: false };
   }
   const realEmail = !!email && !String(email).toLowerCase().endsWith('.invalid');
   const rows = [
-    ['Name', name], ['Email', realEmail ? email : '(no email)'], ['Phone', phone], ['Date', date], ['Service', service], ['Message', message]
+    ['Name', name], ['Email', realEmail ? email : '(no email)'], ['Phone', phone], ['Date', date], ['Service', service], ['Message', message],
+    ...(videoLink ? [['Visit', 'Video call']] : [])
   ].map(([k, v]) => `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">${k}</td>` +
     `<td style="padding:6px 12px;white-space:pre-wrap">${esc(v) || '—'}</td></tr>`).join('');
 
@@ -60,6 +61,21 @@ async function sendBookingEmails({ name, email, phone, date, service, message })
       htmlContent: `<p>A new appointment request came in from the website:</p><table style="border-collapse:collapse">${rows}</table>`
     }, 'clinic notification')
   ]);
+  // Video visits: a second email with the patient's personal join link
+  // (the Brevo template has no field for it).
+  if (videoLink && realEmail) {
+    await brevoSend({
+      sender: { email: CLINIC.email, name: CLINIC.name },
+      to: [{ email, name }],
+      replyTo: CLINIC,
+      subject: `Your video appointment link – ${date}`,
+      htmlContent: `<p>Hello ${esc(name)},</p>` +
+        `<p>Your <strong>video appointment</strong>${doctorName ? ` with ${esc(doctorName)}` : ''} is on <strong>${esc(date)}</strong>.</p>` +
+        `<p style="margin:24px 0"><a href="${esc(videoLink)}" style="background:#3D7DB7;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Join video call</a></p>` +
+        `<p>The link opens 15 minutes before your appointment. It works in your phone or computer browser — no app needed. Please allow camera and microphone when asked.</p>` +
+        `<p>This link is personal to you — please don't share it.</p><p>Radiant Health Alliance</p>`
+    }, 'patient video link');
+  }
   return { autoReply, clinic };
 }
 
@@ -106,7 +122,7 @@ function fold(line) {
   return out.join('\r\n');
 }
 
-function buildIcs({ method, uid, sequence, start, end, summary, description, doctor }) {
+function buildIcs({ method, uid, sequence, start, end, summary, description, doctor, location, url }) {
   const lines = [
     'BEGIN:VCALENDAR',
     'PRODID:-//Radiant Health Alliance//Appointments//EN',
@@ -121,7 +137,8 @@ function buildIcs({ method, uid, sequence, start, end, summary, description, doc
     `DTEND:${icsDate(end)}`,
     `SUMMARY:${icsText(summary)}`,
     `DESCRIPTION:${icsText(description)}`,
-    `LOCATION:${icsText('Radiant Health Alliance')}`,
+    `LOCATION:${icsText(location || 'Radiant Health Alliance')}`,
+    ...(url ? [`URL:${url}`] : []),
     `ORGANIZER;CN=${icsParam(CLINIC.name)}:mailto:${CLINIC.email}`,
     `ATTENDEE;CN=${icsParam(doctor.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=FALSE:mailto:${doctor.email}`,
     `STATUS:${method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'}`,
@@ -135,31 +152,36 @@ function buildIcs({ method, uid, sequence, start, end, summary, description, doc
 }
 
 // kind: 'booked' | 'cancelled'
-async function sendDoctorInvite({ kind, appointment, doctor, patient, departmentName }) {
+async function sendDoctorInvite({ kind, appointment, doctor, patient, departmentName, videoLink }) {
   if (!isConfigured() || !doctor || !doctor.email || !/@/.test(doctor.email) || doctor.email.startsWith('deleted+')) return false;
   const start = clinicTimeToDate(appointment.date, appointment.time);
   const end = new Date(start.getTime() + (doctor.slotMinutes || 30) * 60000);
   const whenText = new Intl.DateTimeFormat('en-GB', { timeZone: CLINIC_TZ(), weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(start);
   const cancelled = kind === 'cancelled';
-  const summary = `${cancelled ? 'Cancelled: ' : ''}Appointment – ${patient.name}`;
+  const isVideo = !!videoLink && !cancelled;
+  const summary = `${cancelled ? 'Cancelled: ' : ''}${videoLink ? 'Video appointment' : 'Appointment'} – ${patient.name}`;
   const description = [
     `Patient: ${patient.name}`,
     patient.phone ? `Phone: ${patient.phone}` : '',
     patient.email && !/\.invalid$/i.test(patient.email) ? `Email: ${patient.email}` : '',
     departmentName ? `Department: ${departmentName}` : '',
     appointment.reason ? `Reason: ${appointment.reason}` : '',
+    isVideo ? '' : null,
+    isVideo ? `Join video call: ${videoLink}` : null,
     '',
     `Doctor portal: ${SITE_URL()}/doctor-dashboard.html`
-  ].filter((l, i, a) => l !== '' || (i > 0 && a[i - 1] !== '')).join('\n');
+  ].filter(l => l !== null).filter((l, i, a) => l !== '' || (i > 0 && a[i - 1] !== '')).join('\n');
   const ics = buildIcs({
     method: cancelled ? 'CANCEL' : 'REQUEST',
     uid: `${appointment.id}@radianthealthalliance.com`,
     sequence: cancelled ? 1 : 0,
-    start, end, summary, description, doctor
+    start, end, summary, description, doctor,
+    location: videoLink ? 'Video call (link in description)' : undefined,
+    url: isVideo ? videoLink : undefined
   });
   const rows = [
     ['Patient', patient.name], ['Phone', patient.phone], ['Email', /\.invalid$/i.test(patient.email || '') ? '' : patient.email],
-    ['When', whenText], ['Department', departmentName], ['Reason', appointment.reason]
+    ['When', whenText], ['Visit', videoLink ? 'Video call' : 'In clinic'], ['Department', departmentName], ['Reason', appointment.reason]
   ].filter(([, v]) => v).map(([k, v]) => `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">${k}</td><td style="padding:6px 12px;white-space:pre-wrap">${esc(v)}</td></tr>`).join('');
   return brevoSend({
     sender: { email: CLINIC.email, name: CLINIC.name },
@@ -168,6 +190,7 @@ async function sendDoctorInvite({ kind, appointment, doctor, patient, department
     subject: cancelled ? `Cancelled: ${patient.name} – ${whenText}` : `New appointment: ${patient.name} – ${whenText}`,
     htmlContent: `<p>Dear ${esc(doctor.name)},</p><p>${cancelled ? 'This appointment has been <strong>cancelled</strong> and removed from your calendar.' : 'A new appointment has been booked with you. The attached invite adds it to your calendar.'}</p>` +
       `<table style="border-collapse:collapse">${rows}</table>` +
+      (isVideo ? `<p style="margin:22px 0"><a href="${esc(videoLink)}" style="background:#3D7DB7;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Join video call</a></p><p style="color:#5A6B75;font-size:13px">The link opens 15 minutes before the appointment and is also in the calendar event.</p>` : '') +
       `<p><a href="${SITE_URL()}/doctor-dashboard.html">Open the doctor portal</a></p>`,
     attachment: [{ name: cancelled ? 'cancel.ics' : 'invite.ics', content: Buffer.from(ics, 'utf8').toString('base64') }]
   }, cancelled ? 'doctor cancellation' : 'doctor invite');

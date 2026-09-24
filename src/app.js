@@ -4,6 +4,7 @@
 // endpoints the frontend already called but the old server never had.
 require('dotenv').config();
 const express = require('express');
+const crypto = require('crypto');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -14,6 +15,7 @@ const prisma = require('./db');
 const settings = require('./settings');
 const mailer = require('./mailer');
 const brevo = require('./brevo');
+const video = require('./video');
 const { newId } = require('./ids');
 const { normalizePhone, displayPatientId } = require('./phone');
 const { PERMISSIONS, VALID: VALID_PERMS, parsePerms, permsForRole } = require('./permissions');
@@ -151,7 +153,8 @@ function doctorOut(d, { includeEmail = true } = {}) {
     id: d.id, name: d.name, departmentId: d.departmentId, specialty: d.specialty, bio: d.bio,
     photo: d.photo, mustChangePassword: d.mustChangePassword,
     workingHours: { start: d.workStart, end: d.workEnd, slotMinutes: d.slotMinutes },
-    workingDays: parseDays(d.workingDays)
+    workingDays: parseDays(d.workingDays),
+    offersVideo: !!d.offersVideo
   };
   if (includeEmail) out.email = d.email;
   return out;
@@ -159,8 +162,16 @@ function doctorOut(d, { includeEmail = true } = {}) {
 
 const apptOut = a => ({
   id: a.id, patientId: a.patientId, doctorId: a.doctorId, date: a.date, time: a.time,
-  reason: a.reason, status: a.status, createdAt: a.createdAt
+  reason: a.reason, status: a.status, visitType: a.visitType || 'in_person', createdAt: a.createdAt
 });
+
+// Personal join links for a video appointment (open /video.html).
+const SITE_URL = () => (process.env.SITE_URL || 'https://www.radianthealthalliance.com').replace(/\/$/, '');
+function videoLinks(a) {
+  if (!a || a.visitType !== 'video' || !a.videoPatientKey) return null;
+  const base = `${SITE_URL()}/video.html?a=${encodeURIComponent(a.id)}&k=`;
+  return { patient: base + a.videoPatientKey, doctor: base + a.videoDoctorKey };
+}
 
 const recordOut = r => ({
   id: r.id, patientId: r.patientId, doctorId: r.doctorId, date: r.date, diagnosis: r.diagnosis,
@@ -350,7 +361,7 @@ app.post('/api/change-password', auth(), wrap(async (req, res) => {
 
 app.get('/api/settings', wrap(async (req, res) => {
   const s = await settings.getAll();
-  res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail });
+  res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail, videoEnabled: video.isConfigured() });
 }));
 
 // ---------- DEPARTMENTS ----------
@@ -401,7 +412,10 @@ app.get('/api/doctors/me/appointments', auth(['doctor']), wrap(async (req, res) 
     include: { patient: { select: { name: true } } },
     orderBy: [{ date: 'asc' }, { time: 'asc' }]
   });
-  res.json(appts.map(a => ({ ...apptOut(a), patientName: a.patient ? a.patient.name : 'Unknown patient' })));
+  res.json(appts.map(a => {
+    const links = videoLinks(a);
+    return { ...apptOut(a), patientName: a.patient ? a.patient.name : 'Unknown patient', ...(links ? { videoLink: links.doctor } : {}) };
+  }));
 }));
 
 app.get('/api/doctors/me/patients', auth(['doctor']), wrap(async (req, res) => {
@@ -556,6 +570,7 @@ app.patch('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, res
     if (workingHours.slotMinutes) data.slotMinutes = Math.max(5, Math.min(240, Number(workingHours.slotMinutes) || 30));
   }
   if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort().join(',');
+  if (req.body && req.body.offersVideo !== undefined) data.offersVideo = !!req.body.offersVideo;
   const start = data.workStart || existing.workStart, end = data.workEnd || existing.workEnd;
   if (start >= end) throw new HttpError(400, 'Finishing time must be after the starting time.');
   if (req.body && req.body.email !== undefined) {
@@ -611,8 +626,10 @@ app.get('/api/admin/doctors/:id/calendar', perm('doctors.view'), wrap(async (req
     orderBy: [{ date: 'asc' }, { time: 'asc' }]
   });
   const now = clinicNow();
+  const canLinks = staffCan(req, 'appointments.book');
   const apptView = a => ({
-    id: a.id, time: a.time, status: a.status, reason: a.reason,
+    id: a.id, time: a.time, status: a.status, reason: a.reason, visitType: a.visitType || 'in_person',
+    ...(canLinks && a.status !== 'cancelled' && videoLinks(a) ? { videoPatientLink: videoLinks(a).patient, videoDoctorLink: videoLinks(a).doctor } : {}),
     patient: a.patient ? { id: a.patient.id, patientId: displayPatientId(a.patient.phoneKey), name: a.patient.name, phone: a.patient.phone, email: hasRealEmail(a.patient.email) ? a.patient.email : '', isGuest: a.patient.isGuest } : null
   });
   const days = dates.map(date => {
@@ -656,45 +673,54 @@ app.delete('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, re
 
 // Shared by logged-in and guest bookings. Saves the appointment, then sends
 // the Brevo emails (and SMTP doctor notification, if configured).
-async function createBooking({ patient, doctorId, date, time, reason, honeypot }) {
+async function createBooking({ patient, doctorId, date, time, reason, honeypot, visitType }) {
   if (!doctorId || !date || !time) throw new HttpError(400, 'Doctor, date and time are required.');
   const doctor = await prisma.doctor.findUnique({ where: { id: String(doctorId) }, include: { department: true } });
   if (!doctor || !doctor.active) throw new HttpError(404, 'Doctor not found.');
+  const isVideo = visitType === 'video';
+  if (isVideo && !video.isConfigured()) throw new HttpError(400, 'Video appointments are not available yet. Please book an in-clinic visit.');
+  if (isVideo && !doctor.offersVideo) throw new HttpError(400, `${doctor.name} doesn't offer video appointments. Please choose an in-clinic visit or another doctor.`);
   if (!generateSlots(doctor, date).includes(time)) throw new HttpError(400, 'That time is not available. Please pick another slot.');
   let appt;
   try {
     appt = await prisma.appointment.create({
-      data: { id: newId('appt'), patientId: patient.id, doctorId: doctor.id, date, time, reason: String(reason || '').slice(0, 2000), status: 'confirmed' }
+      data: {
+        id: newId('appt'), patientId: patient.id, doctorId: doctor.id, date, time, reason: String(reason || '').slice(0, 2000), status: 'confirmed',
+        visitType: isVideo ? 'video' : 'in_person',
+        ...(isVideo ? { videoPatientKey: video.newKey(), videoDoctorKey: video.newKey() } : {})
+      }
     });
   } catch (e) {
     if (e.code === 'P2002') throw new HttpError(409, 'That slot was just booked by someone else. Please pick another.');
     throw e;
   }
   const departmentName = doctor.department && doctor.department.name;
+  const links = videoLinks(appt);
   let emailSent = false;
   if (brevo.isConfigured() && !honeypot) {
     // Brevo: template auto-reply to the patient + notification to the clinic.
     const r = await brevo.sendBookingEmails({
       name: patient.name, email: patient.email, phone: patient.phone,
       date: formatWhen(date, time),
-      service: [departmentName, doctor.name].filter(Boolean).join(' — '),
-      message: reason || ''
+      service: [departmentName, doctor.name].filter(Boolean).join(' — ') + (links ? ' (video call)' : ''),
+      message: reason || '',
+      videoLink: links && links.patient, doctorName: doctor.name
     });
     emailSent = r.autoReply;
   }
   // Doctor gets a calendar invite (.ics) for the appointment.
-  const doctorInvited = await brevo.sendDoctorInvite({ kind: 'booked', appointment: appt, doctor, patient, departmentName })
+  const doctorInvited = await brevo.sendDoctorInvite({ kind: 'booked', appointment: appt, doctor, patient, departmentName, videoLink: links && links.doctor })
     .catch(err => { console.error('doctor invite:', err.message); return false; });
   // SMTP (if configured in Admin → Settings) notifies extra addresses; the
   // patient/doctor are skipped when Brevo already emailed them.
   await mailer.notifyBooking({ appointment: appt, doctor, patient, departmentName, skipPatient: emailSent, skipDoctor: doctorInvited })
     .catch(err => console.error('notifyBooking:', err.message));
-  return { ...apptOut(appt), emailSent };
+  return { ...apptOut(appt), emailSent, ...(links ? { videoLink: links.patient } : {}) };
 }
 
 app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, res) => {
-  const { doctorId, date, time, reason, website } = req.body || {};
-  res.json(await createBooking({ patient: req.account, doctorId, date, time, reason, honeypot: website }));
+  const { doctorId, date, time, reason, website, visitType } = req.body || {};
+  res.json(await createBooking({ patient: req.account, doctorId, date, time, reason, honeypot: website, visitType }));
 }));
 
 // Book without an account: name + email + phone. Re-uses the patient record
@@ -769,7 +795,7 @@ app.post('/api/appointments/guest', guestLimiter, wrap(async (req, res) => {
   if (!isEmail(email) || email.length > 254) throw new HttpError(400, 'Please enter a valid email address so we can send your confirmation.');
   if (!normalizePhone(phone)) throw new HttpError(400, 'Please enter a valid mobile number so the clinic can reach you.');
   const patient = await findOrCreatePatient({ name, email, phone });
-  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000) });
+  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000), visitType: b.visitType });
   res.json({ ...out, patientId: displayPatientId(patient.phoneKey) });
 }));
 
@@ -782,7 +808,7 @@ app.post('/api/admin/appointments', perm('appointments.book'), wrap(async (req, 
   const email = normEmail(b.email);
   if (!name) throw new HttpError(400, "Please enter the patient's full name.");
   const patient = await findOrCreatePatient({ name, email: email || '', phone: str(b.phone, 40), allowNoEmail: true, updateGuest: true });
-  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000) });
+  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000), visitType: b.visitType });
   res.json({ ...out, patient: patientOut(patient), bookedBy: req.account.name });
 }));
 
@@ -840,11 +866,15 @@ app.get('/api/patients/me/appointments', auth(['patient']), wrap(async (req, res
     include: { doctor: { include: { department: true } } },
     orderBy: [{ date: 'asc' }, { time: 'asc' }]
   });
-  res.json(appts.map(a => ({
-    ...apptOut(a),
-    doctorName: a.doctor ? a.doctor.name : 'Unknown',
-    departmentName: a.doctor && a.doctor.department ? a.doctor.department.name : ''
-  })));
+  res.json(appts.map(a => {
+    const links = a.status !== 'cancelled' && videoLinks(a);
+    return {
+      ...apptOut(a),
+      doctorName: a.doctor ? a.doctor.name : 'Unknown',
+      departmentName: a.doctor && a.doctor.department ? a.doctor.department.name : '',
+      ...(links ? { videoLink: links.patient } : {})
+    };
+  }));
 }));
 
 async function cancelAppointment(where, by) {
@@ -852,6 +882,7 @@ async function cancelAppointment(where, by) {
   if (!appt) throw new HttpError(404, 'Appointment not found.');
   if (appt.status === 'cancelled') return appt;
   const updated = await prisma.appointment.update({ where: { id: appt.id }, data: { status: 'cancelled' } });
+  if (appt.videoRoom) await video.deleteRoom(appt.videoRoom); // link stops working
   // Removes the event from the doctor's calendar.
   const doctorNotified = await brevo.sendDoctorInvite({
     kind: 'cancelled', appointment: appt, doctor: appt.doctor, patient: appt.patient,
@@ -879,7 +910,9 @@ app.get('/api/admin/appointments', perm('appointments.view'), wrap(async (req, r
     patientName: a.patient ? a.patient.name : 'Unknown patient',
     patientId: a.patient ? displayPatientId(a.patient.phoneKey) : '',
     patientPhone: a.patient ? a.patient.phone : '',
-    patientEmail: a.patient && hasRealEmail(a.patient.email) ? a.patient.email : ''
+    patientEmail: a.patient && hasRealEmail(a.patient.email) ? a.patient.email : '',
+    ...(staffCan(req, 'appointments.book') && a.status !== 'cancelled' && videoLinks(a)
+      ? { videoPatientLink: videoLinks(a).patient, videoDoctorLink: videoLinks(a).doctor } : {})
   })));
 }));
 
@@ -890,9 +923,10 @@ app.post('/api/admin/appointments/:id/send-invite', perm('appointments.book'), w
   });
   if (!appt) throw new HttpError(404, 'Appointment not found.');
   if (!brevo.isConfigured()) throw new HttpError(400, 'Email sending (Brevo) is not set up.');
+  const links = videoLinks(appt);
   const ok = await brevo.sendDoctorInvite({
     kind: appt.status === 'cancelled' ? 'cancelled' : 'booked', appointment: appt, doctor: appt.doctor, patient: appt.patient,
-    departmentName: appt.doctor.department && appt.doctor.department.name
+    departmentName: appt.doctor.department && appt.doctor.department.name, videoLink: links && links.doctor
   });
   if (!ok) throw new HttpError(502, `Could not send to ${appt.doctor.email}. Check the address is a real mailbox, and that it isn't blocked in Brevo.`);
   res.json({ ok: true, to: appt.doctor.email });
@@ -901,6 +935,51 @@ app.post('/api/admin/appointments/:id/send-invite', perm('appointments.book'), w
 app.post('/api/admin/appointments/:id/cancel', perm('appointments.cancel'), wrap(async (req, res) => {
   const a = await cancelAppointment({ id: req.params.id }, 'the clinic');
   res.json(apptOut(a));
+}));
+
+// ---------- VIDEO CALLS ----------
+// Public (no login): the secret key in the link is the permission. Returns
+// the call status and, when the window is open, a personal join link.
+const videoLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many attempts. Please wait a few minutes.' } });
+const sameKey = (a, b) => {
+  const x = Buffer.from(String(a || '')), y = Buffer.from(String(b || ''));
+  return x.length === y.length && x.length > 0 && crypto.timingSafeEqual(x, y);
+};
+
+app.get('/api/video/:id', videoLimiter, wrap(async (req, res) => {
+  const a = await prisma.appointment.findUnique({ where: { id: String(req.params.id) }, include: { doctor: true, patient: true } });
+  const key = String(req.query.k || '');
+  const role = a && a.visitType === 'video' ? (sameKey(key, a.videoDoctorKey) ? 'doctor' : sameKey(key, a.videoPatientKey) ? 'patient' : null) : null;
+  if (!role) throw new HttpError(404, 'This video link is not valid. Please check the link in your email.');
+  const start = brevo.clinicTimeToDate(a.date, a.time);
+  const { opens, closes } = video.joinWindow(start, a.doctor.slotMinutes);
+  const base = {
+    role, doctorName: a.doctor.name, patientFirstName: String(a.patient.name || '').split(' ')[0],
+    date: a.date, time: a.time, startsAt: start.toISOString(), opensAt: opens.toISOString(), closesAt: closes.toISOString(),
+    earlyMinutes: video.EARLY_MIN
+  };
+  if (a.status === 'cancelled') return res.json({ ...base, status: 'cancelled' });
+  const now = Date.now();
+  if (now < opens.getTime()) return res.json({ ...base, status: 'early' });
+  if (now > closes.getTime()) return res.json({ ...base, status: 'ended' });
+  if (!video.isConfigured()) throw new HttpError(503, 'Video calls are not set up yet. Please call the clinic.');
+  // Create the private room the first time anyone joins.
+  let roomName = a.videoRoom, roomUrl = a.videoRoomUrl;
+  if (!roomName) {
+    const room = await video.createRoom({ appointmentId: a.id, opens, closes });
+    const upd = await prisma.appointment.updateMany({ where: { id: a.id, videoRoom: '' }, data: { videoRoom: room.name, videoRoomUrl: room.url } });
+    if (upd.count === 0) { // someone else created it at the same moment
+      await video.deleteRoom(room.name);
+      const fresh = await prisma.appointment.findUnique({ where: { id: a.id } });
+      roomName = fresh.videoRoom; roomUrl = fresh.videoRoomUrl;
+    } else { roomName = room.name; roomUrl = room.url; }
+  }
+  const joinUrl = await video.joinLink({
+    roomName, roomUrl, closes, isOwner: role === 'doctor',
+    userName: role === 'doctor' ? a.doctor.name : a.patient.name
+  });
+  res.json({ ...base, status: 'open', joinUrl });
 }));
 
 // ---------- MEDICAL RECORDS ----------

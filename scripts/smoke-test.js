@@ -135,6 +135,21 @@ function check(name, cond, extra) {
     const oUp = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'x.pdf', data: pdf.toString('base64') }, other.data.token);
     check("other doctor can't attach to this record", oUp.status === 404, oUp);
   }
+  // ---- admin adds a report on behalf of a doctor ----
+  const aRec = await call('POST', `/api/admin/patients/${pid}/records`, { doctorId: newDoc.data.id, diagnosis: 'From lab', notes: 'Results received by email', prescription: '' }, A);
+  check('admin adds report', aRec.status === 200 && aRec.data.enteredByName, aRec);
+  const aNoDoc = await call('POST', `/api/admin/patients/${pid}/records`, { notes: 'x' }, A);
+  check('admin report needs a doctor', aNoDoc.status === 400, aNoDoc);
+  const aUp = await call('POST', `/api/admin/records/${aRec.data.id}/files`, { filename: 'results.pdf', data: pdf.toString('base64') }, A);
+  check('admin attaches file', aUp.status === 200, aUp);
+  const sAdd = await call('POST', `/api/admin/patients/${pid}/records`, { doctorId: newDoc.data.id, notes: 'x' }, S);
+  check('front-desk staff cannot add reports', sAdd.status === 403, sAdd);
+  const docSees = await call('GET', `/api/doctors/me/patients/${pid}/records`, null, D);
+  const seen = docSees.data.find(r => r.id === aRec.data.id);
+  check('doctor sees admin report + file', seen && seen.enteredByName && seen.files.length === 1, seen);
+  const aRm = await call('DELETE', `/api/admin/files/${aUp.data.id}`, null, A);
+  check('admin removes file', aRm.status === 200, aRm);
+
   const rm = await call('DELETE', `/api/doctors/me/files/${up.data.id}`, null, D);
   check('uploader removes file', rm.status === 200, rm);
 
@@ -175,7 +190,7 @@ function check(name, cond, extra) {
   const docGone = await call('POST', '/api/login', { email: docEmail, password: 'NewDoctor123!' });
   check('deleted doctor cannot log in', docGone.status === 401, docGone);
   const histKept = await call('GET', `/api/admin/patients/${me.id}`, null, A);
-  check('history kept after doctor delete', histKept.data.records.length === 1, histKept);
+  check('history kept after doctor delete', histKept.data.records.length === 2, histKept);
   const delDept = await call('DELETE', `/api/admin/departments/${newDept.data.id}`, null, A);
   check('delete empty department', delDept.status === 200, delDept);
 

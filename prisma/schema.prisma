@@ -57,7 +57,7 @@ model Doctor {
 
 model Staff {
   id                 String   @id
-  role               String   @default("staff") // "admin" | "staff"
+  role               String   @default("staff") // Role.id (e.g. "admin", "reception"); always set explicitly
   name               String
   email              String   @unique
   passwordHash       String
@@ -70,6 +70,9 @@ model Patient {
   name         String
   email        String          @unique
   phone        String          @default("")
+  // Patient ID: the phone number in one standard form (digits incl. country
+  // code, e.g. 971501234567). Unique, so one phone = one patient.
+  phoneKey     String?         @unique
   dob          String          @default("")
   gender       String          @default("")
   passwordHash String
@@ -158,4 +161,14 @@ model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// Staff roles and what they may do (admin-editable). "admin" always has
+// every permission and can't be edited.
+model Role {
+  id          String   @id
+  name        String
+  permissions String   @default("") // comma-separated permission keys
+  builtIn     Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }

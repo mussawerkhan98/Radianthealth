@@ -50,9 +50,12 @@
         </div>
 
         <div id="tab-docs" style="display:none;">
+         <div id="docsMain">
           <h2>Doctors</h2>
+          <p>Click <strong>Manage</strong> on a doctor to see their calendar, set working hours, and edit their login.</p>
           <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
             <h4>Add a Doctor</h4>
+            <p style="font-size:0.88rem; color:var(--ink-soft);">This creates the doctor's own login to the Doctor Portal (their schedule, patients, and notes). Use their clinic email — booking invites are sent there.</p>
             <div id="docAlert" class="alert"></div>
             <form id="docForm">
               <div class="form-group">
@@ -87,6 +90,82 @@
             </form>
           </div>
           <div id="docList"><div class="empty-state">Loading…</div></div>
+         </div>
+
+         <!-- Manage one doctor: calendar, hours, profile & login -->
+         <div id="docManage" style="display:none;">
+          <button class="btn btn-outline" id="docBack" style="margin-bottom:1.2rem; padding:0.4rem 0.9rem; font-size:0.8rem;">&larr; Back to all doctors</button>
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+            <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+              <div id="dmAvatar"></div>
+              <div style="flex:1; min-width:200px;">
+                <h3 id="dmName" style="margin:0;"></h3>
+                <p id="dmMeta" style="margin:0.2rem 0 0; color:var(--ink-soft); font-size:0.9rem;"></p>
+              </div>
+            </div>
+            <div class="doc-stats" id="dmStats"></div>
+          </div>
+
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+            <h4 style="margin-top:0;">Calendar</h4>
+            <div class="cal-toolbar">
+              <span class="cal-range" id="calRange"></span>
+              <button class="btn btn-outline" id="calPrev" style="padding:0.35rem 0.8rem; font-size:0.8rem;" aria-label="Previous week">&larr; Prev</button>
+              <button class="btn btn-outline" id="calToday" style="padding:0.35rem 0.8rem; font-size:0.8rem;">This week</button>
+              <button class="btn btn-outline" id="calNext" style="padding:0.35rem 0.8rem; font-size:0.8rem;" aria-label="Next week">Next &rarr;</button>
+            </div>
+            <div class="cal-legend"><span class="lg-booked">Booked</span><span class="lg-free">Free</span><span class="lg-past">Past</span></div>
+            <div id="calDetail"></div>
+            <div id="calDays"><div class="empty-state">Loading…</div></div>
+          </div>
+
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+            <h4 style="margin-top:0;">Working Hours</h4>
+            <p style="font-size:0.85rem; color:var(--ink-soft);">Patients can only book inside these hours. Existing bookings are kept if you change them.</p>
+            <div id="hoursAlert" class="alert"></div>
+            <form id="hoursForm">
+              <div class="form-group">
+                <label>Working days</label>
+                <div class="day-checks" id="dmDays"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label for="dmStart">Starts</label><input type="time" id="dmStart" required step="300"></div>
+                <div class="form-group"><label for="dmEnd">Finishes</label><input type="time" id="dmEnd" required step="300"></div>
+                <div class="form-group"><label for="dmSlot">Appointment length</label>
+                  <select id="dmSlot">
+                    <option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option>
+                    <option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option>
+                  </select></div>
+              </div>
+              <button type="submit" class="btn btn-primary">Save Hours</button>
+            </form>
+          </div>
+
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+            <h4 style="margin-top:0;">Profile &amp; Login</h4>
+            <div id="profileAlert" class="alert"></div>
+            <form id="profileForm">
+              <div class="form-row">
+                <div class="form-group"><label for="dmNameIn">Full name</label><input type="text" id="dmNameIn" required></div>
+                <div class="form-group"><label for="dmSpecIn">Specialty</label><input type="text" id="dmSpecIn"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label for="dmDeptIn">Department</label><select id="dmDeptIn"></select></div>
+                <div class="form-group"><label for="dmEmailIn">Login email (booking invites go here)</label><input type="email" id="dmEmailIn" required></div>
+              </div>
+              <div class="form-group"><label for="dmBioIn">Short bio</label><textarea id="dmBioIn"></textarea></div>
+              <button type="submit" class="btn btn-primary">Save Profile</button>
+            </form>
+            <hr style="border:0; border-top:1px solid var(--border); margin:1.6rem 0 1.2rem;">
+            <h4 style="margin-top:0;">Reset Password</h4>
+            <p style="font-size:0.85rem; color:var(--ink-soft);">Sets a temporary password. The doctor will be asked to choose a new one when they next log in.</p>
+            <div id="pwAlert" class="alert"></div>
+            <form id="pwForm" style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:flex-end;">
+              <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;"><label for="dmPw">Temporary password</label><input type="text" id="dmPw" required minlength="8" autocomplete="off"></div>
+              <button type="submit" class="btn btn-outline">Reset Password</button>
+            </form>
+          </div>
+         </div>
         </div>
 
         <div id="tab-team" style="display:none;">
@@ -312,6 +391,7 @@
       tabNames.forEach(name => {
         document.getElementById('tab-' + name).style.display = (name === tab.dataset.tab) ? 'block' : 'none';
       });
+      if (tab.dataset.tab === 'docs') closeDoctorManage();
       if (tab.dataset.tab === 'appointments') loadAppointments();
       if (tab.dataset.tab === 'patients') loadPatients();
       if (tab.dataset.tab === 'staffAccounts') loadStaffAccounts();
@@ -359,7 +439,8 @@
               <span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:0.6rem;">
+          <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+            <button class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-manage-doctor="${d.id}">Manage</button>
             <label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
               Photo
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" data-doctor-photo="${d.id}">
@@ -379,6 +460,10 @@
           await loadDoctors();
         } catch (err) { alert(err.message); }
       });
+    });
+
+    document.querySelectorAll('[data-manage-doctor]').forEach(btn => {
+      btn.addEventListener('click', () => openDoctorManage(btn.dataset.manageDoctor));
     });
 
     document.querySelectorAll('[data-delete-doctor]').forEach(btn => {
@@ -609,6 +694,179 @@
     document.getElementById('arDate').value = '';
     document.getElementById('patientDetail').style.display = 'none';
     document.getElementById('patientsList').style.display = 'block';
+  });
+
+  // ---------- Manage doctor: calendar, hours, profile & login ----------
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  let dm = { id: null, weekStart: null, doctor: null, calendar: null };
+
+  const isoDay = d => d.toISOString().slice(0, 10);
+  const addDays = (iso, n) => isoDay(new Date(Date.parse(iso + 'T00:00:00Z') + n * 864e5));
+  function mondayOf(iso) { const dow = new Date(iso + 'T00:00:00Z').getUTCDay(); return addDays(iso, dow === 0 ? -6 : 1 - dow); }
+  function fmtDay(iso, opts) { return new Date(iso + 'T00:00:00Z').toLocaleDateString(undefined, Object.assign({ timeZone: 'UTC' }, opts)); }
+
+  function closeDoctorManage() {
+    document.getElementById('docManage').style.display = 'none';
+    document.getElementById('docsMain').style.display = 'block';
+    dm.id = null;
+  }
+  document.getElementById('docBack').addEventListener('click', () => { closeDoctorManage(); loadDoctors(); });
+
+  async function openDoctorManage(id) {
+    dm = { id, weekStart: null, doctor: null, calendar: null };
+    document.getElementById('docsMain').style.display = 'none';
+    document.getElementById('docManage').style.display = 'block';
+    ['hoursAlert', 'profileAlert', 'pwAlert'].forEach(a => hideAlert(document.getElementById(a)));
+    document.getElementById('calDetail').innerHTML = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      await loadDoctorProfile();
+      dm.weekStart = mondayOf(new Date().toISOString().slice(0, 10));
+      await loadDoctorCalendar();
+    } catch (err) { alert(err.message); closeDoctorManage(); }
+  }
+
+  async function loadDoctorProfile() {
+    const d = await API.get(`/api/admin/doctors/${dm.id}`);
+    dm.doctor = d;
+    document.getElementById('dmAvatar').innerHTML = avatarHtml(d);
+    document.getElementById('dmName').textContent = d.name;
+    document.getElementById('dmMeta').textContent = [d.specialty, d.departmentName, d.email].filter(Boolean).join(' · ');
+    document.getElementById('dmStats').innerHTML =
+      `<div><b>${d.stats.upcoming}</b>upcoming appointments</div><div><b>${d.stats.patients}</b>patients</div><div><b>${d.stats.records}</b>notes written</div>` +
+      (d.mustChangePassword ? '<div style="color:var(--amber-deep);">Hasn\'t set their own password yet</div>' : '');
+    // hours form
+    document.getElementById('dmDays').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(n =>
+      `<label><input type="checkbox" value="${n}" ${d.workingDays.includes(n) ? 'checked' : ''}> ${DAY_NAMES[n]}</label>`).join('');
+    document.getElementById('dmStart').value = d.workingHours.start;
+    document.getElementById('dmEnd').value = d.workingHours.end;
+    const slotSel = document.getElementById('dmSlot');
+    if (![...slotSel.options].some(o => Number(o.value) === d.workingHours.slotMinutes)) {
+      slotSel.insertAdjacentHTML('beforeend', `<option value="${d.workingHours.slotMinutes}">${d.workingHours.slotMinutes} minutes</option>`);
+    }
+    slotSel.value = String(d.workingHours.slotMinutes);
+    // profile form
+    document.getElementById('dmNameIn').value = d.name;
+    document.getElementById('dmSpecIn').value = d.specialty || '';
+    document.getElementById('dmEmailIn').value = d.email;
+    document.getElementById('dmBioIn').value = d.bio || '';
+    document.getElementById('dmDeptIn').innerHTML = departments.map(x => `<option value="${x.id}" ${x.id === d.departmentId ? 'selected' : ''}>${escAttr(x.name)}</option>`).join('');
+  }
+
+  async function loadDoctorCalendar() {
+    const el = document.getElementById('calDays');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    const cal = await API.get(`/api/admin/doctors/${dm.id}/calendar?start=${dm.weekStart}&days=7`);
+    dm.calendar = cal;
+    const end = addDays(dm.weekStart, 6);
+    document.getElementById('calRange').textContent =
+      `${fmtDay(dm.weekStart, { day: 'numeric', month: 'short' })} – ${fmtDay(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    const chip = (s, date) => {
+      if (s.status === 'booked') {
+        const a = s.appointment;
+        return `<button type="button" class="cal-chip booked" data-appt="${a.id}" data-date="${date}" title="${escAttr(a.patient ? a.patient.name : '')}">${fmtTime(s.time)}<small>${escAttr(a.patient ? a.patient.name : 'Booked')}</small></button>`;
+      }
+      return `<div class="cal-chip ${s.status}">${fmtTime(s.time)}<small>${s.status === 'free' ? 'Free' : '—'}</small></div>`;
+    };
+    el.innerHTML = cal.days.map(day => {
+      const booked = day.slots.filter(s => s.status === 'booked').length + day.outside.length;
+      const free = day.slots.filter(s => s.status === 'free').length;
+      const extra = day.outside.map(a => `<button type="button" class="cal-chip outside" data-appt="${a.id}" data-date="${day.date}" title="Booked outside current working hours">${fmtTime(a.time)}<small>${escAttr(a.patient ? a.patient.name : 'Booked')}</small></button>`).join('');
+      return `<div class="cal-day ${day.date === cal.today ? 'today' : ''}">
+        <div class="cal-day-head"><strong>${fmtDay(day.date, { weekday: 'long', day: 'numeric', month: 'short' })}${day.date === cal.today ? ' · Today' : ''}</strong>
+          <span>${day.working || day.outside.length ? `${booked} booked · ${free} free` : ''}${day.cancelled.length ? ` · ${day.cancelled.length} cancelled` : ''}</span></div>
+        ${day.working || day.outside.length ? `<div class="cal-slots">${day.slots.map(s => chip(s, day.date)).join('')}${extra}</div>` : '<div class="cal-off">Day off</div>'}
+      </div>`;
+    }).join('');
+    el.querySelectorAll('[data-appt]').forEach(b => b.addEventListener('click', () => showApptDetail(b.dataset.appt, b.dataset.date)));
+  }
+
+  function showApptDetail(apptId, date) {
+    const day = dm.calendar.days.find(d => d.date === date);
+    const a = [...day.slots.filter(s => s.appointment).map(s => s.appointment), ...day.outside].find(x => x.id === apptId);
+    if (!a) return;
+    const p = a.patient || {};
+    const box = document.getElementById('calDetail');
+    box.innerHTML = `<div class="cal-detail">
+      <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:1.05rem;">${escAttr(p.name || 'Patient')}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}<br>
+          <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(date)} at ${fmtTime(a.time)}</span>
+          <p style="margin:0.5rem 0 0; font-size:0.9rem;">${p.phone ? escAttr(p.phone) + ' · ' : ''}${escAttr(p.email || '')}</p>
+          ${a.reason ? `<p style="margin:0.4rem 0 0; font-size:0.9rem;"><strong>Reason:</strong> ${escAttr(a.reason)}</p>` : ''}
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:flex-start; flex-wrap:wrap;">
+          ${p.id ? `<button type="button" class="btn btn-outline" id="calOpenPatient" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Patient report</button>` : ''}
+          <button type="button" class="btn btn-danger" id="calCancelAppt" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Cancel appointment</button>
+          <button type="button" class="btn btn-outline" id="calCloseDetail" style="padding:0.4rem 0.9rem; font-size:0.8rem;" aria-label="Close details">Close</button>
+        </div>
+      </div></div>`;
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById('calCloseDetail').addEventListener('click', () => { box.innerHTML = ''; });
+    document.getElementById('calCancelAppt').addEventListener('click', async () => {
+      if (!confirm(`Cancel ${p.name || 'this patient'}'s appointment on ${fmtDate(date)} at ${fmtTime(a.time)}? The patient and doctor will be notified.`)) return;
+      try {
+        await API.post(`/api/admin/appointments/${a.id}/cancel`, {});
+        box.innerHTML = '';
+        await Promise.all([loadDoctorCalendar(), loadDoctorProfile()]);
+      } catch (err) { alert(err.message); }
+    });
+    const openBtn = document.getElementById('calOpenPatient');
+    if (openBtn) openBtn.addEventListener('click', () => {
+      document.querySelector('[data-tab="patients"]').click();
+      setTimeout(() => openPatientReport(p.id), 50);
+    });
+  }
+
+  document.getElementById('calPrev').addEventListener('click', () => { dm.weekStart = addDays(dm.weekStart, -7); document.getElementById('calDetail').innerHTML = ''; loadDoctorCalendar(); });
+  document.getElementById('calNext').addEventListener('click', () => { dm.weekStart = addDays(dm.weekStart, 7); document.getElementById('calDetail').innerHTML = ''; loadDoctorCalendar(); });
+  document.getElementById('calToday').addEventListener('click', () => { dm.weekStart = mondayOf(new Date().toISOString().slice(0, 10)); document.getElementById('calDetail').innerHTML = ''; loadDoctorCalendar(); });
+
+  document.getElementById('hoursForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('hoursAlert');
+    hideAlert(alertEl);
+    const days = [...document.querySelectorAll('#dmDays input:checked')].map(i => Number(i.value));
+    const start = document.getElementById('dmStart').value, end = document.getElementById('dmEnd').value;
+    if (!days.length) return showAlert(alertEl, 'Pick at least one working day.', 'error');
+    if (start >= end) return showAlert(alertEl, 'Finishing time must be after the starting time.', 'error');
+    try {
+      await API.patch(`/api/admin/doctors/${dm.id}`, { workingDays: days, workingHours: { start, end, slotMinutes: Number(document.getElementById('dmSlot').value) } });
+      showAlert(alertEl, 'Working hours saved. The booking page now uses these times.', 'success');
+      await Promise.all([loadDoctorProfile(), loadDoctorCalendar()]);
+    } catch (err) { showAlert(alertEl, err.message, 'error'); }
+  });
+
+  document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('profileAlert');
+    hideAlert(alertEl);
+    try {
+      await API.patch(`/api/admin/doctors/${dm.id}`, {
+        name: document.getElementById('dmNameIn').value.trim(),
+        specialty: document.getElementById('dmSpecIn').value.trim(),
+        departmentId: document.getElementById('dmDeptIn').value,
+        email: document.getElementById('dmEmailIn').value.trim(),
+        bio: document.getElementById('dmBioIn').value
+      });
+      showAlert(alertEl, 'Profile saved.', 'success');
+      await loadDoctorProfile();
+      loadDepartments();
+    } catch (err) { showAlert(alertEl, err.message, 'error'); }
+  });
+
+  document.getElementById('pwForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('pwAlert');
+    hideAlert(alertEl);
+    const pw = document.getElementById('dmPw').value;
+    if (pw.length < 8) return showAlert(alertEl, 'Temporary password must be at least 8 characters.', 'error');
+    try {
+      await API.post(`/api/admin/doctors/${dm.id}/reset-password`, { password: pw });
+      document.getElementById('dmPw').value = '';
+      showAlert(alertEl, `Password reset. Share it with ${dm.doctor.name} directly — they'll choose a new one at next login.`, 'success');
+      loadDoctorProfile();
+    } catch (err) { showAlert(alertEl, err.message, 'error'); }
   });
 
   let currentNotifyEmails = [];

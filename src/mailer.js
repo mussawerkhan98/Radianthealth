@@ -38,7 +38,7 @@ async function send({ to, subject, text }, { throwOnError = false } = {}) {
   }
 }
 
-async function notifyBooking({ appointment, doctor, patient, departmentName, skipPatient = false }) {
+async function notifyBooking({ appointment, doctor, patient, departmentName, skipPatient = false, skipDoctor = false }) {
   const cfg = await transport().catch(() => null);
   if (!cfg) return;
   const when = `${appointment.date} at ${appointment.time}`;
@@ -49,7 +49,7 @@ async function notifyBooking({ appointment, doctor, patient, departmentName, ski
     `When: ${when}\n` +
     (appointment.reason ? `Reason: ${appointment.reason}\n` : '');
   await Promise.all([
-    send({ to: [doctor.email, ...cfg.notifyEmails], subject: `New appointment: ${patient.name} — ${when}`, text: staffText }),
+    send({ to: [skipDoctor ? null : doctor.email, ...cfg.notifyEmails], subject: `New appointment: ${patient.name} — ${when}`, text: staffText }),
     skipPatient ? Promise.resolve() : send({
       to: patient.email,
       subject: 'Your appointment at Radiant Health Alliance is confirmed',
@@ -58,12 +58,12 @@ async function notifyBooking({ appointment, doctor, patient, departmentName, ski
   ]);
 }
 
-async function notifyCancellation({ appointment, doctor, patient, by }) {
+async function notifyCancellation({ appointment, doctor, patient, by, skipDoctor = false }) {
   const cfg = await transport().catch(() => null);
   if (!cfg) return;
   const when = `${appointment.date} at ${appointment.time}`;
   await Promise.all([
-    send({ to: [doctor.email, ...cfg.notifyEmails], subject: `Cancelled: ${patient.name} — ${when}`, text: `The appointment for ${patient.name} with ${doctor.name} on ${when} was cancelled by ${by}.` }),
+    send({ to: [skipDoctor ? null : doctor.email, ...cfg.notifyEmails], subject: `Cancelled: ${patient.name} — ${when}`, text: `The appointment for ${patient.name} with ${doctor.name} on ${when} was cancelled by ${by}.` }),
     by !== 'the patient'
       ? send({ to: patient.email, subject: 'Your appointment was cancelled', text: `Hello ${patient.name},\n\nYour appointment with ${doctor.name} on ${when} has been cancelled by the clinic. Please book a new time or contact us.\n\nRadiant Health Alliance` })
       : Promise.resolve()

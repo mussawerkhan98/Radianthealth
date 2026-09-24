@@ -544,9 +544,12 @@ async function createBooking({ patient, doctorId, date, time, reason, honeypot }
     });
     emailSent = r.autoReply;
   }
-  // SMTP (if configured in Admin → Settings) still notifies the doctor and
-  // extra addresses; the patient email is skipped when Brevo already sent one.
-  await mailer.notifyBooking({ appointment: appt, doctor, patient, departmentName, skipPatient: emailSent })
+  // Doctor gets a calendar invite (.ics) for the appointment.
+  const doctorInvited = await brevo.sendDoctorInvite({ kind: 'booked', appointment: appt, doctor, patient, departmentName })
+    .catch(err => { console.error('doctor invite:', err.message); return false; });
+  // SMTP (if configured in Admin → Settings) notifies extra addresses; the
+  // patient/doctor are skipped when Brevo already emailed them.
+  await mailer.notifyBooking({ appointment: appt, doctor, patient, departmentName, skipPatient: emailSent, skipDoctor: doctorInvited })
     .catch(err => console.error('notifyBooking:', err.message));
   return { ...apptOut(appt), emailSent };
 }
@@ -639,11 +642,16 @@ app.get('/api/patients/me/appointments', auth(['patient']), wrap(async (req, res
 }));
 
 async function cancelAppointment(where, by) {
-  const appt = await prisma.appointment.findFirst({ where, include: { doctor: true, patient: true } });
+  const appt = await prisma.appointment.findFirst({ where, include: { doctor: { include: { department: true } }, patient: true } });
   if (!appt) throw new HttpError(404, 'Appointment not found.');
   if (appt.status === 'cancelled') return appt;
   const updated = await prisma.appointment.update({ where: { id: appt.id }, data: { status: 'cancelled' } });
-  await mailer.notifyCancellation({ appointment: appt, doctor: appt.doctor, patient: appt.patient, by })
+  // Removes the event from the doctor's calendar.
+  const doctorNotified = await brevo.sendDoctorInvite({
+    kind: 'cancelled', appointment: appt, doctor: appt.doctor, patient: appt.patient,
+    departmentName: appt.doctor.department && appt.doctor.department.name
+  }).catch(err => { console.error('doctor cancellation:', err.message); return false; });
+  await mailer.notifyCancellation({ appointment: appt, doctor: appt.doctor, patient: appt.patient, by, skipDoctor: doctorNotified })
     .catch(err => console.error('notifyCancellation:', err.message));
   return updated;
 }

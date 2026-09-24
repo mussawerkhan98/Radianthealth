@@ -23,7 +23,7 @@
 <section class="section">
   <div class="container">
     <div class="card form-card" style="padding:2rem;">
-      <div id="loginNotice" class="alert alert-error"></div>
+      <p id="loginNotice" style="font-size:0.9rem; color:var(--ink-soft); margin-bottom:1.2rem;"></p>
 
       <div class="form-group">
         <label for="deptSelect">Department</label>
@@ -48,6 +48,22 @@
       <div class="form-group">
         <label for="reasonInput">Reason for visit (optional)</label>
         <textarea id="reasonInput" placeholder="e.g. Annual check-up, follow-up, new symptoms…"></textarea>
+      </div>
+
+      <!-- Your details: shown only when not logged in (guest booking, no account needed). -->
+      <div id="guestFields" style="display:none;">
+        <div class="form-group">
+          <label for="guestName">Full name</label>
+          <input type="text" id="guestName" autocomplete="name" maxlength="120" required>
+        </div>
+        <div class="form-group">
+          <label for="guestEmail">Email</label>
+          <input type="email" id="guestEmail" autocomplete="email" maxlength="254" required placeholder="We'll email your confirmation here">
+        </div>
+        <div class="form-group">
+          <label for="guestPhone">Phone</label>
+          <input type="tel" id="guestPhone" autocomplete="tel" maxlength="40" required placeholder="+971 5x xxx xxxx">
+        </div>
       </div>
 
       <!-- Honeypot: hidden from people, bots tend to fill it in. -->
@@ -84,14 +100,19 @@
   dateInput.min = today;
   dateInput.value = today;
 
-  function checkLogin() {
+  const guestFields = document.getElementById('guestFields');
+  function isPatient() {
     const user = API.user();
-    if (!user || user.role !== 'patient') {
-      showAlert(loginNotice, 'You will need to log in or create a free account to confirm your booking — you can browse times first.', 'error');
-      return false;
+    return !!(user && user.role === 'patient');
+  }
+  function setupMode() {
+    if (isPatient()) {
+      guestFields.style.display = 'none';
+      loginNotice.textContent = 'Booking as ' + API.user().name + '. Your appointments appear in your dashboard.';
+    } else {
+      guestFields.style.display = 'block';
+      loginNotice.innerHTML = 'No account needed — just add your details below. Already have an account? <a href="login.html?next=book.html">Log in</a>.';
     }
-    hideAlert(loginNotice);
-    return true;
   }
 
   async function loadDoctorsForDept(deptId, keepSelection) {
@@ -140,25 +161,41 @@
 
   confirmBtn.addEventListener('click', async () => {
     hideAlert(formAlert);
-    if (!checkLogin()) {
-      window.location.href = `login.html?next=book.html&doctor=${doctorSelect.value}`;
-      return;
+    const patient = isPatient();
+    let url = '/api/appointments';
+    const body = {
+      doctorId: doctorSelect.value,
+      date: dateInput.value,
+      time: selectedSlot,
+      reason: document.getElementById('reasonInput').value,
+      website: document.getElementById('websiteInput').value
+    };
+    if (!patient) {
+      const name = document.getElementById('guestName').value.trim();
+      const email = document.getElementById('guestEmail').value.trim();
+      const phone = document.getElementById('guestPhone').value.trim();
+      if (!name) return showAlert(formAlert, 'Please enter your full name.', 'error');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showAlert(formAlert, 'Please enter a valid email address.', 'error');
+      if (phone.replace(/\D/g, '').length < 7) return showAlert(formAlert, 'Please enter your phone number.', 'error');
+      Object.assign(body, { name, email, phone });
+      url = '/api/appointments/guest';
     }
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<span class="spinner"></span> Booking…';
     try {
-      const result = await API.post('/api/appointments', {
-        doctorId: doctorSelect.value,
-        date: dateInput.value,
-        time: selectedSlot,
-        reason: document.getElementById('reasonInput').value,
-        website: document.getElementById('websiteInput').value
-      });
+      const result = await API.post(url, body);
       confirmBtn.textContent = 'Booked';
-      showAlert(formAlert, result && result.emailSent
-        ? "Thanks! We've emailed you a confirmation."
-        : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)', 'success');
-      setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
+      const emailed = result && result.emailSent;
+      if (patient) {
+        showAlert(formAlert, emailed
+          ? "Thanks! We've emailed you a confirmation."
+          : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)', 'success');
+        setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
+      } else {
+        showAlert(formAlert, emailed
+          ? "Thanks! We've emailed you a confirmation."
+          : 'Appointment confirmed! We could not send the confirmation email right now — please note your time, and call us if you need to change it.', 'success');
+      }
     } catch (e) {
       showAlert(formAlert, e.message, 'error');
       confirmBtn.disabled = false;
@@ -168,7 +205,7 @@
   });
 
   (async function () {
-    checkLogin();
+    setupMode();
     departments = await API.get('/api/departments');
     deptSelect.innerHTML = '<option value="">Choose a department…</option>' +
       departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');

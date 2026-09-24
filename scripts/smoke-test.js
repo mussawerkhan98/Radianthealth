@@ -158,6 +158,8 @@ function check(name, cond, extra) {
   check('second booking reuses the same patient', rBook2.status === 200 && rBook2.data.patient.id === rBook.data.patient.id && rBook2.data.patient.email === `walkin.${stamp}@example.com`, rBook2);
   const edit = await call('PATCH', `/api/admin/patients/${rBook.data.patient.id}`, { phone: '0500000000' }, S);
   check("can't take another patient's phone", edit.status === 409, edit);
+  const vNo = await call('POST', '/api/admin/appointments', { phone: newPhone, name: 'Walk In', doctorId: newDoc.data.id, date: tomorrow, time: slotsR.data.available[3], visitType: 'video' }, S);
+  check('video booking refused when video is off or doctor has no video', vNo.status === 400, vNo);
   const pBook = await call('POST', '/api/admin/appointments', { phone: newPhone, name: 'x', doctorId: newDoc.data.id, date: tomorrow, time: slotsR.data.available[3] }, P);
   check('patients cannot use reception booking', pBook.status === 403, pBook);
   await call('POST', `/api/admin/appointments/${rBook.data.id}/cancel`, {}, S);

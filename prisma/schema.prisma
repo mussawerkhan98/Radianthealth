@@ -107,6 +107,9 @@ model MedicalRecord {
   diagnosis    String   @default("")
   notes        String
   prescription String   @default("")
+  // Who typed it in, when that isn't the doctor (e.g. admin entering a report).
+  enteredById   String  @default("")
+  enteredByName String  @default("")
   createdAt    DateTime @default(now())
   files        RecordFile[]
 

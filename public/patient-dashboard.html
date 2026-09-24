@@ -17,7 +17,8 @@
     <div class="dash-layout">
       <aside class="dash-sidebar">
         <p style="font-weight:800; margin-bottom:0.2rem;" id="welcomeName">Welcome</p>
-        <p style="font-size:0.82rem; margin-bottom:1.2rem;">Patient Portal</p>
+        <p style="font-size:0.82rem; margin-bottom:0.3rem;">Patient Portal</p>
+        <p style="font-size:0.82rem; margin-bottom:1.2rem;" id="patientIdLine"></p>
         <a href="#" class="active" data-tab="upcoming">Upcoming Appointments</a>
         <a href="#" data-tab="past">Past Appointments</a>
         <a href="#" data-tab="history">Medical History</a>
@@ -139,6 +140,10 @@
   }
 
   document.getElementById('welcomeName').textContent = 'Welcome, ' + (user ? user.name.split(' ')[0] : '');
+  API.get('/api/patients/me').then(me => {
+    const el = document.getElementById('patientIdLine');
+    el.innerHTML = me.patientId ? `Patient ID: <strong>${me.patientId}</strong>` : '';
+  }).catch(() => {});
   loadAppointments();
   loadHistory();
 </script>

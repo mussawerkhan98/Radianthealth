@@ -61,8 +61,9 @@
           <input type="email" id="guestEmail" autocomplete="email" maxlength="254" required placeholder="We'll email your confirmation here">
         </div>
         <div class="form-group">
-          <label for="guestPhone">Phone</label>
-          <input type="tel" id="guestPhone" autocomplete="tel" maxlength="40" required placeholder="+971 5x xxx xxxx">
+          <label for="guestPhone">Mobile number</label>
+          <input type="tel" id="guestPhone" autocomplete="tel" maxlength="40" required placeholder="050 123 4567">
+          <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:0.35rem;">This becomes your Patient ID — use the same number each time you book.</p>
         </div>
       </div>
 
@@ -192,9 +193,10 @@
           : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)', 'success');
         setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
       } else {
-        showAlert(formAlert, emailed
+        const idNote = result && result.patientId ? ` Your Patient ID is ${result.patientId} (your mobile number).` : '';
+        showAlert(formAlert, (emailed
           ? "Thanks! We've emailed you a confirmation."
-          : 'Appointment confirmed! We could not send the confirmation email right now — please note your time, and call us if you need to change it.', 'success');
+          : 'Appointment confirmed! We could not send the confirmation email right now — please note your time, and call us if you need to change it.') + idNote, 'success');
       }
     } catch (e) {
       showAlert(formAlert, e.message, 'error');

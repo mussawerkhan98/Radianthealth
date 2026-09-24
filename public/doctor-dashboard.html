@@ -125,8 +125,8 @@
       const el = document.getElementById('patientsList');
       el.innerHTML = patients.length
         ? patients.map(p => `
-            <div class="list-item" style="cursor:pointer;" data-patient="${p.id}" data-name="${p.name}" data-meta="${p.email} ${p.phone ? '· ' + p.phone : ''}">
-              <div><strong>${p.name}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${p.email}</span></div>
+            <div class="list-item" style="cursor:pointer;" data-patient="${p.id}" data-name="${escHtml(p.name)}" data-meta="${escHtml([p.patientId ? 'Patient ID ' + p.patientId : '', p.email].filter(Boolean).join(' · '))}">
+              <div><strong>${escHtml(p.name)}</strong>${p.patientId ? ` <span class="badge">ID ${escHtml(p.patientId)}</span>` : ''}<br><span style="color:var(--ink-soft); font-size:0.85rem;">${escHtml([p.phone, p.email].filter(Boolean).join(' · '))}</span></div>
               <span class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;">View History</span>
             </div>
           `).join('')

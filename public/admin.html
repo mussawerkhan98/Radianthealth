@@ -16,15 +16,17 @@
   <div class="container">
     <div class="dash-layout">
       <aside class="dash-sidebar">
-        <p style="font-weight:800; margin-bottom:0.2rem;">Admin</p>
-        <p style="font-size:0.82rem; margin-bottom:1.2rem;">Directory Management</p>
-        <a href="#" class="active" data-tab="depts">Departments</a>
-        <a href="#" data-tab="docs">Doctors</a>
-        <a href="#" data-tab="team">Team &amp; Staff (Directory)</a>
-        <a href="#" data-tab="staffAccounts">Staff Logins</a>
-        <a href="#" data-tab="appointments">All Appointments</a>
-        <a href="#" data-tab="patients">Patient Reports</a>
-        <a href="#" data-tab="settings">Site Settings</a>
+        <p style="font-weight:800; margin-bottom:0.2rem;" id="dashTitle">Staff Portal</p>
+        <p style="font-size:0.82rem; margin-bottom:1.2rem;" id="dashSubtitle"></p>
+        <a href="#" data-tab="appointments" data-perm="appointments.view">Appointments</a>
+        <a href="#" data-tab="patients" data-perm="patients.view">Patients</a>
+        <a href="#" data-tab="docs" data-perm="doctors.view">Doctors</a>
+        <a href="#" data-tab="depts" data-perm="directory.manage">Departments</a>
+        <a href="#" data-tab="team" data-perm="directory.manage">Team Page</a>
+        <a href="#" data-tab="staffAccounts" data-perm="staff.manage">Staff Logins</a>
+        <a href="#" data-tab="roles" data-perm="staff.manage">Roles &amp; Permissions</a>
+        <a href="#" data-tab="settings" data-perm="settings.manage">Site Settings</a>
+        <div id="noAccess" style="display:none; font-size:0.85rem; color:var(--ink-soft); margin:0.6rem 0;">Your role has no sections yet. Ask an admin to give it permissions.</div>
         <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
       </aside>
 
@@ -52,8 +54,8 @@
         <div id="tab-docs" style="display:none;">
          <div id="docsMain">
           <h2>Doctors</h2>
-          <p>Click <strong>Manage</strong> on a doctor to see their calendar, set working hours, and edit their login.</p>
-          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
+          <p>Click <strong>Manage</strong> on a doctor to see their calendar<span data-perm="doctors.manage">, set working hours, and edit their login</span>.</p>
+          <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;" data-perm="doctors.manage">
             <h4>Add a Doctor</h4>
             <p style="font-size:0.88rem; color:var(--ink-soft);">This creates the doctor's own login to the Doctor Portal (their schedule, patients, and notes). Use their clinic email — booking invites are sent there.</p>
             <div id="docAlert" class="alert"></div>
@@ -119,7 +121,7 @@
             <div id="calDays"><div class="empty-state">Loading…</div></div>
           </div>
 
-          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;" data-perm="doctors.manage">
             <h4 style="margin-top:0;">Working Hours</h4>
             <p style="font-size:0.85rem; color:var(--ink-soft);">Patients can only book inside these hours. Existing bookings are kept if you change them.</p>
             <div id="hoursAlert" class="alert"></div>
@@ -141,7 +143,7 @@
             </form>
           </div>
 
-          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;" data-perm="doctors.manage">
             <h4 style="margin-top:0;">Profile &amp; Login</h4>
             <div id="profileAlert" class="alert"></div>
             <form id="profileForm">
@@ -199,7 +201,7 @@
 
         <div id="tab-staffAccounts" style="display:none;">
           <h2>Staff Logins</h2>
-          <p>Create an actual login for front-desk staff (they'll see all appointments, but not doctors' medical notes) or for another admin.</p>
+          <p>Create a login for each staff member and choose their role. What each role can do is set under <a href="#" data-goto-tab="roles">Roles &amp; Permissions</a>.</p>
           <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
             <h4>Add a Staff Login</h4>
             <div id="staffAlert" class="alert"></div>
@@ -213,11 +215,8 @@
                 <input type="email" id="staffEmail" required>
               </div>
               <div class="form-group">
-                <label for="staffRole">Access Level</label>
-                <select id="staffRole">
-                  <option value="staff">Staff (front desk — appointments only)</option>
-                  <option value="admin">Admin (full access)</option>
-                </select>
+                <label for="staffRole">Role</label>
+                <select id="staffRole" required></select>
               </div>
               <div class="form-group">
                 <label for="staffPassword">Temporary Password</label>
@@ -229,30 +228,91 @@
           <div id="staffList"><div class="empty-state">Loading…</div></div>
         </div>
 
+        <div id="tab-roles" style="display:none;">
+          <h2>Roles &amp; Permissions</h2>
+          <p>Tick what each role is allowed to do. Changes apply straight away to everyone with that role. The Admin role always has full access.</p>
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;">
+            <h4 style="margin-top:0;">Add a Role</h4>
+            <div id="roleAlert" class="alert"></div>
+            <form id="roleForm" style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:flex-end;">
+              <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;"><label for="roleName">Role name</label><input type="text" id="roleName" required maxlength="60" placeholder="e.g. Lab technician"></div>
+              <button type="submit" class="btn btn-primary">Add Role</button>
+            </form>
+          </div>
+          <div id="rolesList"><div class="empty-state">Loading…</div></div>
+        </div>
+
         <div id="tab-appointments" style="display:none;">
-          <h2>All Appointments</h2>
+          <h2>Appointments</h2>
           <p>Every booking across every doctor and department.</p>
-          <div class="form-group" style="max-width:220px;">
-            <label for="apptFilter">Show</label>
-            <select id="apptFilter">
-              <option value="upcoming">Upcoming only</option>
-              <option value="all">All appointments</option>
-            </select>
+
+          <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;" data-perm="appointments.book">
+            <h4 style="margin-top:0;">Book for a Patient</h4>
+            <p style="font-size:0.85rem; color:var(--ink-soft);">For phone calls and walk-ins. The mobile number is the Patient ID — enter it first to find an existing patient.</p>
+            <div id="rbAlert" class="alert"></div>
+            <form id="rbForm">
+              <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;"><label for="rbPhone">Mobile number (Patient ID)</label><input type="tel" id="rbPhone" required placeholder="050 123 4567" autocomplete="off"></div>
+                <button type="button" class="btn btn-outline" id="rbFind">Find patient</button>
+              </div>
+              <div id="rbFound" style="margin:0.8rem 0 0;"></div>
+              <div id="rbDetails" style="display:none; margin-top:0.8rem;">
+                <div class="form-row">
+                  <div class="form-group"><label for="rbName">Full name</label><input type="text" id="rbName" maxlength="120"></div>
+                  <div class="form-group"><label for="rbEmail">Email (optional — for the confirmation)</label><input type="email" id="rbEmail" maxlength="254"></div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group"><label for="rbDoctor">Doctor</label><select id="rbDoctor"></select></div>
+                  <div class="form-group"><label for="rbDate">Date</label><input type="date" id="rbDate"></div>
+                </div>
+                <div id="rbSlotsWrap" style="display:none;"><label>Available times</label><div class="slot-grid" id="rbSlots"></div></div>
+                <div class="form-group"><label for="rbReason">Reason (optional)</label><input type="text" id="rbReason" maxlength="500"></div>
+                <button type="submit" class="btn btn-primary" id="rbBookBtn" disabled>Book Appointment</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="form-row" style="align-items:end;">
+            <div class="form-group"><label for="apptSearch">Search</label><input type="search" id="apptSearch" placeholder="Name, Patient ID/phone or doctor"></div>
+            <div class="form-group">
+              <label for="apptFilter">Show</label>
+              <select id="apptFilter">
+                <option value="upcoming">Upcoming only</option>
+                <option value="today">Today</option>
+                <option value="all">All appointments</option>
+              </select>
+            </div>
           </div>
           <div id="apptList"><div class="empty-state">Loading…</div></div>
         </div>
 
         <div id="tab-patients" style="display:none;">
-          <h2>Patient Reports</h2>
-          <p>See every registered patient, and drill into their full appointment and medical history across all doctors.</p>
+          <h2>Patients</h2>
+          <p>Each patient's ID is their mobile number. Search by Patient ID, phone, name or email.</p>
+          <div class="form-group" style="max-width:420px;"><label for="patientSearch">Search patients</label><input type="search" id="patientSearch" placeholder="e.g. 050 123 4567, Aisha, aisha@…" autocomplete="off"></div>
           <div id="patientsList"><div class="empty-state">Loading…</div></div>
           <div id="patientDetail" style="display:none; margin-top:1.6rem;">
             <div class="card" style="padding:1.6rem;">
               <button class="btn btn-outline" id="backToPatientsList" style="margin-bottom:1.2rem; padding:0.4rem 0.9rem; font-size:0.8rem;">&larr; Back to all patients</button>
-              <h3 id="patientReportName"></h3>
+              <h3 id="patientReportName" style="margin-bottom:0.2rem;"></h3>
+              <p style="margin:0 0 0.3rem;"><span class="badge" id="patientReportId"></span></p>
               <p id="patientReportMeta"></p>
+              <div data-perm="patients.edit">
+                <button type="button" class="btn btn-outline" id="editPatientBtn" style="padding:0.35rem 0.8rem; font-size:0.8rem;">Edit contact details</button>
+                <div id="editPatientAlert" class="alert" style="margin-top:0.8rem;"></div>
+                <form id="editPatientForm" style="display:none; margin-top:0.8rem;">
+                  <div class="form-row">
+                    <div class="form-group"><label for="epName">Full name</label><input type="text" id="epName" required maxlength="120"></div>
+                    <div class="form-group"><label for="epPhone">Mobile (Patient ID)</label><input type="tel" id="epPhone" required></div>
+                    <div class="form-group"><label for="epEmail">Email</label><input type="email" id="epEmail"></div>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;">Save</button>
+                </form>
+              </div>
               <h4 style="margin-top:1.6rem;">Appointments</h4>
               <div id="patientReportAppts"></div>
+              <div id="recordsSection">
+              <div data-perm="records.write">
               <h4 style="margin-top:1.6rem;">Add a Report</h4>
               <div id="adminRecordAlert" class="alert"></div>
               <form id="adminRecordForm" class="card" style="padding:1.2rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
@@ -283,9 +343,11 @@
                 </div>
                 <button type="submit" class="btn btn-primary" id="arSaveBtn">Save Report</button>
               </form>
+              </div>
 
               <h4 style="margin-top:1.6rem;">Medical History</h4>
               <div id="patientReportRecords"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -373,7 +435,16 @@
 
 <script src="js/app.js"></script>
 <script>
-  const user = requireRole('admin');
+  const user = requireRole(['admin', 'staff']);
+  let ME = { permissions: [] };
+  const can = key => user && (user.role === 'admin' || (ME.permissions || []).includes(key));
+  // Hide anything marked data-perm="…" that this role can't do.
+  function applyPerms(root) {
+    (root || document).querySelectorAll('[data-perm]').forEach(el => {
+      if (el.matches('[data-tab]')) return;
+      el.style.display = can(el.dataset.perm) ? '' : 'none';
+    });
+  }
 
   document.getElementById('logoutLink').addEventListener('click', (e) => {
     e.preventDefault();
@@ -382,7 +453,7 @@
   });
 
   const tabs = document.querySelectorAll('[data-tab]');
-  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'appointments', 'patients', 'settings'];
+  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'roles', 'appointments', 'patients', 'settings'];
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       e.preventDefault();
@@ -395,9 +466,15 @@
       if (tab.dataset.tab === 'appointments') loadAppointments();
       if (tab.dataset.tab === 'patients') loadPatients();
       if (tab.dataset.tab === 'staffAccounts') loadStaffAccounts();
+      if (tab.dataset.tab === 'roles') loadRoles();
       if (tab.dataset.tab === 'settings') loadSettings();
     });
   });
+  document.querySelectorAll('[data-goto-tab]').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(`[data-tab="${a.dataset.gotoTab}"]`);
+    if (t) t.click();
+  }));
 
   let departments = [];
 
@@ -440,12 +517,12 @@
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
-            <button class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-manage-doctor="${d.id}">Manage</button>
-            <label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
+            <button class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-manage-doctor="${d.id}">${can('doctors.manage') ? 'Manage' : 'Calendar'}</button>
+            ${can('doctors.manage') ? `<label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
               Photo
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" data-doctor-photo="${d.id}">
             </label>
-            <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-delete-doctor="${d.id}">Delete</button>
+            <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-delete-doctor="${d.id}">Delete</button>` : ''}
           </div>
         </div>
       `;
@@ -504,97 +581,293 @@
     });
   }
 
+  let rolesCache = [];
+  async function fetchRoles() {
+    const data = await API.get('/api/admin/roles');
+    rolesCache = data.roles;
+    return data;
+  }
+  function roleOptions(selected) {
+    return rolesCache
+      .filter(r => r.id !== 'admin' || user.role === 'admin' || selected === 'admin')
+      .map(r => `<option value="${r.id}" ${r.id === selected ? 'selected' : ''}>${escAttr(r.name)}</option>`).join('');
+  }
+
   async function loadStaffAccounts() {
     const el = document.getElementById('staffList');
     el.innerHTML = '<div class="empty-state">Loading…</div>';
     try {
-      const accounts = await API.get('/api/admin/staff-accounts');
-      el.innerHTML = accounts.length ? accounts.map(a => `
-        <div class="list-item">
-          <div><strong>${a.name}</strong> — <span class="badge">${a.role}</span><br><span style="color:var(--ink-soft); font-size:0.85rem;">${a.email}</span></div>
-          ${a.email !== 'admin@radianthealthalliance.com' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-remove-staff="${a.id}">Remove</button>` : ''}
-        </div>
-      `).join('') : '<div class="empty-state">No staff accounts yet.</div>';
+      const [accounts] = await Promise.all([API.get('/api/admin/staff-accounts'), fetchRoles()]);
+      document.getElementById('staffRole').innerHTML = roleOptions('reception');
+      el.innerHTML = accounts.length ? accounts.map(a => {
+        const main = a.email === 'admin@radianthealthalliance.com';
+        const locked = main || a.id === user.id || (a.role === 'admin' && user.role !== 'admin');
+        return `
+        <div class="list-item" style="flex-wrap:wrap; gap:0.8rem;">
+          <div style="min-width:200px;"><strong>${escAttr(a.name)}</strong>${a.id === user.id ? ' <span class="badge">you</span>' : ''}${a.mustChangePassword ? ' <span class="badge" title="Hasn\'t set their own password yet">temp password</span>' : ''}<br>
+            <span style="color:var(--ink-soft); font-size:0.85rem;">${escAttr(a.email)}</span></div>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            ${locked ? `<span class="badge">${escAttr(a.roleName)}</span>` : `<select data-staff-role="${a.id}" aria-label="Role for ${escAttr(a.name)}" style="padding:0.35rem 0.5rem; font-size:0.85rem;">${roleOptions(a.role)}</select>`}
+            ${!main && !(a.role === 'admin' && user.role !== 'admin') ? `<button class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-reset-staff="${a.id}" data-name="${escAttr(a.name)}">Reset password</button>` : ''}
+            ${!locked ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-remove-staff="${a.id}">Remove</button>` : ''}
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty-state">No staff accounts yet.</div>';
 
-      document.querySelectorAll('[data-remove-staff]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Remove this login?')) return;
-          try {
-            await API.del(`/api/admin/staff-accounts/${btn.dataset.removeStaff}`);
-            loadStaffAccounts();
-          } catch (err) { alert(err.message); }
-        });
-      });
+      el.querySelectorAll('[data-staff-role]').forEach(sel => sel.addEventListener('change', async () => {
+        try { await API.patch(`/api/admin/staff-accounts/${sel.dataset.staffRole}`, { role: sel.value }); loadStaffAccounts(); }
+        catch (err) { alert(err.message); loadStaffAccounts(); }
+      }));
+      el.querySelectorAll('[data-reset-staff]').forEach(btn => btn.addEventListener('click', async () => {
+        const pw = prompt(`New temporary password for ${btn.dataset.name} (at least 8 characters). They'll choose their own at next login.`);
+        if (!pw) return;
+        try { await API.post(`/api/admin/staff-accounts/${btn.dataset.resetStaff}/reset-password`, { password: pw }); alert('Password reset. Share it with them directly.'); loadStaffAccounts(); }
+        catch (err) { alert(err.message); }
+      }));
+      el.querySelectorAll('[data-remove-staff]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('Remove this login? They will be logged out immediately.')) return;
+        try { await API.del(`/api/admin/staff-accounts/${btn.dataset.removeStaff}`); loadStaffAccounts(); }
+        catch (err) { alert(err.message); }
+      }));
     } catch (e) {
       el.innerHTML = '<div class="empty-state">Could not load staff accounts.</div>';
     }
   }
 
+  async function loadRoles() {
+    const el = document.getElementById('rolesList');
+    el.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const { permissions } = await fetchRoles();
+      const groups = [...new Set(permissions.map(p => p.group))];
+      el.innerHTML = rolesCache.map(r => `
+        <div class="card" style="padding:1.3rem 1.5rem; margin-bottom:1.1rem;" data-role-card="${r.id}">
+          <div style="display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap; margin-bottom:0.8rem;">
+            ${r.locked ? `<h4 style="margin:0;">${escAttr(r.name)}</h4>` : `<input type="text" value="${escAttr(r.name)}" data-role-name aria-label="Role name" style="font-weight:800; max-width:260px; padding:0.4rem 0.6rem;">`}
+            <span class="badge">${r.staffCount} login${r.staffCount === 1 ? '' : 's'}</span>
+            ${r.builtIn ? '' : '<span class="badge">custom</span>'}
+          </div>
+          ${r.locked ? '<p style="margin:0; color:var(--ink-soft); font-size:0.9rem;">Full access to everything. This role can\'t be changed.</p>' : `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0.4rem 1.4rem;">
+            ${groups.map(g => `<div><p style="font-weight:800; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft); margin:0.6rem 0 0.3rem;">${escAttr(g)}</p>
+              ${permissions.filter(p => p.group === g).map(p => `<label style="display:flex; gap:0.5rem; align-items:flex-start; font-size:0.9rem; margin:0.3rem 0; cursor:pointer;">
+                <input type="checkbox" value="${p.key}" ${r.permissions.includes(p.key) ? 'checked' : ''} style="width:auto; flex:0 0 auto; margin:0.2rem 0 0; accent-color:var(--blue);"> <span style="flex:1; text-align:left;">${escAttr(p.label)}</span></label>`).join('')}
+            </div>`).join('')}
+          </div>
+          <div style="display:flex; gap:0.6rem; margin-top:1rem; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn btn-primary" data-save-role style="padding:0.45rem 1rem; font-size:0.85rem;">Save</button>
+            ${r.builtIn ? '' : '<button type="button" class="btn btn-danger" data-delete-role style="padding:0.45rem 1rem; font-size:0.85rem;">Delete role</button>'}
+            <span data-role-msg style="font-size:0.85rem;"></span>
+          </div>`}
+        </div>`).join('');
+      el.querySelectorAll('[data-role-card]').forEach(card => {
+        const id = card.dataset.roleCard;
+        const msg = card.querySelector('[data-role-msg]');
+        const save = card.querySelector('[data-save-role]');
+        if (save) save.addEventListener('click', async () => {
+          const perms = [...card.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
+          const nameIn = card.querySelector('[data-role-name]');
+          try {
+            await API.patch(`/api/admin/roles/${id}`, { permissions: perms, ...(nameIn ? { name: nameIn.value } : {}) });
+            msg.style.color = 'var(--teal-deep)'; msg.textContent = 'Saved — applies straight away.';
+          } catch (err) { msg.style.color = 'var(--danger)'; msg.textContent = err.message; }
+        });
+        const del = card.querySelector('[data-delete-role]');
+        if (del) del.addEventListener('click', async () => {
+          if (!confirm('Delete this role?')) return;
+          try { await API.del(`/api/admin/roles/${id}`); loadRoles(); }
+          catch (err) { msg.style.color = 'var(--danger)'; msg.textContent = err.message; }
+        });
+      });
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state">Could not load roles.</div>';
+    }
+  }
+
+  document.getElementById('roleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('roleAlert');
+    hideAlert(alertEl);
+    try {
+      await API.post('/api/admin/roles', { name: document.getElementById('roleName').value, permissions: [] });
+      document.getElementById('roleName').value = '';
+      showAlert(alertEl, 'Role added. Tick its permissions below and click Save.', 'success');
+      await loadRoles();
+    } catch (err) { showAlert(alertEl, err.message, 'error'); }
+  });
+
+  let apptCache = [];
   async function loadAppointments() {
     const el = document.getElementById('apptList');
     el.innerHTML = '<div class="empty-state">Loading…</div>';
     try {
-      const all = await API.get('/api/admin/appointments');
-      const showAll = document.getElementById('apptFilter').value === 'all';
-      const now = new Date();
-      const filtered = showAll ? all : all.filter(a => a.status === 'confirmed' && new Date(a.date + 'T' + a.time) >= now);
-      el.innerHTML = filtered.length ? filtered.map(a => `
-        <div class="list-item">
-          <div>
-            <strong>${a.patientName}</strong> with <strong>${a.doctorName}</strong><br>
-            <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
-            ${a.patientPhone ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">${a.patientPhone} · ${a.patientEmail}</span>` : ''}
-          </div>
-          <div style="display:flex; align-items:center; gap:0.7rem;">
-            <span class="badge ${a.status}">${a.status}</span>
-            ${a.status === 'confirmed' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel-appt="${a.id}">Cancel</button>` : ''}
-          </div>
-        </div>
-      `).join('') : '<div class="empty-state">No appointments to show.</div>';
-
-      document.querySelectorAll('[data-cancel-appt]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Cancel this appointment?')) return;
-          try {
-            await API.post(`/api/admin/appointments/${btn.dataset.cancelAppt}/cancel`, {});
-            loadAppointments();
-          } catch (err) { alert(err.message); }
-        });
-      });
+      apptCache = await API.get('/api/admin/appointments');
+      renderAppointments();
     } catch (e) {
       el.innerHTML = '<div class="empty-state">Could not load appointments.</div>';
     }
   }
-  document.getElementById('apptFilter').addEventListener('change', loadAppointments);
+  function renderAppointments() {
+    const el = document.getElementById('apptList');
+    const mode = document.getElementById('apptFilter').value;
+    const q = document.getElementById('apptSearch').value.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '').replace(/^0+/, '');
+    const now = new Date();
+    const todayIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    let list = apptCache;
+    if (mode === 'upcoming') list = list.filter(a => a.status === 'confirmed' && new Date(a.date + 'T' + a.time) >= now);
+    if (mode === 'today') list = list.filter(a => a.date === todayIso);
+    if (q) list = list.filter(a =>
+      (a.patientName || '').toLowerCase().includes(q) || (a.doctorName || '').toLowerCase().includes(q) ||
+      (a.patientEmail || '').toLowerCase().includes(q) || (qDigits.length >= 3 && (a.patientId || '').replace(/\D/g, '').includes(qDigits)));
+    el.innerHTML = list.length ? list.map(a => `
+      <div class="list-item" style="flex-wrap:wrap; gap:0.7rem;">
+        <div>
+          <strong>${escAttr(a.patientName)}</strong> with <strong>${escAttr(a.doctorName)}</strong>${a.patientId ? ` <span class="badge">ID ${escAttr(a.patientId)}</span>` : ''}<br>
+          <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
+          ${a.patientPhone || a.patientEmail ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">${[a.patientPhone, a.patientEmail].filter(Boolean).map(escAttr).join(' · ')}</span>` : ''}
+          ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${escAttr(a.reason)}</span>` : ''}
+        </div>
+        <div style="display:flex; align-items:center; gap:0.7rem;">
+          <span class="badge ${a.status}">${a.status}</span>
+          ${a.status === 'confirmed' && can('appointments.cancel') ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel-appt="${a.id}">Cancel</button>` : ''}
+        </div>
+      </div>
+    `).join('') : '<div class="empty-state">No appointments to show.</div>';
+    el.querySelectorAll('[data-cancel-appt]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Cancel this appointment? The patient and doctor will be notified.')) return;
+        try { await API.post(`/api/admin/appointments/${btn.dataset.cancelAppt}/cancel`, {}); loadAppointments(); }
+        catch (err) { alert(err.message); }
+      });
+    });
+  }
+  let apptSearchTimer;
+  document.getElementById('apptSearch').addEventListener('input', () => { clearTimeout(apptSearchTimer); apptSearchTimer = setTimeout(renderAppointments, 150); });
+  document.getElementById('apptFilter').addEventListener('change', renderAppointments);
+
+  // ---- Book for a patient (reception) ----
+  const rb = { patient: null, slot: null };
+  function rbReset(keepPhone) {
+    rb.patient = null; rb.slot = null;
+    if (!keepPhone) document.getElementById('rbPhone').value = '';
+    ['rbName', 'rbEmail', 'rbReason'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('rbFound').innerHTML = '';
+    document.getElementById('rbDetails').style.display = 'none';
+    document.getElementById('rbSlotsWrap').style.display = 'none';
+    document.getElementById('rbBookBtn').disabled = true;
+  }
+  async function rbFind() {
+    const alertEl = document.getElementById('rbAlert');
+    hideAlert(alertEl);
+    const phone = document.getElementById('rbPhone').value.trim();
+    if (!phone) return showAlert(alertEl, 'Enter the mobile number first.', 'error');
+    try {
+      const { patientId, patient } = await API.get(`/api/admin/patients/lookup?phone=${encodeURIComponent(phone)}`);
+      rb.patient = patient;
+      document.getElementById('rbFound').innerHTML = patient
+        ? `<div class="alert show alert-success" style="margin:0;">Found <strong>${escAttr(patient.name)}</strong> · Patient ID ${escAttr(patientId)}${patient.email ? ' · ' + escAttr(patient.email) : ''}</div>`
+        : `<div class="alert show" style="margin:0; background:rgba(232,162,78,0.14); color:var(--amber-deep);">New patient — Patient ID will be <strong>${escAttr(patientId)}</strong>. Enter their name below.</div>`;
+      document.getElementById('rbName').value = patient ? patient.name : '';
+      document.getElementById('rbEmail').value = patient ? patient.email : '';
+      document.getElementById('rbDetails').style.display = 'block';
+      if (!document.getElementById('rbDoctor').options.length) {
+        const docs = await API.get('/api/doctors');
+        document.getElementById('rbDoctor').innerHTML = '<option value="">Choose a doctor…</option>' +
+          docs.map(d => `<option value="${d.id}">${escAttr(d.name)} — ${escAttr(d.specialty)}</option>`).join('');
+      }
+      const dateIn = document.getElementById('rbDate');
+      dateIn.min = new Date().toISOString().slice(0, 10);
+      if (!dateIn.value) dateIn.value = dateIn.min;
+      (patient ? document.getElementById('rbDoctor') : document.getElementById('rbName')).focus();
+      rbLoadSlots();
+    } catch (err) { showAlert(alertEl, err.message, 'error'); }
+  }
+  async function rbLoadSlots() {
+    rb.slot = null;
+    document.getElementById('rbBookBtn').disabled = true;
+    const doctorId = document.getElementById('rbDoctor').value, date = document.getElementById('rbDate').value;
+    const wrap = document.getElementById('rbSlotsWrap'), grid = document.getElementById('rbSlots');
+    if (!doctorId || !date) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    grid.innerHTML = '<div style="grid-column:1/-1; color:var(--ink-soft);">Loading times…</div>';
+    try {
+      const { available } = await API.get(`/api/doctors/${doctorId}/slots?date=${date}`);
+      grid.innerHTML = available.length ? available.map(t => `<button type="button" class="slot-btn" data-time="${t}">${fmtTime(t)}</button>`).join('')
+        : '<div style="grid-column:1/-1; color:var(--ink-soft);">No free times this day — try another date.</div>';
+      grid.querySelectorAll('.slot-btn').forEach(b => b.addEventListener('click', () => {
+        grid.querySelectorAll('.slot-btn').forEach(x => x.classList.remove('selected'));
+        b.classList.add('selected'); rb.slot = b.dataset.time;
+        document.getElementById('rbBookBtn').disabled = false;
+      }));
+    } catch (e) { grid.innerHTML = '<div style="grid-column:1/-1; color:var(--danger);">Could not load times.</div>'; }
+  }
+  document.getElementById('rbFind').addEventListener('click', rbFind);
+  document.getElementById('rbPhone').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); rbFind(); } });
+  document.getElementById('rbPhone').addEventListener('input', () => { if (document.getElementById('rbDetails').style.display === 'block') rbReset(true); });
+  document.getElementById('rbDoctor').addEventListener('change', rbLoadSlots);
+  document.getElementById('rbDate').addEventListener('change', rbLoadSlots);
+  document.getElementById('rbForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('rbAlert');
+    hideAlert(alertEl);
+    const name = document.getElementById('rbName').value.trim();
+    if (!name) return showAlert(alertEl, "Enter the patient's full name.", 'error');
+    if (!rb.slot) return showAlert(alertEl, 'Pick a time.', 'error');
+    const btn = document.getElementById('rbBookBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Booking…';
+    try {
+      const r = await API.post('/api/admin/appointments', {
+        phone: document.getElementById('rbPhone').value, name, email: document.getElementById('rbEmail').value.trim(),
+        doctorId: document.getElementById('rbDoctor').value, date: document.getElementById('rbDate').value, time: rb.slot,
+        reason: document.getElementById('rbReason').value
+      });
+      const doc = document.getElementById('rbDoctor').selectedOptions[0].textContent.split(' — ')[0];
+      showAlert(alertEl, `Booked ${r.patient.name} (ID ${r.patient.patientId}) with ${doc} on ${fmtDate(r.date)} at ${fmtTime(r.time)}.` +
+        (r.patient.email ? (r.emailSent ? ' Confirmation emailed.' : ' (Confirmation email could not be sent.)') : ' No email on file, so no confirmation was sent.'), 'success');
+      rbReset(false);
+      loadAppointments();
+    } catch (err) { showAlert(alertEl, err.message, 'error'); rbLoadSlots(); }
+    btn.textContent = 'Book Appointment';
+  });
 
   async function loadPatients() {
     const el = document.getElementById('patientsList');
     el.innerHTML = '<div class="empty-state">Loading…</div>';
+    const q = document.getElementById('patientSearch').value.trim();
     try {
-      const patients = await API.get('/api/admin/patients');
+      const patients = await API.get('/api/admin/patients' + (q ? `?q=${encodeURIComponent(q)}` : ''));
       el.innerHTML = patients.length ? patients.map(p => `
-        <div class="list-item" style="cursor:pointer;" data-patient="${p.id}">
-          <div><strong>${p.name}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}<br><span style="color:var(--ink-soft); font-size:0.85rem;">${p.email}${p.phone ? ' · ' + p.phone : ''}</span></div>
-          <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'} · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}</span>
+        <div class="list-item" style="cursor:pointer; flex-wrap:wrap; gap:0.6rem;" data-patient="${p.id}" tabindex="0" role="button">
+          <div><strong>${escAttr(p.name)}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ' <span class="badge" style="color:var(--danger);">no ID — add phone</span>'}<br>
+            <span style="color:var(--ink-soft); font-size:0.85rem;">${[p.phone, p.email].filter(Boolean).map(escAttr).join(' · ')}</span></div>
+          <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'}${can('records.view') ? ` · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}` : ''}</span>
         </div>
-      `).join('') : '<div class="empty-state">No patients registered yet.</div>';
-
-      document.querySelectorAll('[data-patient]').forEach(row => {
+      `).join('') : `<div class="empty-state">${q ? 'No patients match that search.' : 'No patients yet.'}</div>`;
+      el.querySelectorAll('[data-patient]').forEach(row => {
         row.addEventListener('click', () => openPatientReport(row.dataset.patient));
+        row.addEventListener('keydown', e => { if (e.key === 'Enter') openPatientReport(row.dataset.patient); });
       });
     } catch (e) {
       el.innerHTML = '<div class="empty-state">Could not load patients.</div>';
     }
   }
+  let patientSearchTimer;
+  document.getElementById('patientSearch').addEventListener('input', () => { clearTimeout(patientSearchTimer); patientSearchTimer = setTimeout(loadPatients, 250); });
 
   const escAttr = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let currentReportPatientId = null;
+  let currentReportPatientId = null, currentReportPatient = null;
   async function openPatientReport(id) {
     try {
       currentReportPatientId = id;
-      const [{ patient, appointments, records }, allDoctors] = await Promise.all([
+      const [{ patient, appointments, records, canViewRecords }, allDoctors] = await Promise.all([
         API.get(`/api/admin/patients/${id}`), API.get('/api/doctors')
       ]);
+      currentReportPatient = patient;
+      document.getElementById('patientReportId').textContent = patient.patientId ? 'Patient ID ' + patient.patientId : 'No Patient ID yet — add a mobile number';
+      document.getElementById('recordsSection').style.display = canViewRecords ? '' : 'none';
+      document.getElementById('editPatientForm').style.display = 'none';
+      hideAlert(document.getElementById('editPatientAlert'));
       // Doctor picker: default to the doctor of the patient's most recent appointment.
       const docSel = document.getElementById('arDoctor');
       const lastDoc = appointments.length ? appointments[0].doctorId : '';
@@ -607,7 +880,7 @@
       document.getElementById('patientsList').style.display = 'none';
       document.getElementById('patientDetail').style.display = 'block';
       document.getElementById('patientReportName').textContent = patient.name;
-      document.getElementById('patientReportMeta').textContent = `${patient.email}${patient.phone ? ' · ' + patient.phone : ''}${patient.dob ? ' · DOB ' + patient.dob : ''}`;
+      document.getElementById('patientReportMeta').textContent = [patient.phone, patient.email, patient.dob ? 'DOB ' + patient.dob : ''].filter(Boolean).join(' · ');
 
       document.getElementById('patientReportAppts').innerHTML = appointments.length ? appointments.map(a => `
         <div class="list-item">
@@ -642,6 +915,27 @@
       alert(e.message);
     }
   }
+
+  document.getElementById('editPatientBtn').addEventListener('click', () => {
+    const f = document.getElementById('editPatientForm');
+    const p = currentReportPatient || {};
+    document.getElementById('epName').value = p.name || '';
+    document.getElementById('epPhone').value = p.phone || '';
+    document.getElementById('epEmail').value = p.email || '';
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  });
+  document.getElementById('editPatientForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('editPatientAlert');
+    hideAlert(alertEl);
+    try {
+      const upd = await API.patch(`/api/admin/patients/${currentReportPatientId}`, {
+        name: document.getElementById('epName').value, phone: document.getElementById('epPhone').value, email: document.getElementById('epEmail').value
+      });
+      await openPatientReport(currentReportPatientId);
+      showAlert(alertEl, `Saved. Patient ID is ${upd.patientId}.`, 'success');
+    } catch (err) { showAlert(alertEl, err.message, 'error'); }
+  });
 
   function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
@@ -790,21 +1084,22 @@
     box.innerHTML = `<div class="cal-detail">
       <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
         <div>
-          <strong style="font-size:1.05rem;">${escAttr(p.name || 'Patient')}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}<br>
+          <strong style="font-size:1.05rem;">${escAttr(p.name || 'Patient')}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ''}<br>
           <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(date)} at ${fmtTime(a.time)}</span>
           <p style="margin:0.5rem 0 0; font-size:0.9rem;">${p.phone ? escAttr(p.phone) + ' · ' : ''}${escAttr(p.email || '')}</p>
           ${a.reason ? `<p style="margin:0.4rem 0 0; font-size:0.9rem;"><strong>Reason:</strong> ${escAttr(a.reason)}</p>` : ''}
         </div>
         <div style="display:flex; gap:0.5rem; align-items:flex-start; flex-wrap:wrap;">
-          ${p.id ? `<button type="button" class="btn btn-outline" id="calOpenPatient" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Patient report</button>` : ''}
-          <button type="button" class="btn btn-outline" id="calSendInvite" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Send invite to doctor</button>
-          <button type="button" class="btn btn-danger" id="calCancelAppt" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Cancel appointment</button>
+          ${p.id && can('patients.view') ? `<button type="button" class="btn btn-outline" id="calOpenPatient" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Patient details</button>` : ''}
+          ${can('appointments.book') ? `<button type="button" class="btn btn-outline" id="calSendInvite" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Send invite to doctor</button>` : ''}
+          ${can('appointments.cancel') ? `<button type="button" class="btn btn-danger" id="calCancelAppt" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Cancel appointment</button>` : ''}
           <button type="button" class="btn btn-outline" id="calCloseDetail" style="padding:0.4rem 0.9rem; font-size:0.8rem;" aria-label="Close details">Close</button>
         </div>
       </div></div>`;
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     document.getElementById('calCloseDetail').addEventListener('click', () => { box.innerHTML = ''; });
-    document.getElementById('calSendInvite').addEventListener('click', async (e) => {
+    const sendBtn = document.getElementById('calSendInvite');
+    if (sendBtn) sendBtn.addEventListener('click', async (e) => {
       const btn = e.currentTarget;
       btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-color:rgba(61,125,183,0.3); border-top-color:var(--blue);"></span> Sending…';
       try {
@@ -812,7 +1107,8 @@
         btn.textContent = 'Invite sent to ' + r.to;
       } catch (err) { alert(err.message); btn.disabled = false; btn.textContent = 'Send invite to doctor'; }
     });
-    document.getElementById('calCancelAppt').addEventListener('click', async () => {
+    const cancelBtn = document.getElementById('calCancelAppt');
+    if (cancelBtn) cancelBtn.addEventListener('click', async () => {
       if (!confirm(`Cancel ${p.name || 'this patient'}'s appointment on ${fmtDate(date)} at ${fmtTime(a.time)}? The patient and doctor will be notified.`)) return;
       try {
         await API.post(`/api/admin/appointments/${a.id}/cancel`, {});
@@ -1068,7 +1364,7 @@
       });
       document.getElementById('staffForm').reset();
       document.getElementById('staffPassword').value = 'ChangeMe123!';
-      showAlert(alertEl, 'Staff login created. Share the email and temporary password with them directly.', 'success');
+      showAlert(alertEl, 'Staff login created. Share the email and temporary password with them directly — they\'ll choose their own password at first login.', 'success');
       await loadStaffAccounts();
     } catch (err) {
       showAlert(alertEl, err.message, 'error');
@@ -1076,9 +1372,22 @@
   });
 
   (async function () {
+    if (!user) return;
+    try { ME = await API.get('/api/me'); } catch (e) { API.clearSession(); window.location.href = 'login.html'; return; }
+    document.getElementById('dashTitle').textContent = user.role === 'admin' ? 'Admin' : 'Staff Portal';
+    document.getElementById('dashSubtitle').textContent = `${ME.name} · ${ME.roleName || 'Admin'}`;
+    let first = null;
+    document.querySelectorAll('[data-tab]').forEach(t => {
+      const ok = can(t.dataset.perm);
+      t.style.display = ok ? '' : 'none';
+      if (ok && !first) first = t;
+    });
+    applyPerms();
+    if (!first) { document.getElementById('noAccess').style.display = 'block'; return; }
     await loadDepartments();
-    await loadDoctors();
-    await loadTeam();
+    if (can('doctors.view')) await loadDoctors();
+    if (can('directory.manage')) await loadTeam();
+    first.click();
   })();
 </script>
 </body>

@@ -1,0 +1,137 @@
+// Radiant Health Alliance — database schema (Turso / libSQL = SQLite, via Prisma).
+//
+// The app connects to Turso through the libSQL driver adapter (src/db.js).
+// Schema changes: edit this file, then run `npm run db:new-migration -- <name>`
+// and `npm run db:migrate` (see README).
+//
+// IDs are strings so records migrated from the old data/db.json keep their
+// original ids (e.g. "dept_yau0aaot"). New records get prefixed random ids.
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  // "native" = your machine / VPS, "rhel-openssl-3.0.x" = Vercel.
+  binaryTargets   = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  // Only used by Prisma tooling (e.g. `prisma migrate diff`). At runtime the
+  // app uses TURSO_DATABASE_URL + TURSO_AUTH_TOKEN via the libSQL adapter.
+  url      = "file:./dev.db"
+}
+
+model Department {
+  id          String   @id
+  name        String
+  description String   @default("")
+  icon        String   @default("stethoscope")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true) // "deleted" departments are hidden, not removed
+  createdAt   DateTime @default(now())
+  doctors     Doctor[]
+}
+
+model Doctor {
+  id                 String          @id
+  name               String
+  departmentId       String
+  department         Department      @relation(fields: [departmentId], references: [id])
+  specialty          String          @default("")
+  bio                String          @default("")
+  photo              String?         // base64 data URL (kept for compatibility with the current frontend)
+  email              String          @unique
+  passwordHash       String
+  mustChangePassword Boolean         @default(true)
+  workStart          String          @default("09:00")
+  workEnd            String          @default("17:00")
+  slotMinutes        Int             @default(30)
+  workingDays        String          @default("1,2,3,4,5") // comma-separated, 0 = Sunday
+  active             Boolean         @default(true)           // "deleted" doctors are deactivated so history is kept
+  createdAt          DateTime        @default(now())
+  appointments       Appointment[]
+  records            MedicalRecord[]
+
+  @@index([departmentId])
+}
+
+model Staff {
+  id                 String   @id
+  role               String   @default("staff") // "admin" | "staff"
+  name               String
+  email              String   @unique
+  passwordHash       String
+  mustChangePassword Boolean  @default(true)
+  createdAt          DateTime @default(now())
+}
+
+model Patient {
+  id           String          @id
+  name         String
+  email        String          @unique
+  phone        String          @default("")
+  dob          String          @default("")
+  gender       String          @default("")
+  passwordHash String
+  createdAt    DateTime        @default(now())
+  appointments Appointment[]
+  records      MedicalRecord[]
+}
+
+model Appointment {
+  id        String   @id
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  doctorId  String
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+  date      String   // YYYY-MM-DD (clinic local date)
+  time      String   // HH:MM
+  reason    String   @default("")
+  status    String   @default("confirmed") // "confirmed" | "cancelled"
+  createdAt DateTime @default(now())
+
+  // A partial unique index (one active booking per doctor/date/time) is
+  // added in the SQL migration — Prisma can't express partial indexes.
+  @@index([doctorId, date])
+  @@index([patientId])
+}
+
+model MedicalRecord {
+  id           String   @id
+  patientId    String
+  patient      Patient  @relation(fields: [patientId], references: [id])
+  doctorId     String
+  doctor       Doctor   @relation(fields: [doctorId], references: [id])
+  date         String   // YYYY-MM-DD
+  diagnosis    String   @default("")
+  notes        String
+  prescription String   @default("")
+  createdAt    DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model ContactMessage {
+  id        String   @id
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model TeamMember {
+  id        String   @id
+  name      String
+  role      String
+  bio       String   @default("")
+  photo     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Key/value site settings (contact info, notification emails, SMTP).
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

@@ -1,3 +1,9 @@
 node_modules/
 .env
-data/db.json
+.env.*
+!.env.example
+data/
+.vercel
+*.log
+*.db
+*.db-journal

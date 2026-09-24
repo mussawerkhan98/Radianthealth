@@ -108,7 +108,27 @@ model MedicalRecord {
   notes        String
   prescription String   @default("")
   createdAt    DateTime @default(now())
+  files        RecordFile[]
 
+  @@index([patientId])
+}
+
+// Files a doctor attaches to a medical record (lab reports, scans, PDFs…).
+// Stored privately in the database; only downloadable through the API by
+// the patient's doctors and admins.
+model RecordFile {
+  id           String        @id
+  recordId     String
+  record       MedicalRecord @relation(fields: [recordId], references: [id])
+  patientId    String
+  uploadedById String        // doctor id
+  filename     String
+  mimeType     String
+  size         Int
+  data         Bytes
+  createdAt    DateTime      @default(now())
+
+  @@index([recordId])
   @@index([patientId])
 }
 

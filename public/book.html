@@ -50,6 +50,12 @@
         <textarea id="reasonInput" placeholder="e.g. Annual check-up, follow-up, new symptoms…"></textarea>
       </div>
 
+      <!-- Honeypot: hidden from people, bots tend to fill it in. -->
+      <div style="position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden;" aria-hidden="true">
+        <label for="websiteInput">Leave this field empty</label>
+        <input type="text" id="websiteInput" name="website" tabindex="-1" autocomplete="off">
+      </div>
+
       <div id="formAlert" class="alert"></div>
 
       <button class="btn btn-amber btn-block" id="confirmBtn" disabled>Confirm Appointment</button>
@@ -141,14 +147,18 @@
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<span class="spinner"></span> Booking…';
     try {
-      await API.post('/api/appointments', {
+      const result = await API.post('/api/appointments', {
         doctorId: doctorSelect.value,
         date: dateInput.value,
         time: selectedSlot,
-        reason: document.getElementById('reasonInput').value
+        reason: document.getElementById('reasonInput').value,
+        website: document.getElementById('websiteInput').value
       });
-      showAlert(formAlert, 'Appointment confirmed! Redirecting to your dashboard…', 'success');
-      setTimeout(() => window.location.href = 'patient-dashboard.html', 1200);
+      confirmBtn.textContent = 'Booked';
+      showAlert(formAlert, result && result.emailSent
+        ? "Thanks! We've emailed you a confirmation."
+        : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)', 'success');
+      setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
     } catch (e) {
       showAlert(formAlert, e.message, 'error');
       confirmBtn.disabled = false;

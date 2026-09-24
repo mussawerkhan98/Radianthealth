@@ -187,3 +187,89 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHeader(page);
   renderFooter();
 });
+
+// ---------- Private file viewer (doctor portal + admin) ----------
+// Files need the login token, so they're fetched with it and shown from a
+// temporary in-browser copy. PDFs and images preview on the page; other
+// types (Word, Excel) offer a download.
+async function fetchPrivateFile(id) {
+  const res = await fetch(`/api/files/${id}`, { headers: { Authorization: 'Bearer ' + API.token() } });
+  if (!res.ok) {
+    let m = 'Could not open this file.';
+    try { m = (await res.json()).error || m; } catch (e) { /* not JSON */ }
+    throw new Error(m);
+  }
+  return res.blob();
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename || 'file';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+async function downloadPrivateFile(id, filename) {
+  saveBlob(await fetchPrivateFile(id), filename);
+}
+
+async function openFileViewer(id, filename, mimeType) {
+  const old = document.getElementById('fileViewer');
+  if (old) old.remove();
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const wrap = document.createElement('div');
+  wrap.id = 'fileViewer';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.setAttribute('aria-label', filename || 'File');
+  wrap.style.cssText = 'position:fixed; inset:0; z-index:1000; background:rgba(15,23,30,0.72); display:flex; align-items:center; justify-content:center; padding:16px;';
+  wrap.innerHTML = `
+    <div style="background:#fff; border-radius:14px; width:min(1000px,100%); height:min(90vh,100%); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.35);">
+      <div style="display:flex; align-items:center; gap:0.6rem; padding:0.7rem 1rem; border-bottom:1px solid #e3e8ea;">
+        <strong style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(filename)}</strong>
+        <button type="button" class="btn btn-outline" data-fv-download style="padding:0.4rem 0.9rem; font-size:0.8rem;">Download</button>
+        <button type="button" class="btn btn-outline" data-fv-close style="padding:0.4rem 0.9rem; font-size:0.8rem;" aria-label="Close">Close</button>
+      </div>
+      <div data-fv-body style="flex:1; min-height:0; background:#f3f5f6; display:flex; align-items:center; justify-content:center; overflow:auto;">
+        <div style="color:#5b6b73;">Loading…</div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+
+  let blob = null, url = null;
+  const close = () => {
+    wrap.remove();
+    document.body.style.overflow = prevOverflow;
+    document.removeEventListener('keydown', onKey);
+    if (url) setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+  wrap.querySelector('[data-fv-close]').addEventListener('click', close);
+  wrap.querySelector('[data-fv-download]').addEventListener('click', async () => {
+    try { saveBlob(blob || await fetchPrivateFile(id), filename); } catch (err) { alert(err.message); }
+  });
+
+  const body = wrap.querySelector('[data-fv-body]');
+  try {
+    blob = await fetchPrivateFile(id);
+    const type = mimeType || blob.type || '';
+    if (type === 'application/pdf' || type.startsWith('image/')) {
+      url = URL.createObjectURL(new Blob([blob], { type }));
+      body.innerHTML = type === 'application/pdf'
+        ? `<iframe title="${esc(filename)}" src="${url}" style="width:100%; height:100%; border:0; background:#fff;"></iframe>`
+        : `<img src="${url}" alt="${esc(filename)}" style="max-width:100%; max-height:100%; object-fit:contain; display:block;">`;
+    } else {
+      body.innerHTML = `<div style="text-align:center; padding:2rem; color:#5b6b73;">
+        <p style="margin-bottom:1rem;">This file type (${esc((filename.split('.').pop() || '').toUpperCase())}) can't be previewed in the browser.</p>
+        <button type="button" class="btn btn-primary" data-fv-download2>Download to open it</button></div>`;
+      body.querySelector('[data-fv-download2]').addEventListener('click', () => saveBlob(blob, filename));
+    }
+  } catch (err) {
+    body.innerHTML = `<div style="color:#b3261e; padding:2rem; text-align:center;">${esc(err.message)}</div>`;
+  }
+}

@@ -764,6 +764,21 @@ app.get('/api/admin/appointments', auth(['admin', 'staff']), wrap(async (req, re
   })));
 }));
 
+// Re-send the calendar invite to the doctor (e.g. after fixing their email).
+app.post('/api/admin/appointments/:id/send-invite', auth(['admin', 'staff']), wrap(async (req, res) => {
+  const appt = await prisma.appointment.findUnique({
+    where: { id: req.params.id }, include: { doctor: { include: { department: true } }, patient: true }
+  });
+  if (!appt) throw new HttpError(404, 'Appointment not found.');
+  if (!brevo.isConfigured()) throw new HttpError(400, 'Email sending (Brevo) is not set up.');
+  const ok = await brevo.sendDoctorInvite({
+    kind: appt.status === 'cancelled' ? 'cancelled' : 'booked', appointment: appt, doctor: appt.doctor, patient: appt.patient,
+    departmentName: appt.doctor.department && appt.doctor.department.name
+  });
+  if (!ok) throw new HttpError(502, `Could not send to ${appt.doctor.email}. Check the address is a real mailbox, and that it isn't blocked in Brevo.`);
+  res.json({ ok: true, to: appt.doctor.email });
+}));
+
 app.post('/api/admin/appointments/:id/cancel', auth(['admin', 'staff']), wrap(async (req, res) => {
   const a = await cancelAppointment({ id: req.params.id }, 'the clinic');
   res.json(apptOut(a));

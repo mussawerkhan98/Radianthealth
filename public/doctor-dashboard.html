@@ -161,21 +161,11 @@
     return `<div style="margin-top:0.5rem;">` + r.files.map(f => `
       <div style="display:flex; align-items:center; gap:0.6rem; margin:0.25rem 0; font-size:0.88rem;">
         <span style="color:var(--ink-soft); display:inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>
-        <a href="#" data-download-file="${f.id}" data-filename="${escHtml(f.filename)}">${escHtml(f.filename)}</a>
+        <a href="#" data-view-file="${f.id}" data-filename="${escHtml(f.filename)}" data-mime="${escHtml(f.mimeType)}" title="View">${escHtml(f.filename)}</a>
         <span style="color:var(--ink-soft);">${fmtSize(f.size)}</span>
+        <a href="#" data-download-file="${f.id}" data-filename="${escHtml(f.filename)}" style="font-size:0.8rem;">Download</a>
         ${user && f.uploadedById === user.id ? `<a href="#" data-remove-file="${f.id}" style="color:var(--danger); font-size:0.8rem;">Remove</a>` : ''}
       </div>`).join('') + `</div>`;
-  }
-
-  // Files need the login token, so fetch them and hand the browser a download.
-  async function downloadFile(id, filename) {
-    const res = await fetch(`/api/files/${id}`, { headers: { Authorization: 'Bearer ' + API.token() } });
-    if (!res.ok) { let m = 'Could not download this file.'; try { m = (await res.json()).error || m; } catch (e) {} throw new Error(m); }
-    const url = URL.createObjectURL(await res.blob());
-    const a = document.createElement('a');
-    a.href = url; a.download = filename || 'file';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
   function readAsDataUrl(file) {
@@ -204,9 +194,13 @@
             </div>
           `).join('')
         : '<div class="empty-state">No history yet for this patient.</div>';
+      el.querySelectorAll('[data-view-file]').forEach(a => a.addEventListener('click', (e) => {
+        e.preventDefault();
+        openFileViewer(a.dataset.viewFile, a.dataset.filename, a.dataset.mime);
+      }));
       el.querySelectorAll('[data-download-file]').forEach(a => a.addEventListener('click', async (e) => {
         e.preventDefault();
-        try { await downloadFile(a.dataset.downloadFile, a.dataset.filename); } catch (err) { alert(err.message); }
+        try { await downloadPrivateFile(a.dataset.downloadFile, a.dataset.filename); } catch (err) { alert(err.message); }
       }));
       el.querySelectorAll('[data-remove-file]').forEach(a => a.addEventListener('click', async (e) => {
         e.preventDefault();

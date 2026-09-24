@@ -54,7 +54,12 @@
                   <label for="prescription">Prescription (optional)</label>
                   <input type="text" id="prescription">
                 </div>
-                <button type="submit" class="btn btn-primary">Save Note</button>
+                <div class="form-group">
+                  <label for="recordFiles">Attach files (optional)</label>
+                  <input type="file" id="recordFiles" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xlsx,application/pdf,image/*">
+                  <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:0.35rem;">Lab reports, scans, prescriptions — PDF, images, Word or Excel, up to 3 MB each. Only doctors and admin can open them.</p>
+                </div>
+                <button type="submit" class="btn btn-primary" id="saveNoteBtn">Save Note</button>
               </form>
 
               <h4 style="margin-top:2rem;">History</h4>
@@ -148,6 +153,40 @@
     currentPatientId = null;
   });
 
+  const escHtml = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtSize = n => n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1024 / 1024).toFixed(1) + ' MB';
+
+  function filesHtml(r) {
+    if (!r.files || !r.files.length) return '';
+    return `<div style="margin-top:0.5rem;">` + r.files.map(f => `
+      <div style="display:flex; align-items:center; gap:0.6rem; margin:0.25rem 0; font-size:0.88rem;">
+        <span style="color:var(--ink-soft); display:inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>
+        <a href="#" data-download-file="${f.id}" data-filename="${escHtml(f.filename)}">${escHtml(f.filename)}</a>
+        <span style="color:var(--ink-soft);">${fmtSize(f.size)}</span>
+        ${user && f.uploadedById === user.id ? `<a href="#" data-remove-file="${f.id}" style="color:var(--danger); font-size:0.8rem;">Remove</a>` : ''}
+      </div>`).join('') + `</div>`;
+  }
+
+  // Files need the login token, so fetch them and hand the browser a download.
+  async function downloadFile(id, filename) {
+    const res = await fetch(`/api/files/${id}`, { headers: { Authorization: 'Bearer ' + API.token() } });
+    if (!res.ok) { let m = 'Could not download this file.'; try { m = (await res.json()).error || m; } catch (e) {} throw new Error(m); }
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a');
+    a.href = url; a.download = filename || 'file';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  function readAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error(`Could not read "${file.name}".`));
+      r.readAsDataURL(file);
+    });
+  }
+
   async function loadPatientHistory() {
     const el = document.getElementById('patientHistoryList');
     el.innerHTML = '<div class="empty-state">Loading…</div>';
@@ -160,9 +199,20 @@
               ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
               <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
               ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
+              ${r.doctorName ? `<p style="margin:0.2rem 0; font-size:0.8rem; color:var(--ink-soft);">By ${escHtml(r.doctorName)}</p>` : ''}
+              ${filesHtml(r)}
             </div>
           `).join('')
         : '<div class="empty-state">No history yet for this patient.</div>';
+      el.querySelectorAll('[data-download-file]').forEach(a => a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try { await downloadFile(a.dataset.downloadFile, a.dataset.filename); } catch (err) { alert(err.message); }
+      }));
+      el.querySelectorAll('[data-remove-file]').forEach(a => a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!confirm('Remove this file from the record? This cannot be undone.')) return;
+        try { await API.del(`/api/doctors/me/files/${a.dataset.removeFile}`); loadPatientHistory(); } catch (err) { alert(err.message); }
+      }));
     } catch (e) {
       el.innerHTML = '<div class="empty-state">Could not load history.</div>';
     }
@@ -173,18 +223,37 @@
   recordForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert(recordAlert);
+    const saveBtn = document.getElementById('saveNoteBtn');
+    const files = [...document.getElementById('recordFiles').files];
+    const tooBig = files.find(f => f.size > 3 * 1024 * 1024);
+    if (tooBig) return showAlert(recordAlert, `"${tooBig.name}" is larger than 3 MB. Please compress it or split it.`, 'error');
+    if (files.length > 20) return showAlert(recordAlert, 'Please attach at most 20 files per note.', 'error');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner"></span> Saving…';
+    const failed = [];
     try {
-      await API.post(`/api/doctors/me/patients/${currentPatientId}/records`, {
+      const record = await API.post(`/api/doctors/me/patients/${currentPatientId}/records`, {
         diagnosis: document.getElementById('diagnosis').value,
         notes: document.getElementById('notes').value,
         prescription: document.getElementById('prescription').value
       });
-      showAlert(recordAlert, 'Note saved.', 'success');
+      for (let i = 0; i < files.length; i++) {
+        saveBtn.innerHTML = `<span class="spinner"></span> Uploading ${i + 1} of ${files.length}…`;
+        try {
+          await API.post(`/api/doctors/me/records/${record.id}/files`, { filename: files[i].name, data: await readAsDataUrl(files[i]) });
+        } catch (err) {
+          failed.push(err.message);
+        }
+      }
       recordForm.reset();
+      if (failed.length) showAlert(recordAlert, 'Note saved, but some files were not uploaded: ' + failed.join(' '), 'error');
+      else showAlert(recordAlert, files.length ? `Note saved with ${files.length} file${files.length === 1 ? '' : 's'}.` : 'Note saved.', 'success');
       loadPatientHistory();
     } catch (err) {
       showAlert(recordAlert, err.message, 'error');
     }
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Note';
   });
 
   document.getElementById('welcomeName').textContent = 'Welcome, ' + (user ? user.name : '');

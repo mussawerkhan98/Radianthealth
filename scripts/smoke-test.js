@@ -101,6 +101,43 @@ function check(name, cond, extra) {
   check('staff sees appointments', sAppts.status === 200, sAppts);
   const sBlocked = await call('GET', '/api/admin/patients', null, S);
   check('staff blocked from patient records', sBlocked.status === 403, sBlocked);
+  // ---- record file attachments ----
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
+  const up = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'lab-report.pdf', data: 'data:application/pdf;base64,' + pdf.toString('base64') }, D);
+  check('doctor uploads PDF', up.status === 200 && up.data.size === pdf.length, up);
+  const fake = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'virus.pdf', data: Buffer.from('MZ not a pdf').toString('base64') }, D);
+  check('fake PDF rejected', fake.status === 400, fake);
+  const exe = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'run.exe', data: pdf.toString('base64') }, D);
+  check('disallowed type rejected', exe.status === 400, exe);
+  const big = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'big.pdf', data: Buffer.concat([pdf, Buffer.alloc(3.2 * 1024 * 1024)]).toString('base64') }, D);
+  check('file over 3 MB rejected', big.status === 413, { status: big.status });
+  const listed = await call('GET', `/api/doctors/me/patients/${pid}/records`, null, D);
+  check('record lists file (no bytes)', listed.data[0].files.length === 1 && !('data' in listed.data[0].files[0]), listed.data[0].files);
+  const dl = await fetch(`${BASE}/api/files/${up.data.id}`, { headers: { Authorization: 'Bearer ' + D } });
+  const dlBuf = Buffer.from(await dl.arrayBuffer());
+  check('doctor downloads same bytes', dl.status === 200 && dlBuf.equals(pdf) && /attachment/.test(dl.headers.get('content-disposition')), dl.status);
+  const pDl = await fetch(`${BASE}/api/files/${up.data.id}`, { headers: { Authorization: 'Bearer ' + P } });
+  check('patient cannot download', pDl.status === 403, pDl.status);
+  const sDl = await fetch(`${BASE}/api/files/${up.data.id}`, { headers: { Authorization: 'Bearer ' + S } });
+  check('front-desk staff cannot download', sDl.status === 403, sDl.status);
+  const aDl = await fetch(`${BASE}/api/files/${up.data.id}`, { headers: { Authorization: 'Bearer ' + A } });
+  check('admin can download', aDl.status === 200, aDl.status);
+  const noAuth = await fetch(`${BASE}/api/files/${up.data.id}`);
+  check('anonymous cannot download', noAuth.status === 401, noAuth.status);
+  const pRecs = await call('GET', '/api/patients/me/records', null, P);
+  check('patient view has no files', pRecs.data.length === 1 && !pRecs.data[0].files, pRecs.data[0]);
+  const aRep = await call('GET', `/api/admin/patients/${pid}`, null, A);
+  check('admin report lists file', aRep.data.records[0].files.length === 1, aRep.data.records[0]);
+  const other = await call('POST', '/api/login', { email: 'amina.farouk@radianthealthalliance.com', password: DOCTOR_PASSWORD });
+  if (other.status === 200) {
+    const oDl = await fetch(`${BASE}/api/files/${up.data.id}`, { headers: { Authorization: 'Bearer ' + other.data.token } });
+    check("other doctor can't download", oDl.status === 404, oDl.status);
+    const oUp = await call('POST', `/api/doctors/me/records/${rec.data.id}/files`, { filename: 'x.pdf', data: pdf.toString('base64') }, other.data.token);
+    check("other doctor can't attach to this record", oUp.status === 404, oUp);
+  }
+  const rm = await call('DELETE', `/api/doctors/me/files/${up.data.id}`, null, D);
+  check('uploader removes file', rm.status === 200, rm);
+
   const cancel = await call('POST', `/api/admin/appointments/${book.data.id}/cancel`, {}, S);
   check('staff cancels appointment', cancel.data.status === 'cancelled', cancel);
   const rebook = await call('POST', '/api/appointments', { doctorId: newDoc.data.id, date: tomorrow, time: slot }, P);

@@ -151,7 +151,8 @@ const recordOut = r => ({
   id: r.id, patientId: r.patientId, doctorId: r.doctorId, date: r.date, diagnosis: r.diagnosis,
   notes: r.notes, prescription: r.prescription, createdAt: r.createdAt,
   ...(r.doctor ? { doctorName: r.doctor.name } : {}),
-  ...(r.files ? { files: r.files.map(fileOut) } : {})
+  ...(r.files ? { files: r.files.map(fileOut) } : {}),
+  ...(r.enteredByName ? { enteredByName: r.enteredByName } : {})
 });
 
 // ---------- record file attachments ----------
@@ -379,10 +380,9 @@ app.post('/api/doctors/me/patients/:patientId/records', auth(['doctor']), wrap(a
 
 // Attach one file to a record (one request per file so each can be up to 3 MB).
 // Body: { filename, data } where data is a base64 data URL or plain base64.
-app.post('/api/doctors/me/records/:recordId/files', auth(['doctor']), wrap(async (req, res) => {
-  const record = await prisma.medicalRecord.findUnique({ where: { id: req.params.recordId } });
-  if (!record || record.doctorId !== req.user.sub) throw new HttpError(404, 'Record not found.');
-  const { filename, data } = req.body || {};
+// Validates and stores one uploaded file on a record.
+async function saveRecordFile(record, uploaderId, body) {
+  const { filename, data } = body || {};
   const name = cleanFilename(filename);
   const ext = (name.match(/\.([a-z0-9]+)$/i) || [])[1];
   const type = ext && FILE_TYPES[ext.toLowerCase()];
@@ -397,10 +397,18 @@ app.post('/api/doctors/me/records/:recordId/files', auth(['doctor']), wrap(async
     throw new HttpError(400, `A note can have at most ${MAX_FILES_PER_RECORD} files. Add a new note for more.`);
   }
   const f = await prisma.recordFile.create({
-    data: { id: newId('file'), recordId: record.id, patientId: record.patientId, uploadedById: req.user.sub,
+    data: { id: newId('file'), recordId: record.id, patientId: record.patientId, uploadedById: uploaderId,
       filename: name, mimeType: type.mime, size: buf.length, data: buf }
   });
-  res.json(fileOut(f));
+  return fileOut(f);
+}
+
+// Attach one file to a record (one request per file so each can be up to 3 MB).
+// Body: { filename, data } where data is a base64 data URL or plain base64.
+app.post('/api/doctors/me/records/:recordId/files', auth(['doctor']), wrap(async (req, res) => {
+  const record = await prisma.medicalRecord.findUnique({ where: { id: req.params.recordId } });
+  if (!record || record.doctorId !== req.user.sub) throw new HttpError(404, 'Record not found.');
+  res.json(await saveRecordFile(record, req.user.sub, req.body));
 }));
 
 // Remove a file you uploaded by mistake.
@@ -701,6 +709,39 @@ app.get('/api/admin/patients/:id', auth(['admin']), wrap(async (req, res) => {
     appointments: appointments.map(a => ({ ...apptOut(a), doctorName: a.doctor ? a.doctor.name : 'Unknown' })),
     records: records.map(r => ({ ...recordOut(r), doctorName: r.doctor ? r.doctor.name : 'Unknown' }))
   });
+}));
+
+// Admin adds a report to a patient's history on behalf of a doctor (e.g. a
+// walk-in, or results that came in by email). The record shows who entered it.
+app.post('/api/admin/patients/:id/records', auth(['admin']), wrap(async (req, res) => {
+  const p = await prisma.patient.findUnique({ where: { id: req.params.id } });
+  if (!p) throw new HttpError(404, 'Patient not found.');
+  const { doctorId, diagnosis, notes, prescription, date } = req.body || {};
+  if (!notes || !String(notes).trim()) throw new HttpError(400, 'Notes are required.');
+  const doctor = doctorId && await prisma.doctor.findUnique({ where: { id: String(doctorId) } });
+  if (!doctor || !doctor.active) throw new HttpError(400, 'Please choose the doctor this report belongs to.');
+  const day = DATE_RE.test(String(date || '')) && String(date) <= clinicNow().date ? String(date) : clinicNow().date;
+  const r = await prisma.medicalRecord.create({
+    data: {
+      id: newId('rec'), patientId: p.id, doctorId: doctor.id, date: day,
+      diagnosis: String(diagnosis || '').slice(0, 500), notes: String(notes).slice(0, 10000), prescription: String(prescription || '').slice(0, 2000),
+      enteredById: req.user.sub, enteredByName: req.account.name
+    }
+  });
+  res.json({ ...recordOut(r), doctorName: doctor.name, files: [] });
+}));
+
+app.post('/api/admin/records/:recordId/files', auth(['admin']), wrap(async (req, res) => {
+  const record = await prisma.medicalRecord.findUnique({ where: { id: req.params.recordId } });
+  if (!record) throw new HttpError(404, 'Record not found.');
+  res.json(await saveRecordFile(record, req.user.sub, req.body));
+}));
+
+app.delete('/api/admin/files/:id', auth(['admin']), wrap(async (req, res) => {
+  const f = await prisma.recordFile.findUnique({ where: { id: req.params.id }, select: { id: true } });
+  if (!f) throw new HttpError(404, 'File not found.');
+  await prisma.recordFile.delete({ where: { id: f.id } });
+  res.json({ ok: true });
 }));
 
 // ---------- ADMIN: STAFF ACCOUNTS ----------

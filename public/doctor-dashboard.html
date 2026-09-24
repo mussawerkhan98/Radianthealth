@@ -199,7 +199,7 @@
               ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
               <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
               ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
-              ${r.doctorName ? `<p style="margin:0.2rem 0; font-size:0.8rem; color:var(--ink-soft);">By ${escHtml(r.doctorName)}</p>` : ''}
+              ${r.doctorName ? `<p style="margin:0.2rem 0; font-size:0.8rem; color:var(--ink-soft);">By ${escHtml(r.doctorName)}${r.enteredByName ? ' · entered by ' + escHtml(r.enteredByName) : ''}</p>` : ''}
               ${filesHtml(r)}
             </div>
           `).join('')

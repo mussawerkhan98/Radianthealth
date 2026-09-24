@@ -174,6 +174,37 @@
               <p id="patientReportMeta"></p>
               <h4 style="margin-top:1.6rem;">Appointments</h4>
               <div id="patientReportAppts"></div>
+              <h4 style="margin-top:1.6rem;">Add a Report</h4>
+              <div id="adminRecordAlert" class="alert"></div>
+              <form id="adminRecordForm" class="card" style="padding:1.2rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
+                <div class="form-group">
+                  <label for="arDoctor">Doctor</label>
+                  <select id="arDoctor" required></select>
+                </div>
+                <div class="form-group">
+                  <label for="arDate">Date</label>
+                  <input type="date" id="arDate">
+                </div>
+                <div class="form-group">
+                  <label for="arDiagnosis">Diagnosis (optional)</label>
+                  <input type="text" id="arDiagnosis" maxlength="500">
+                </div>
+                <div class="form-group">
+                  <label for="arNotes">Notes / report</label>
+                  <textarea id="arNotes" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="arPrescription">Prescription (optional)</label>
+                  <input type="text" id="arPrescription" maxlength="2000">
+                </div>
+                <div class="form-group">
+                  <label for="arFiles">Attach files (optional)</label>
+                  <input type="file" id="arFiles" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xlsx,application/pdf,image/*">
+                  <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:0.35rem;">Lab reports, scans, prescriptions — PDF, images, Word or Excel, up to 3 MB each. Patients can't see these files.</p>
+                </div>
+                <button type="submit" class="btn btn-primary" id="arSaveBtn">Save Report</button>
+              </form>
+
               <h4 style="margin-top:1.6rem;">Medical History</h4>
               <div id="patientReportRecords"></div>
             </div>
@@ -472,9 +503,22 @@
   }
 
   const escAttr = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let currentReportPatientId = null;
   async function openPatientReport(id) {
     try {
-      const { patient, appointments, records } = await API.get(`/api/admin/patients/${id}`);
+      currentReportPatientId = id;
+      const [{ patient, appointments, records }, allDoctors] = await Promise.all([
+        API.get(`/api/admin/patients/${id}`), API.get('/api/doctors')
+      ]);
+      // Doctor picker: default to the doctor of the patient's most recent appointment.
+      const docSel = document.getElementById('arDoctor');
+      const lastDoc = appointments.length ? appointments[0].doctorId : '';
+      docSel.innerHTML = '<option value="">Choose a doctor…</option>' +
+        allDoctors.map(d => `<option value="${d.id}">${escAttr(d.name)} — ${escAttr(d.specialty)}</option>`).join('');
+      if (lastDoc && allDoctors.some(d => d.id === lastDoc)) docSel.value = lastDoc;
+      const arDate = document.getElementById('arDate');
+      arDate.max = new Date().toISOString().slice(0, 10);
+      if (!arDate.value) arDate.value = arDate.max;
       document.getElementById('patientsList').style.display = 'none';
       document.getElementById('patientDetail').style.display = 'block';
       document.getElementById('patientReportName').textContent = patient.name;
@@ -489,11 +533,11 @@
 
       document.getElementById('patientReportRecords').innerHTML = records.length ? records.map(r => `
         <div class="timeline-item">
-          <div class="timeline-date">${fmtDate(r.date)} — ${r.doctorName}</div>
+          <div class="timeline-date">${fmtDate(r.date)} — ${r.doctorName}${r.enteredByName ? ` <span style="font-weight:400; color:var(--ink-soft);">(entered by ${escAttr(r.enteredByName)})</span>` : ''}</div>
           ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
           <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
           ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
-          ${(r.files || []).map(f => `<div style="display:flex; align-items:center; gap:0.5rem; margin:0.25rem 0; font-size:0.88rem;"><span style="color:var(--ink-soft); display:inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><a href="#" data-admin-file="${f.id}" data-filename="${escAttr(f.filename)}">${escAttr(f.filename)}</a><span style="color:var(--ink-soft);">${f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB'}</span></div>`).join('')}
+          ${(r.files || []).map(f => `<div style="display:flex; align-items:center; gap:0.5rem; margin:0.25rem 0; font-size:0.88rem;"><span style="color:var(--ink-soft); display:inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><a href="#" data-admin-file="${f.id}" data-filename="${escAttr(f.filename)}">${escAttr(f.filename)}</a><span style="color:var(--ink-soft);">${f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB'}</span><a href="#" data-admin-remove-file="${f.id}" style="color:var(--danger); font-size:0.8rem;">Remove</a></div>`).join('')}
         </div>
       `).join('') : '<div class="empty-state">No medical history.</div>';
       document.querySelectorAll('[data-admin-file]').forEach(a => a.addEventListener('click', async (e) => {
@@ -507,12 +551,65 @@
           setTimeout(() => URL.revokeObjectURL(url), 10000);
         } catch (err) { alert(err.message); }
       }));
+      document.querySelectorAll('[data-admin-remove-file]').forEach(a => a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!confirm('Remove this file from the record? This cannot be undone.')) return;
+        try { await API.del(`/api/admin/files/${a.dataset.adminRemoveFile}`); openPatientReport(currentReportPatientId); } catch (err) { alert(err.message); }
+      }));
     } catch (e) {
       alert(e.message);
     }
   }
 
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error(`Could not read "${file.name}".`));
+      r.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('adminRecordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('adminRecordAlert');
+    const btn = document.getElementById('arSaveBtn');
+    hideAlert(alertEl);
+    const files = [...document.getElementById('arFiles').files];
+    const tooBig = files.find(f => f.size > 3 * 1024 * 1024);
+    if (tooBig) return showAlert(alertEl, `"${tooBig.name}" is larger than 3 MB. Please compress it or split it.`, 'error');
+    if (files.length > 20) return showAlert(alertEl, 'Please attach at most 20 files per report.', 'error');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving…';
+    const failed = [];
+    try {
+      const record = await API.post(`/api/admin/patients/${currentReportPatientId}/records`, {
+        doctorId: document.getElementById('arDoctor').value,
+        date: document.getElementById('arDate').value,
+        diagnosis: document.getElementById('arDiagnosis').value,
+        notes: document.getElementById('arNotes').value,
+        prescription: document.getElementById('arPrescription').value
+      });
+      for (let i = 0; i < files.length; i++) {
+        btn.innerHTML = `<span class="spinner"></span> Uploading ${i + 1} of ${files.length}…`;
+        try {
+          await API.post(`/api/admin/records/${record.id}/files`, { filename: files[i].name, data: await readFileAsDataUrl(files[i]) });
+        } catch (err) { failed.push(err.message); }
+      }
+      ['arDiagnosis', 'arNotes', 'arPrescription', 'arFiles'].forEach(id => { document.getElementById(id).value = ''; });
+      if (failed.length) showAlert(alertEl, 'Report saved, but some files were not uploaded: ' + failed.join(' '), 'error');
+      else showAlert(alertEl, files.length ? `Report saved with ${files.length} file${files.length === 1 ? '' : 's'}.` : 'Report saved.', 'success');
+      await openPatientReport(currentReportPatientId);
+    } catch (err) {
+      showAlert(alertEl, err.message, 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Save Report';
+  });
+
   document.getElementById('backToPatientsList').addEventListener('click', () => {
+    hideAlert(document.getElementById('adminRecordAlert'));
+    document.getElementById('arDate').value = '';
     document.getElementById('patientDetail').style.display = 'none';
     document.getElementById('patientsList').style.display = 'block';
   });

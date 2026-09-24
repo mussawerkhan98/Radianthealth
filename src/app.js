@@ -76,7 +76,10 @@ function signToken(payload) {
 }
 
 async function findAccount(role, id) {
-  if (role === 'patient') return prisma.patient.findUnique({ where: { id } });
+  if (role === 'patient') {
+    const p = await prisma.patient.findUnique({ where: { id } });
+    return p && !p.isGuest ? p : null; // guest bookers have no login
+  }
   if (role === 'doctor') {
     const d = await prisma.doctor.findUnique({ where: { id } });
     return d && d.active ? d : null;
@@ -188,13 +191,31 @@ app.post('/api/register', authLimiter, wrap(async (req, res) => {
   if (!name || !email || !password) throw new HttpError(400, 'Name, email and password are required.');
   if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
   if (String(password).length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
-  if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
-  const patient = await prisma.patient.create({
-    data: {
-      id: newId('pt'), name: String(name).trim(), email, phone: phone || '', dob: dob || '', gender: gender || '',
-      passwordHash: await bcrypt.hash(password, 10)
+  const guest = await prisma.patient.findFirst({ where: { email, isGuest: true }, include: { _count: { select: { records: true } } } });
+  let patient;
+  if (guest) {
+    // Someone who booked as a guest is now creating an account: their past
+    // bookings move into it. If a doctor has already written medical notes for
+    // this email, we don't hand those over without the clinic checking first.
+    if (guest._count.records > 0) {
+      throw new HttpError(409, 'We already have records for this email. Please contact the clinic to activate your account.');
     }
-  });
+    patient = await prisma.patient.update({
+      where: { id: guest.id },
+      data: {
+        name: String(name).trim(), phone: phone || guest.phone, dob: dob || '', gender: gender || '',
+        passwordHash: await bcrypt.hash(password, 10), isGuest: false
+      }
+    });
+  } else {
+    if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
+    patient = await prisma.patient.create({
+      data: {
+        id: newId('pt'), name: String(name).trim(), email, phone: phone || '', dob: dob || '', gender: gender || '',
+        passwordHash: await bcrypt.hash(password, 10)
+      }
+    });
+  }
   const token = signToken({ sub: patient.id, role: 'patient', name: patient.name });
   res.json({ token, user: { id: patient.id, name: patient.name, email: patient.email, role: 'patient' } });
 }));
@@ -205,7 +226,7 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
   if (!email || !password) throw new HttpError(400, 'Email and password are required.');
 
   const [patient, doctor, staff] = await Promise.all([
-    prisma.patient.findUnique({ where: { email } }),
+    prisma.patient.findFirst({ where: { email, isGuest: false } }),
     prisma.doctor.findFirst({ where: { email, active: true } }),
     prisma.staff.findUnique({ where: { email } })
   ]);
@@ -413,25 +434,25 @@ app.delete('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
 
 // ---------- APPOINTMENTS ----------
 
-app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, res) => {
-  const { doctorId, date, time, reason } = req.body || {};
+// Shared by logged-in and guest bookings. Saves the appointment, then sends
+// the Brevo emails (and SMTP doctor notification, if configured).
+async function createBooking({ patient, doctorId, date, time, reason, honeypot }) {
   if (!doctorId || !date || !time) throw new HttpError(400, 'Doctor, date and time are required.');
-  const doctor = await prisma.doctor.findUnique({ where: { id: doctorId }, include: { department: true } });
+  const doctor = await prisma.doctor.findUnique({ where: { id: String(doctorId) }, include: { department: true } });
   if (!doctor || !doctor.active) throw new HttpError(404, 'Doctor not found.');
   if (!generateSlots(doctor, date).includes(time)) throw new HttpError(400, 'That time is not available. Please pick another slot.');
   let appt;
   try {
     appt = await prisma.appointment.create({
-      data: { id: newId('appt'), patientId: req.user.sub, doctorId, date, time, reason: reason || '', status: 'confirmed' }
+      data: { id: newId('appt'), patientId: patient.id, doctorId: doctor.id, date, time, reason: String(reason || '').slice(0, 2000), status: 'confirmed' }
     });
   } catch (e) {
     if (e.code === 'P2002') throw new HttpError(409, 'That slot was just booked by someone else. Please pick another.');
     throw e;
   }
   const departmentName = doctor.department && doctor.department.name;
-  const patient = req.account;
   let emailSent = false;
-  if (brevo.isConfigured() && !(req.body && req.body.website)) {
+  if (brevo.isConfigured() && !honeypot) {
     // Brevo: template auto-reply to the patient + notification to the clinic.
     const r = await brevo.sendBookingEmails({
       name: patient.name, email: patient.email, phone: patient.phone,
@@ -445,7 +466,45 @@ app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, r
   // extra addresses; the patient email is skipped when Brevo already sent one.
   await mailer.notifyBooking({ appointment: appt, doctor, patient, departmentName, skipPatient: emailSent })
     .catch(err => console.error('notifyBooking:', err.message));
-  res.json({ ...apptOut(appt), emailSent });
+  return { ...apptOut(appt), emailSent };
+}
+
+app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, res) => {
+  const { doctorId, date, time, reason, website } = req.body || {};
+  res.json(await createBooking({ patient: req.account, doctorId, date, time, reason, honeypot: website }));
+}));
+
+// Book without an account: name + email + phone. Re-uses the patient record
+// if this email has booked before, otherwise creates a "guest" patient (no
+// password). They can create a full account later with the same email.
+const guestLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many bookings from this device. Please try again later or call us.' } });
+
+app.post('/api/appointments/guest', guestLimiter, wrap(async (req, res) => {
+  const b = req.body || {};
+  const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  if (str(b.website, 200)) return res.json({ ok: true, emailSent: true }); // honeypot: pretend success
+  const name = str(b.name, 120).replace(/[\r\n]+/g, ' ');
+  const email = normEmail(b.email);
+  const phone = str(b.phone, 40);
+  if (!name) throw new HttpError(400, 'Please enter your full name.');
+  if (!isEmail(email) || email.length > 254) throw new HttpError(400, 'Please enter a valid email address so we can send your confirmation.');
+  if (phone.replace(/\D/g, '').length < 7) throw new HttpError(400, 'Please enter a phone number so the clinic can reach you.');
+
+  let patient = await prisma.patient.findUnique({ where: { email } });
+  if (!patient) {
+    const [doc, staff] = await Promise.all([
+      prisma.doctor.findUnique({ where: { email } }), prisma.staff.findUnique({ where: { email } })
+    ]);
+    if (doc || staff) throw new HttpError(409, 'This email belongs to a clinic account. Please use your personal email.');
+    patient = await prisma.patient.create({
+      data: { id: newId('pt'), name, email, phone, isGuest: true, passwordHash: '!guest-no-password' }
+    });
+  } else if (patient.isGuest) {
+    patient = await prisma.patient.update({ where: { id: patient.id }, data: { name, phone } });
+  }
+  // (Existing full accounts keep their saved name/phone; the booking just links to them.)
+  res.json(await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000) }));
 }));
 
 // "Thursday, 1 October 2026 at 10:30 AM" for emails.
@@ -551,7 +610,7 @@ app.get('/api/admin/patients', auth(['admin']), wrap(async (req, res) => {
     include: { _count: { select: { appointments: true, records: true } } }
   });
   res.json(patients.map(p => ({
-    id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt,
+    id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt, isGuest: p.isGuest,
     appointmentCount: p._count.appointments, recordCount: p._count.records
   })));
 }));

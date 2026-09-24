@@ -25,6 +25,16 @@
     <div class="card form-card" style="padding:2rem;">
       <p id="loginNotice" style="font-size:0.9rem; color:var(--ink-soft); margin-bottom:1.2rem;"></p>
 
+      <!-- Visit type: only shown when video calls are switched on -->
+      <fieldset id="visitTypeWrap" class="form-group" style="display:none; border:0; padding:0; margin:0 0 1.2rem;">
+        <legend style="font-weight:700; margin-bottom:0.5rem; font-size:0.92rem;">Type of visit</legend>
+        <div class="visit-types">
+          <label class="visit-type"><input type="radio" name="visitType" value="in_person" checked> <span><strong>In clinic</strong><small>Visit us in person</small></span></label>
+          <label class="visit-type"><input type="radio" name="visitType" value="video"> <span><strong>Video call</strong><small>From your phone or computer</small></span></label>
+        </div>
+        <p id="videoNote" style="display:none; font-size:0.82rem; color:var(--ink-soft); margin:0.5rem 0 0;">Only doctors who offer video appointments are shown. You'll get a private video link by email.</p>
+      </fieldset>
+
       <div class="form-group">
         <label for="deptSelect">Department</label>
         <select id="deptSelect"><option value="">Choose a department…</option></select>
@@ -116,8 +126,10 @@
     }
   }
 
+  const visitType = () => (document.querySelector('input[name="visitType"]:checked') || {}).value || 'in_person';
   async function loadDoctorsForDept(deptId, keepSelection) {
-    const doctorsInDept = deptId ? doctors.filter(d => d.departmentId === deptId) : doctors;
+    const video = visitType() === 'video';
+    const doctorsInDept = (deptId ? doctors.filter(d => d.departmentId === deptId) : doctors).filter(d => !video || d.offersVideo);
     const prevValue = keepSelection ? doctorSelect.value : '';
     doctorSelect.innerHTML = '<option value="">Choose a doctor…</option>' +
       doctorsInDept.map(d => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
@@ -169,7 +181,8 @@
       date: dateInput.value,
       time: selectedSlot,
       reason: document.getElementById('reasonInput').value,
-      website: document.getElementById('websiteInput').value
+      website: document.getElementById('websiteInput').value,
+      visitType: visitType()
     };
     if (!patient) {
       const name = document.getElementById('guestName').value.trim();
@@ -187,15 +200,18 @@
       const result = await API.post(url, body);
       confirmBtn.textContent = 'Booked';
       const emailed = result && result.emailSent;
+      const videoNote = result && result.visitType === 'video'
+        ? (emailed ? ' Your private video link is in a separate email.' : '') + (patient ? ' You can also join from your dashboard.' : '')
+        : '';
       if (patient) {
-        showAlert(formAlert, emailed
-          ? "Thanks! We've emailed you a confirmation."
-          : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)', 'success');
+        showAlert(formAlert, (emailed
+          ? "Thanks! We've emailed you a confirmation." + videoNote
+          : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)' + videoNote), 'success');
         setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
       } else {
         const idNote = result && result.patientId ? ` Your Patient ID is ${result.patientId} (your mobile number).` : '';
         showAlert(formAlert, (emailed
-          ? "Thanks! We've emailed you a confirmation."
+          ? "Thanks! We've emailed you a confirmation." + videoNote
           : 'Appointment confirmed! We could not send the confirmation email right now — please note your time, and call us if you need to change it.') + idNote, 'success');
       }
     } catch (e) {
@@ -212,6 +228,20 @@
     deptSelect.innerHTML = '<option value="">Choose a department…</option>' +
       departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
     doctors = await API.get('/api/doctors');
+    // Show the visit-type choice if video calls are on and any doctor offers them.
+    try {
+      const st = await API.get('/api/settings');
+      if (st.videoEnabled && doctors.some(d => d.offersVideo)) {
+        document.getElementById('visitTypeWrap').style.display = 'block';
+        if (params.get('visit') === 'video') document.querySelector('input[name="visitType"][value="video"]').checked = true;
+      }
+    } catch (e) { /* in-clinic only */ }
+    document.querySelectorAll('input[name="visitType"]').forEach(r => r.addEventListener('change', () => {
+      document.getElementById('videoNote').style.display = visitType() === 'video' ? 'block' : 'none';
+      loadDoctorsForDept(deptSelect.value, true);
+      loadSlots();
+    }));
+    document.getElementById('videoNote').style.display = visitType() === 'video' ? 'block' : 'none';
 
     if (preselectDoctor) {
       const doc = doctors.find(d => d.id === preselectDoctor);

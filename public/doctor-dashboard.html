@@ -100,17 +100,20 @@
     try {
       const appts = await API.get('/api/doctors/me/appointments');
       const now = new Date();
-      const upcoming = appts.filter(a => new Date(a.date + 'T' + a.time) >= now);
+      const upcoming = appts.filter(a => new Date(a.date + 'T' + a.time).getTime() + 60 * 60000 >= now.getTime());
       const el = document.getElementById('scheduleList');
       el.innerHTML = upcoming.length
         ? upcoming.map(a => `
             <div class="list-item">
               <div>
-                <strong>${a.patientName}</strong><br>
+                <strong>${a.patientName}</strong>${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : ''}<br>
                 <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
                 ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${a.reason}</span>` : ''}
               </div>
-              <span class="badge confirmed">confirmed</span>
+              <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                ${a.videoLink && true ? `<a class="btn btn-amber" style="padding:0.4rem 0.9rem; font-size:0.8rem;" href="${a.videoLink}" target="_blank" rel="noopener">Join video call</a>` : ''}
+                <span class="badge confirmed">confirmed</span>
+              </div>
             </div>
           `).join('')
         : '<div class="empty-state">No upcoming appointments.</div>';

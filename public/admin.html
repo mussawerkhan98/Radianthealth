@@ -139,6 +139,12 @@
                     <option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option>
                   </select></div>
               </div>
+              <div class="form-group">
+                <label style="display:flex; gap:0.55rem; align-items:flex-start; cursor:pointer; font-weight:600;">
+                  <input type="checkbox" id="dmVideo" style="width:auto; flex:0 0 auto; margin:0.2rem 0 0; accent-color:var(--blue);">
+                  <span>Offers video appointments <small id="dmVideoHint" style="display:block; font-weight:400; color:var(--ink-soft);">Patients can choose "Video call" when booking with this doctor.</small></span>
+                </label>
+              </div>
               <button type="submit" class="btn btn-primary">Save Hours</button>
             </form>
           </div>
@@ -261,6 +267,8 @@
                   <div class="form-group"><label for="rbName">Full name</label><input type="text" id="rbName" maxlength="120"></div>
                   <div class="form-group"><label for="rbEmail">Email (optional — for the confirmation)</label><input type="email" id="rbEmail" maxlength="254"></div>
                 </div>
+                <div class="form-group" id="rbVisitWrap" style="display:none;"><label for="rbVisit">Type of visit</label>
+                  <select id="rbVisit"><option value="in_person">In clinic</option><option value="video">Video call</option></select></div>
                 <div class="form-row">
                   <div class="form-group"><label for="rbDoctor">Doctor</label><select id="rbDoctor"></select></div>
                   <div class="form-group"><label for="rbDate">Date</label><input type="date" id="rbDate"></div>
@@ -437,6 +445,7 @@
 <script>
   const user = requireRole(['admin', 'staff']);
   let ME = { permissions: [] };
+  let SITE = { videoEnabled: false };
   const can = key => user && (user.role === 'admin' || (ME.permissions || []).includes(key));
   // Hide anything marked data-perm="…" that this role can't do.
   function applyPerms(root) {
@@ -512,7 +521,7 @@
           <div style="display:flex; align-items:center; gap:0.9rem;">
             ${avatarHtml(d, 'doctor-avatar-sm')}
             <div>
-              <strong>${d.name}</strong> — ${d.specialty}<br>
+              <strong>${d.name}</strong> — ${d.specialty}${d.offersVideo ? ' <span class="badge video">Video</span>' : ''}<br>
               <span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span>
             </div>
           </div>
@@ -696,6 +705,16 @@
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
   });
 
+  async function copyText(text, btn) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { window.prompt('Copy this link:', text); return; }
+    const old = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  }
+  const linkBtns = a => a.videoPatientLink ? `
+      <button type="button" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.78rem;" data-copy="${escAttr(a.videoPatientLink)}" title="Send this to the patient (e.g. WhatsApp)">Copy patient link</button>
+      <button type="button" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.78rem;" data-copy="${escAttr(a.videoDoctorLink)}" title="The doctor's own link">Copy doctor link</button>` : '';
+  const wireCopy = root => root.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => copyText(b.dataset.copy, b)));
+
   let apptCache = [];
   async function loadAppointments() {
     const el = document.getElementById('apptList');
@@ -723,17 +742,19 @@
     el.innerHTML = list.length ? list.map(a => `
       <div class="list-item" style="flex-wrap:wrap; gap:0.7rem;">
         <div>
-          <strong>${escAttr(a.patientName)}</strong> with <strong>${escAttr(a.doctorName)}</strong>${a.patientId ? ` <span class="badge">ID ${escAttr(a.patientId)}</span>` : ''}<br>
+          <strong>${escAttr(a.patientName)}</strong> with <strong>${escAttr(a.doctorName)}</strong>${a.patientId ? ` <span class="badge">ID ${escAttr(a.patientId)}</span>` : ''}${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : ''}<br>
           <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
           ${a.patientPhone || a.patientEmail ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">${[a.patientPhone, a.patientEmail].filter(Boolean).map(escAttr).join(' · ')}</span>` : ''}
           ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${escAttr(a.reason)}</span>` : ''}
         </div>
-        <div style="display:flex; align-items:center; gap:0.7rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          ${linkBtns(a)}
           <span class="badge ${a.status}">${a.status}</span>
           ${a.status === 'confirmed' && can('appointments.cancel') ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel-appt="${a.id}">Cancel</button>` : ''}
         </div>
       </div>
     `).join('') : '<div class="empty-state">No appointments to show.</div>';
+    wireCopy(el);
     el.querySelectorAll('[data-cancel-appt]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Cancel this appointment? The patient and doctor will be notified.')) return;
@@ -771,10 +792,10 @@
       document.getElementById('rbName').value = patient ? patient.name : '';
       document.getElementById('rbEmail').value = patient ? patient.email : '';
       document.getElementById('rbDetails').style.display = 'block';
-      if (!document.getElementById('rbDoctor').options.length) {
-        const docs = await API.get('/api/doctors');
-        document.getElementById('rbDoctor').innerHTML = '<option value="">Choose a doctor…</option>' +
-          docs.map(d => `<option value="${d.id}">${escAttr(d.name)} — ${escAttr(d.specialty)}</option>`).join('');
+      if (!rb.doctors) {
+        rb.doctors = await API.get('/api/doctors');
+        document.getElementById('rbVisitWrap').style.display = SITE.videoEnabled && rb.doctors.some(d => d.offersVideo) ? '' : 'none';
+        rbFillDoctors();
       }
       const dateIn = document.getElementById('rbDate');
       dateIn.min = new Date().toISOString().slice(0, 10);
@@ -783,6 +804,15 @@
       rbLoadSlots();
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
   }
+  function rbFillDoctors() {
+    const video = document.getElementById('rbVisit').value === 'video';
+    const sel = document.getElementById('rbDoctor'), prev = sel.value;
+    const list = (rb.doctors || []).filter(d => !video || d.offersVideo);
+    sel.innerHTML = '<option value="">Choose a doctor…</option>' +
+      list.map(d => `<option value="${d.id}">${escAttr(d.name)} — ${escAttr(d.specialty)}</option>`).join('');
+    if (list.some(d => d.id === prev)) sel.value = prev;
+  }
+  document.getElementById('rbVisit').addEventListener('change', () => { rbFillDoctors(); rbLoadSlots(); });
   async function rbLoadSlots() {
     rb.slot = null;
     document.getElementById('rbBookBtn').disabled = true;
@@ -820,11 +850,13 @@
       const r = await API.post('/api/admin/appointments', {
         phone: document.getElementById('rbPhone').value, name, email: document.getElementById('rbEmail').value.trim(),
         doctorId: document.getElementById('rbDoctor').value, date: document.getElementById('rbDate').value, time: rb.slot,
-        reason: document.getElementById('rbReason').value
+        reason: document.getElementById('rbReason').value,
+        visitType: document.getElementById('rbVisit').value
       });
       const doc = document.getElementById('rbDoctor').selectedOptions[0].textContent.split(' — ')[0];
-      showAlert(alertEl, `Booked ${r.patient.name} (ID ${r.patient.patientId}) with ${doc} on ${fmtDate(r.date)} at ${fmtTime(r.time)}.` +
-        (r.patient.email ? (r.emailSent ? ' Confirmation emailed.' : ' (Confirmation email could not be sent.)') : ' No email on file, so no confirmation was sent.'), 'success');
+      showAlert(alertEl, `Booked ${r.patient.name} (ID ${r.patient.patientId}) with ${doc} on ${fmtDate(r.date)} at ${fmtTime(r.time)}${r.visitType === 'video' ? ' as a video call' : ''}.` +
+        (r.patient.email ? (r.emailSent ? ' Confirmation emailed.' : ' (Confirmation email could not be sent.)') : ' No email on file, so no confirmation was sent.') +
+        (r.visitType === 'video' ? (r.patient.email ? ' The video link was emailed too.' : ' Use "Copy patient link" in the list below to send them the video link (e.g. by WhatsApp).') : ''), 'success');
       rbReset(false);
       loadAppointments();
     } catch (err) { showAlert(alertEl, err.message, 'error'); rbLoadSlots(); }
@@ -1033,6 +1065,10 @@
     document.getElementById('dmDays').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(n =>
       `<label><input type="checkbox" value="${n}" ${d.workingDays.includes(n) ? 'checked' : ''}> ${DAY_NAMES[n]}</label>`).join('');
     document.getElementById('dmStart').value = d.workingHours.start;
+    document.getElementById('dmVideo').checked = !!d.offersVideo;
+    document.getElementById('dmVideoHint').textContent = SITE.videoEnabled
+      ? 'Patients can choose "Video call" when booking with this doctor.'
+      : 'Video calls are not switched on yet (the DAILY_API_KEY setting is missing in Vercel), so patients won\'t see this option until it is.';
     document.getElementById('dmEnd').value = d.workingHours.end;
     const slotSel = document.getElementById('dmSlot');
     if (![...slotSel.options].some(o => Number(o.value) === d.workingHours.slotMinutes)) {
@@ -1058,7 +1094,7 @@
     const chip = (s, date) => {
       if (s.status === 'booked') {
         const a = s.appointment;
-        return `<button type="button" class="cal-chip booked" data-appt="${a.id}" data-date="${date}" title="${escAttr(a.patient ? a.patient.name : '')}">${fmtTime(s.time)}<small>${escAttr(a.patient ? a.patient.name : 'Booked')}</small></button>`;
+        return `<button type="button" class="cal-chip booked" data-appt="${a.id}" data-date="${date}" title="${escAttr(a.patient ? a.patient.name : '')}${a.visitType === 'video' ? ' (video call)' : ''}">${fmtTime(s.time)}${a.visitType === 'video' ? ' · Video' : ''}<small>${escAttr(a.patient ? a.patient.name : 'Booked')}</small></button>`;
       }
       return `<div class="cal-chip ${s.status}">${fmtTime(s.time)}<small>${s.status === 'free' ? 'Free' : '—'}</small></div>`;
     };
@@ -1084,10 +1120,11 @@
     box.innerHTML = `<div class="cal-detail">
       <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
         <div>
-          <strong style="font-size:1.05rem;">${escAttr(p.name || 'Patient')}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ''}<br>
+          <strong style="font-size:1.05rem;">${escAttr(p.name || 'Patient')}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ''}${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : ''}<br>
           <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(date)} at ${fmtTime(a.time)}</span>
           <p style="margin:0.5rem 0 0; font-size:0.9rem;">${p.phone ? escAttr(p.phone) + ' · ' : ''}${escAttr(p.email || '')}</p>
           ${a.reason ? `<p style="margin:0.4rem 0 0; font-size:0.9rem;"><strong>Reason:</strong> ${escAttr(a.reason)}</p>` : ''}
+          ${a.videoPatientLink ? `<div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.6rem;">${linkBtns(a)}</div>` : ''}
         </div>
         <div style="display:flex; gap:0.5rem; align-items:flex-start; flex-wrap:wrap;">
           ${p.id && can('patients.view') ? `<button type="button" class="btn btn-outline" id="calOpenPatient" style="padding:0.4rem 0.9rem; font-size:0.8rem;">Patient details</button>` : ''}
@@ -1097,6 +1134,7 @@
         </div>
       </div></div>`;
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    wireCopy(box);
     document.getElementById('calCloseDetail').addEventListener('click', () => { box.innerHTML = ''; });
     const sendBtn = document.getElementById('calSendInvite');
     if (sendBtn) sendBtn.addEventListener('click', async (e) => {
@@ -1136,7 +1174,7 @@
     if (!days.length) return showAlert(alertEl, 'Pick at least one working day.', 'error');
     if (start >= end) return showAlert(alertEl, 'Finishing time must be after the starting time.', 'error');
     try {
-      await API.patch(`/api/admin/doctors/${dm.id}`, { workingDays: days, workingHours: { start, end, slotMinutes: Number(document.getElementById('dmSlot').value) } });
+      await API.patch(`/api/admin/doctors/${dm.id}`, { workingDays: days, workingHours: { start, end, slotMinutes: Number(document.getElementById('dmSlot').value) }, offersVideo: document.getElementById('dmVideo').checked });
       showAlert(alertEl, 'Working hours saved. The booking page now uses these times.', 'success');
       await Promise.all([loadDoctorProfile(), loadDoctorCalendar()]);
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
@@ -1374,6 +1412,7 @@
   (async function () {
     if (!user) return;
     try { ME = await API.get('/api/me'); } catch (e) { API.clearSession(); window.location.href = 'login.html'; return; }
+    try { SITE = await API.get('/api/settings'); } catch (e) { /* defaults */ }
     document.getElementById('dashTitle').textContent = user.role === 'admin' ? 'Admin' : 'Staff Portal';
     document.getElementById('dashSubtitle').textContent = `${ME.name} · ${ME.roleName || 'Admin'}`;
     let first = null;

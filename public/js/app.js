@@ -41,8 +41,8 @@ function fileToDataUrl(fileInput) {
   return new Promise((resolve, reject) => {
     const file = fileInput.files && fileInput.files[0];
     if (!file) return resolve(null);
-    if (file.size > 4 * 1024 * 1024) {
-      return reject(new Error('Please choose an image under 4MB.'));
+    if (file.size > 3 * 1024 * 1024) {
+      return reject(new Error('Please choose an image under 3MB.'));
     }
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);

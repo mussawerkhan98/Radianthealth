@@ -308,3 +308,33 @@ footer.site-footer a:hover { color: #fff; }
 .timeline-item { border-left: 3px solid var(--teal); padding-left: 1.2rem; margin-bottom: 1.4rem; position: relative; }
 .timeline-item::before { content: ""; position: absolute; left: -7px; top: 3px; width: 11px; height: 11px; border-radius: 50%; background: var(--teal); }
 .timeline-date { font-weight: 800; font-size: 0.8rem; color: var(--blue-deep); }
+
+/* Admin: doctor calendar */
+.cal-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.4rem 0 1rem; }
+.cal-toolbar .cal-range { font-weight: 800; margin-right: auto; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 0.9rem; }
+.cal-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 0.35rem; vertical-align: -1px; }
+.cal-legend .lg-booked::before { background: var(--blue); }
+.cal-legend .lg-free::before { background: #fff; border: 1px solid var(--border); }
+.cal-legend .lg-past::before { background: #EEF1F0; }
+.cal-day { border: 1px solid var(--border); border-radius: 12px; background: #fff; padding: 0.9rem 1rem; margin-bottom: 0.8rem; }
+.cal-day.today { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal) inset; }
+.cal-day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; margin-bottom: 0.6rem; }
+.cal-day-head strong { font-size: 0.95rem; }
+.cal-day-head span { font-size: 0.8rem; color: var(--ink-soft); }
+.cal-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 0.45rem; }
+.cal-chip { border-radius: 8px; padding: 0.4rem 0.45rem; font-size: 0.78rem; font-weight: 700; border: 1px solid var(--border); background: #fff; color: var(--ink-soft); text-align: left; line-height: 1.25; min-width: 0; font-family: inherit; }
+.cal-chip small { display: block; font-weight: 600; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-chip.booked { background: var(--blue); border-color: var(--blue); color: #fff; cursor: pointer; }
+.cal-chip.booked:hover, .cal-chip.booked:focus-visible { background: var(--blue-deep); outline: none; }
+.cal-chip.past { background: #EEF1F0; color: #9AA7AD; border-color: #EEF1F0; }
+.cal-chip.outside { background: var(--amber); border-color: var(--amber); color: #fff; cursor: pointer; }
+.cal-off { font-size: 0.85rem; color: var(--ink-soft); }
+.cal-detail { border: 1px solid var(--blue); border-radius: 12px; background: rgba(61,125,183,0.05); padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.day-checks { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.day-checks label { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.85rem; cursor: pointer; background: #fff; font-weight: 600; }
+.day-checks input { accent-color: var(--blue); }
+.doc-stats { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0 0; }
+.doc-stats div { background: var(--paper); border-radius: 10px; padding: 0.5rem 0.9rem; font-size: 0.82rem; color: var(--ink-soft); }
+.doc-stats b { color: var(--ink); font-size: 1rem; margin-right: 0.25rem; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 1rem; }

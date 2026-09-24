@@ -1,0 +1,691 @@
+// src/app.js — Radiant Health Alliance API (Express + Prisma/PostgreSQL).
+// Same API paths and response shapes as the original JSON-file version, so
+// the existing frontend in /public works unchanged — plus the admin/staff
+// endpoints the frontend already called but the old server never had.
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const prisma = require('./db');
+const settings = require('./settings');
+const mailer = require('./mailer');
+const { newId } = require('./ids');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set (32+ random characters) in production.');
+  }
+  console.warn('\n*** WARNING: JWT_SECRET is missing/short. Set a long random JWT_SECRET before going live. ***\n');
+}
+const SECRET = JWT_SECRET || 'dev-only-insecure-secret-change-me-please-0000';
+const CLINIC_TZ = process.env.CLINIC_TZ || 'Asia/Dubai';
+const PRIMARY_ADMIN_EMAIL = 'admin@radianthealthalliance.com';
+
+const app = express();
+app.set('trust proxy', 1); // behind Hostinger / Vercel / nginx proxy
+app.disable('x-powered-by');
+// CSP disabled because the existing pages use inline scripts + Google Fonts.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+if (process.env.CORS_ORIGIN) app.use(cors({ origin: process.env.CORS_ORIGIN.split(',') }));
+// Photos are sent as base64 data URLs inside JSON, hence the raised limit.
+app.use(express.json({ limit: '6mb' }));
+
+// Strip < and > from text inputs so names/notes can't inject HTML into the
+// pages (the frontend renders with innerHTML). Passwords/photos untouched.
+const RAW_FIELDS = new Set(['password', 'currentPassword', 'newPassword', 'photo', 'pass']);
+function sanitize(value, key) {
+  if (typeof value === 'string') return RAW_FIELDS.has(key) ? value : value.replace(/[<>]/g, '');
+  if (Array.isArray(value)) return value.map(v => sanitize(v, key));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = sanitize(v, k);
+    return out;
+  }
+  return value;
+}
+app.use((req, res, next) => { if (req.body) req.body = sanitize(req.body); next(); });
+
+// Static frontend (on Vercel the CDN serves /public directly instead).
+app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
+
+// ---------- helpers ----------
+
+const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+class HttpError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many attempts. Please wait a few minutes and try again.' } });
+const formLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' } });
+
+function signToken(payload) {
+  return jwt.sign(payload, SECRET, { expiresIn: '12h' });
+}
+
+async function findAccount(role, id) {
+  if (role === 'patient') return prisma.patient.findUnique({ where: { id } });
+  if (role === 'doctor') {
+    const d = await prisma.doctor.findUnique({ where: { id } });
+    return d && d.active ? d : null;
+  }
+  return prisma.staff.findUnique({ where: { id } });
+}
+
+// auth(['admin']) etc. Also re-checks the account still exists, so removed
+// staff/doctors lose access immediately instead of when their token expires.
+function auth(requiredRoles) {
+  return wrap(async (req, res, next) => {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'Not logged in.' });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please log in again.' });
+    }
+    const account = await findAccount(decoded.role, decoded.sub);
+    if (!account) return res.status(401).json({ error: 'Your session has expired. Please log in again.' });
+    const role = (decoded.role === 'admin' || decoded.role === 'staff') ? account.role : decoded.role;
+    if (requiredRoles && !requiredRoles.includes(role)) {
+      return res.status(403).json({ error: 'You do not have permission to do that.' });
+    }
+    req.user = { ...decoded, role };
+    req.account = account;
+    next();
+  });
+}
+
+function isValidPhoto(photo) {
+  if (photo === null || photo === undefined || photo === '') return true;
+  return typeof photo === 'string' && /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(photo);
+}
+
+const normEmail = e => String(e || '').toLowerCase().trim();
+const isEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+async function emailTaken(email) {
+  const [p, d, s] = await Promise.all([
+    prisma.patient.findUnique({ where: { email } }),
+    prisma.doctor.findUnique({ where: { email } }),
+    prisma.staff.findUnique({ where: { email } })
+  ]);
+  return !!(p || d || s);
+}
+
+function doctorOut(d, { includeEmail = true } = {}) {
+  const out = {
+    id: d.id, name: d.name, departmentId: d.departmentId, specialty: d.specialty, bio: d.bio,
+    photo: d.photo, mustChangePassword: d.mustChangePassword,
+    workingHours: { start: d.workStart, end: d.workEnd, slotMinutes: d.slotMinutes },
+    workingDays: d.workingDays
+  };
+  if (includeEmail) out.email = d.email;
+  return out;
+}
+
+const apptOut = a => ({
+  id: a.id, patientId: a.patientId, doctorId: a.doctorId, date: a.date, time: a.time,
+  reason: a.reason, status: a.status, createdAt: a.createdAt
+});
+
+const recordOut = r => ({
+  id: r.id, patientId: r.patientId, doctorId: r.doctorId, date: r.date, diagnosis: r.diagnosis,
+  notes: r.notes, prescription: r.prescription, createdAt: r.createdAt,
+  ...(r.doctor ? { doctorName: r.doctor.name } : {})
+});
+
+// "Now" in the clinic's timezone, as YYYY-MM-DD and HH:MM.
+function clinicNow() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: CLINIC_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(new Date());
+  const g = t => parts.find(p => p.type === t).value;
+  return { date: `${g('year')}-${g('month')}-${g('day')}`, time: `${g('hour') === '24' ? '00' : g('hour')}:${g('minute')}` };
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+function generateSlots(doctor, dateStr) {
+  if (!DATE_RE.test(dateStr)) return [];
+  const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getUTCDay();
+  if (Number.isNaN(dayOfWeek) || !doctor.workingDays.includes(dayOfWeek)) return [];
+  const [sh, sm] = doctor.workStart.split(':').map(Number);
+  const [eh, em] = doctor.workEnd.split(':').map(Number);
+  const step = doctor.slotMinutes || 30;
+  const now = clinicNow();
+  if (dateStr < now.date) return [];
+  const slots = [];
+  for (let c = sh * 60 + sm; c + step <= eh * 60 + em; c += step) {
+    const t = `${String(Math.floor(c / 60)).padStart(2, '0')}:${String(c % 60).padStart(2, '0')}`;
+    if (dateStr === now.date && t <= now.time) continue; // no past slots today
+    slots.push(t);
+  }
+  return slots;
+}
+
+// ---------- AUTH ----------
+
+app.post('/api/register', authLimiter, wrap(async (req, res) => {
+  const { name, phone, dob, gender, password } = req.body || {};
+  const email = normEmail(req.body && req.body.email);
+  if (!name || !email || !password) throw new HttpError(400, 'Name, email and password are required.');
+  if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  if (String(password).length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+  if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
+  const patient = await prisma.patient.create({
+    data: {
+      id: newId('pt'), name: String(name).trim(), email, phone: phone || '', dob: dob || '', gender: gender || '',
+      passwordHash: await bcrypt.hash(password, 10)
+    }
+  });
+  const token = signToken({ sub: patient.id, role: 'patient', name: patient.name });
+  res.json({ token, user: { id: patient.id, name: patient.name, email: patient.email, role: 'patient' } });
+}));
+
+app.post('/api/login', authLimiter, wrap(async (req, res) => {
+  const { password } = req.body || {};
+  const email = normEmail(req.body && req.body.email);
+  if (!email || !password) throw new HttpError(400, 'Email and password are required.');
+
+  const [patient, doctor, staff] = await Promise.all([
+    prisma.patient.findUnique({ where: { email } }),
+    prisma.doctor.findFirst({ where: { email, active: true } }),
+    prisma.staff.findUnique({ where: { email } })
+  ]);
+  const candidates = [[patient, 'patient'], [doctor, 'doctor'], [staff, staff && staff.role]];
+  for (const [user, role] of candidates) {
+    if (!user) continue;
+    if (await bcrypt.compare(password, user.passwordHash)) {
+      return res.json({
+        token: signToken({ sub: user.id, role, name: user.name }),
+        user: { id: user.id, name: user.name, email: user.email, role, mustChangePassword: !!user.mustChangePassword }
+      });
+    }
+  }
+  throw new HttpError(401, 'Incorrect email or password.');
+}));
+
+app.post('/api/change-password', auth(), wrap(async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword || newPassword.length < 8) {
+    throw new HttpError(400, 'New password must be at least 8 characters, and current password is required.');
+  }
+  const user = req.account;
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) throw new HttpError(401, 'Current password is incorrect.');
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const model = req.user.role === 'patient' ? prisma.patient : req.user.role === 'doctor' ? prisma.doctor : prisma.staff;
+  const data = req.user.role === 'patient' ? { passwordHash } : { passwordHash, mustChangePassword: false };
+  await model.update({ where: { id: user.id }, data });
+  res.json({ ok: true });
+}));
+
+// ---------- PUBLIC SETTINGS ----------
+
+app.get('/api/settings', wrap(async (req, res) => {
+  const s = await settings.getAll();
+  res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail });
+}));
+
+// ---------- DEPARTMENTS ----------
+
+app.get('/api/departments', wrap(async (req, res) => {
+  const depts = await prisma.department.findMany({
+    where: { active: true },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    include: { _count: { select: { doctors: { where: { active: true } } } } }
+  });
+  res.json(depts.map(d => ({ id: d.id, name: d.name, description: d.description, icon: d.icon, doctorCount: d._count.doctors })));
+}));
+
+app.post('/api/admin/departments', auth(['admin']), wrap(async (req, res) => {
+  const { name, description, icon } = req.body || {};
+  if (!name) throw new HttpError(400, 'Department name is required.');
+  const count = await prisma.department.count();
+  const d = await prisma.department.create({
+    data: { id: newId('dept'), name, description: description || '', icon: icon || 'stethoscope', sortOrder: count }
+  });
+  res.json({ id: d.id, name: d.name, description: d.description, icon: d.icon });
+}));
+
+app.delete('/api/admin/departments/:id', auth(['admin']), wrap(async (req, res) => {
+  const dept = await prisma.department.findUnique({ where: { id: req.params.id } });
+  if (!dept || !dept.active) throw new HttpError(404, 'Department not found.');
+  const activeDoctors = await prisma.doctor.count({ where: { departmentId: dept.id, active: true } });
+  if (activeDoctors > 0) {
+    throw new HttpError(409, `This department still has ${activeDoctors} doctor${activeDoctors === 1 ? '' : 's'}. Move or delete them first.`);
+  }
+  await prisma.department.update({ where: { id: dept.id }, data: { active: false } });
+  res.json({ ok: true });
+}));
+
+// ---------- DOCTORS ----------
+
+app.get('/api/doctors', wrap(async (req, res) => {
+  const where = { active: true };
+  if (req.query.department) where.departmentId = String(req.query.department);
+  const doctors = await prisma.doctor.findMany({ where, orderBy: { createdAt: 'asc' } });
+  res.json(doctors.map(d => doctorOut(d)));
+}));
+
+// NB: /api/doctors/me/* routes are registered before /api/doctors/:id below.
+app.get('/api/doctors/me/appointments', auth(['doctor']), wrap(async (req, res) => {
+  const appts = await prisma.appointment.findMany({
+    where: { doctorId: req.user.sub, status: { not: 'cancelled' } },
+    include: { patient: { select: { name: true } } },
+    orderBy: [{ date: 'asc' }, { time: 'asc' }]
+  });
+  res.json(appts.map(a => ({ ...apptOut(a), patientName: a.patient ? a.patient.name : 'Unknown patient' })));
+}));
+
+app.get('/api/doctors/me/patients', auth(['doctor']), wrap(async (req, res) => {
+  const patients = await prisma.patient.findMany({
+    where: { appointments: { some: { doctorId: req.user.sub } } },
+    orderBy: { name: 'asc' }
+  });
+  res.json(patients.map(p => ({ id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender })));
+}));
+
+// A doctor may only see/add records for patients who have booked with them.
+async function assertDoctorPatient(doctorId, patientId) {
+  const link = await prisma.appointment.findFirst({ where: { doctorId, patientId }, select: { id: true } });
+  if (!link) throw new HttpError(404, 'Patient not found.');
+}
+
+app.get('/api/doctors/me/patients/:patientId/records', auth(['doctor']), wrap(async (req, res) => {
+  await assertDoctorPatient(req.user.sub, req.params.patientId);
+  const records = await prisma.medicalRecord.findMany({
+    where: { patientId: req.params.patientId },
+    include: { doctor: { select: { name: true } } },
+    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
+  });
+  res.json(records.map(recordOut));
+}));
+
+app.post('/api/doctors/me/patients/:patientId/records', auth(['doctor']), wrap(async (req, res) => {
+  const { diagnosis, notes, prescription } = req.body || {};
+  if (!notes) throw new HttpError(400, 'Notes are required.');
+  await assertDoctorPatient(req.user.sub, req.params.patientId);
+  const r = await prisma.medicalRecord.create({
+    data: {
+      id: newId('rec'), patientId: req.params.patientId, doctorId: req.user.sub, date: clinicNow().date,
+      diagnosis: diagnosis || '', notes, prescription: prescription || ''
+    }
+  });
+  res.json(recordOut(r));
+}));
+
+app.get('/api/doctors/:id', wrap(async (req, res) => {
+  const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+  if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
+  res.json(doctorOut(d));
+}));
+
+app.get('/api/doctors/:id/slots', wrap(async (req, res) => {
+  const date = String(req.query.date || '');
+  if (!DATE_RE.test(date)) throw new HttpError(400, 'A date is required (YYYY-MM-DD).');
+  const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+  if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
+  const taken = await prisma.appointment.findMany({
+    where: { doctorId: d.id, date, status: { not: 'cancelled' } }, select: { time: true }
+  });
+  const takenSet = new Set(taken.map(t => t.time));
+  res.json({ date, available: generateSlots(d, date).filter(s => !takenSet.has(s)) });
+}));
+
+app.post('/api/admin/doctors', auth(['admin']), wrap(async (req, res) => {
+  const { name, departmentId, specialty, bio, password, photo } = req.body || {};
+  const email = normEmail(req.body && req.body.email);
+  if (!name || !departmentId || !email || !password) throw new HttpError(400, 'Name, department, email and password are required.');
+  if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  if (String(password).length < 8) throw new HttpError(400, 'Temporary password must be at least 8 characters.');
+  if (!isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
+  const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+  if (!dept || !dept.active) throw new HttpError(400, 'Please choose a valid department.');
+  if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
+  const d = await prisma.doctor.create({
+    data: {
+      id: newId('doc'), name, departmentId, specialty: specialty || '', bio: bio || '', photo: photo || null,
+      email, passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true
+    }
+  });
+  res.json(doctorOut(d));
+}));
+
+app.patch('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
+  const { name, specialty, bio, photo, departmentId, workingHours, workingDays } = req.body || {};
+  if (photo !== undefined && !isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
+  const existing = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+  if (!existing || !existing.active) throw new HttpError(404, 'Doctor not found.');
+  const data = {};
+  if (name !== undefined) data.name = name;
+  if (specialty !== undefined) data.specialty = specialty;
+  if (bio !== undefined) data.bio = bio;
+  if (photo !== undefined) data.photo = photo || null;
+  if (departmentId !== undefined) {
+    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+    if (!dept || !dept.active) throw new HttpError(400, 'Please choose a valid department.');
+    data.departmentId = departmentId;
+  }
+  if (workingHours) {
+    if (workingHours.start && TIME_RE.test(workingHours.start)) data.workStart = workingHours.start;
+    if (workingHours.end && TIME_RE.test(workingHours.end)) data.workEnd = workingHours.end;
+    if (workingHours.slotMinutes) data.slotMinutes = Math.max(5, Math.min(240, Number(workingHours.slotMinutes) || 30));
+  }
+  if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => n >= 0 && n <= 6))];
+  const d = await prisma.doctor.update({ where: { id: existing.id }, data });
+  res.json(doctorOut(d));
+}));
+
+// "Delete" = deactivate: login stops working, past appointments/records are kept.
+app.delete('/api/admin/doctors/:id', auth(['admin']), wrap(async (req, res) => {
+  const d = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+  if (!d || !d.active) throw new HttpError(404, 'Doctor not found.');
+  await prisma.$transaction([
+    prisma.doctor.update({
+      where: { id: d.id },
+      // Free the email so it can be reused for a new account later.
+      data: { active: false, email: `deleted+${d.id}+${d.email}` }
+    }),
+    prisma.appointment.updateMany({
+      where: { doctorId: d.id, status: 'confirmed', date: { gte: clinicNow().date } },
+      data: { status: 'cancelled' }
+    })
+  ]);
+  res.json({ ok: true });
+}));
+
+// ---------- APPOINTMENTS ----------
+
+app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, res) => {
+  const { doctorId, date, time, reason } = req.body || {};
+  if (!doctorId || !date || !time) throw new HttpError(400, 'Doctor, date and time are required.');
+  const doctor = await prisma.doctor.findUnique({ where: { id: doctorId }, include: { department: true } });
+  if (!doctor || !doctor.active) throw new HttpError(404, 'Doctor not found.');
+  if (!generateSlots(doctor, date).includes(time)) throw new HttpError(400, 'That time is not available. Please pick another slot.');
+  let appt;
+  try {
+    appt = await prisma.appointment.create({
+      data: { id: newId('appt'), patientId: req.user.sub, doctorId, date, time, reason: reason || '', status: 'confirmed' }
+    });
+  } catch (e) {
+    if (e.code === 'P2002') throw new HttpError(409, 'That slot was just booked by someone else. Please pick another.');
+    throw e;
+  }
+  await mailer.notifyBooking({
+    appointment: appt, doctor, patient: req.account, departmentName: doctor.department && doctor.department.name
+  }).catch(err => console.error('notifyBooking:', err.message));
+  res.json(apptOut(appt));
+}));
+
+app.get('/api/patients/me/appointments', auth(['patient']), wrap(async (req, res) => {
+  const appts = await prisma.appointment.findMany({
+    where: { patientId: req.user.sub },
+    include: { doctor: { include: { department: true } } },
+    orderBy: [{ date: 'asc' }, { time: 'asc' }]
+  });
+  res.json(appts.map(a => ({
+    ...apptOut(a),
+    doctorName: a.doctor ? a.doctor.name : 'Unknown',
+    departmentName: a.doctor && a.doctor.department ? a.doctor.department.name : ''
+  })));
+}));
+
+async function cancelAppointment(where, by) {
+  const appt = await prisma.appointment.findFirst({ where, include: { doctor: true, patient: true } });
+  if (!appt) throw new HttpError(404, 'Appointment not found.');
+  if (appt.status === 'cancelled') return appt;
+  const updated = await prisma.appointment.update({ where: { id: appt.id }, data: { status: 'cancelled' } });
+  await mailer.notifyCancellation({ appointment: appt, doctor: appt.doctor, patient: appt.patient, by })
+    .catch(err => console.error('notifyCancellation:', err.message));
+  return updated;
+}
+
+app.post('/api/patients/me/appointments/:id/cancel', auth(['patient']), wrap(async (req, res) => {
+  const a = await cancelAppointment({ id: req.params.id, patientId: req.user.sub }, 'the patient');
+  res.json(apptOut(a));
+}));
+
+// Admin + front-desk staff: every booking.
+app.get('/api/admin/appointments', auth(['admin', 'staff']), wrap(async (req, res) => {
+  const appts = await prisma.appointment.findMany({
+    include: { doctor: { select: { name: true } }, patient: { select: { name: true, phone: true, email: true } } },
+    orderBy: [{ date: 'asc' }, { time: 'asc' }]
+  });
+  res.json(appts.map(a => ({
+    ...apptOut(a),
+    doctorName: a.doctor ? a.doctor.name : 'Unknown',
+    patientName: a.patient ? a.patient.name : 'Unknown patient',
+    patientPhone: a.patient ? a.patient.phone : '',
+    patientEmail: a.patient ? a.patient.email : ''
+  })));
+}));
+
+app.post('/api/admin/appointments/:id/cancel', auth(['admin', 'staff']), wrap(async (req, res) => {
+  const a = await cancelAppointment({ id: req.params.id }, 'the clinic');
+  res.json(apptOut(a));
+}));
+
+// ---------- MEDICAL RECORDS ----------
+
+app.get('/api/patients/me/records', auth(['patient']), wrap(async (req, res) => {
+  const records = await prisma.medicalRecord.findMany({
+    where: { patientId: req.user.sub },
+    include: { doctor: { select: { name: true } } },
+    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
+  });
+  res.json(records.map(r => ({ ...recordOut(r), doctorName: r.doctor ? r.doctor.name : 'Unknown' })));
+}));
+
+// ---------- ADMIN: PATIENTS ----------
+
+app.get('/api/admin/patients', auth(['admin']), wrap(async (req, res) => {
+  const patients = await prisma.patient.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { _count: { select: { appointments: true, records: true } } }
+  });
+  res.json(patients.map(p => ({
+    id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt,
+    appointmentCount: p._count.appointments, recordCount: p._count.records
+  })));
+}));
+
+app.get('/api/admin/patients/:id', auth(['admin']), wrap(async (req, res) => {
+  const p = await prisma.patient.findUnique({ where: { id: req.params.id } });
+  if (!p) throw new HttpError(404, 'Patient not found.');
+  const [appointments, records] = await Promise.all([
+    prisma.appointment.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } } }, orderBy: [{ date: 'desc' }, { time: 'desc' }] }),
+    prisma.medicalRecord.findMany({ where: { patientId: p.id }, include: { doctor: { select: { name: true } } }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }] })
+  ]);
+  res.json({
+    patient: { id: p.id, name: p.name, email: p.email, phone: p.phone, dob: p.dob, gender: p.gender, createdAt: p.createdAt },
+    appointments: appointments.map(a => ({ ...apptOut(a), doctorName: a.doctor ? a.doctor.name : 'Unknown' })),
+    records: records.map(r => ({ ...recordOut(r), doctorName: r.doctor ? r.doctor.name : 'Unknown' }))
+  });
+}));
+
+// ---------- ADMIN: STAFF ACCOUNTS ----------
+
+app.get('/api/admin/staff-accounts', auth(['admin']), wrap(async (req, res) => {
+  const staff = await prisma.staff.findMany({ orderBy: { createdAt: 'asc' } });
+  res.json(staff.map(s => ({ id: s.id, name: s.name, email: s.email, role: s.role, createdAt: s.createdAt })));
+}));
+
+app.post('/api/admin/staff-accounts', auth(['admin']), wrap(async (req, res) => {
+  const { name, role, password } = req.body || {};
+  const email = normEmail(req.body && req.body.email);
+  if (!name || !email || !password) throw new HttpError(400, 'Name, email and temporary password are required.');
+  if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  if (!['admin', 'staff'].includes(role)) throw new HttpError(400, 'Access level must be Staff or Admin.');
+  if (String(password).length < 8) throw new HttpError(400, 'Temporary password must be at least 8 characters.');
+  if (await emailTaken(email)) throw new HttpError(409, 'An account with this email already exists.');
+  const s = await prisma.staff.create({
+    data: { id: newId('staff'), name, email, role, passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true }
+  });
+  res.json({ id: s.id, name: s.name, email: s.email, role: s.role });
+}));
+
+app.delete('/api/admin/staff-accounts/:id', auth(['admin']), wrap(async (req, res) => {
+  const s = await prisma.staff.findUnique({ where: { id: req.params.id } });
+  if (!s) throw new HttpError(404, 'Account not found.');
+  if (s.id === req.user.sub) throw new HttpError(400, "You can't remove your own account while logged in.");
+  if (s.email === PRIMARY_ADMIN_EMAIL) throw new HttpError(400, 'The main admin account cannot be removed.');
+  if (s.role === 'admin' && (await prisma.staff.count({ where: { role: 'admin' } })) <= 1) {
+    throw new HttpError(400, 'At least one admin account must remain.');
+  }
+  await prisma.staff.delete({ where: { id: s.id } });
+  res.json({ ok: true });
+}));
+
+// ---------- ADMIN: SETTINGS ----------
+
+app.get('/api/admin/settings', auth(['admin']), wrap(async (req, res) => {
+  const s = await settings.getAll();
+  // Never send the SMTP password back — just whether one is set.
+  res.json({ ...s, smtp: { ...s.smtp, pass: s.smtp.pass ? true : '' } });
+}));
+
+app.patch('/api/admin/settings', auth(['admin']), wrap(async (req, res) => {
+  const body = req.body || {};
+  for (const k of ['phone', 'whatsapp', 'contactEmail']) {
+    if (body[k] !== undefined) await settings.setKey(k, String(body[k]).trim());
+  }
+  if (body.notifyEmails !== undefined) {
+    if (!Array.isArray(body.notifyEmails)) throw new HttpError(400, 'notifyEmails must be a list.');
+    const list = [...new Set(body.notifyEmails.map(normEmail))];
+    const bad = list.find(e => !isEmail(e));
+    if (bad) throw new HttpError(400, `"${bad}" is not a valid email address.`);
+    await settings.setKey('notifyEmails', list);
+  }
+  if (body.smtp) {
+    const current = (await prisma.setting.findUnique({ where: { key: 'smtp' } }))?.value || {};
+    const next = {
+      host: String(body.smtp.host || '').trim(),
+      port: Number(body.smtp.port) || 587,
+      secure: !!body.smtp.secure,
+      user: String(body.smtp.user || '').trim(),
+      from: String(body.smtp.from || '').trim(),
+      pass: body.smtp.pass ? settings.encrypt(body.smtp.pass) : (current.pass || '')
+    };
+    await settings.setKey('smtp', next);
+  }
+  res.json({ ok: true });
+}));
+
+app.post('/api/admin/settings/test-email', auth(['admin']), wrap(async (req, res) => {
+  const to = normEmail(req.body && req.body.to);
+  if (!isEmail(to)) throw new HttpError(400, 'Enter a valid email address to test with.');
+  try {
+    await mailer.send({ to, subject: 'Radiant Health Alliance — test email', text: 'SMTP is working. Appointment notifications will be sent from this address.' }, { throwOnError: true });
+  } catch (e) {
+    throw new HttpError(400, 'Could not send test email: ' + e.message);
+  }
+  res.json({ ok: true });
+}));
+
+// ---------- TEAM ----------
+
+const teamOut = m => ({ id: m.id, name: m.name, role: m.role, bio: m.bio, photo: m.photo, createdAt: m.createdAt });
+const teamOrder = [{ sortOrder: 'asc' }, { createdAt: 'asc' }];
+
+app.get('/api/team', wrap(async (req, res) => {
+  const [doctors, members] = await Promise.all([
+    prisma.doctor.findMany({ where: { active: true }, orderBy: { createdAt: 'asc' } }),
+    prisma.teamMember.findMany({ orderBy: teamOrder })
+  ]);
+  res.json({ doctors: doctors.map(d => doctorOut(d, { includeEmail: false })), staffMembers: members.map(teamOut) });
+}));
+
+app.get('/api/team-members', wrap(async (req, res) => {
+  res.json((await prisma.teamMember.findMany({ orderBy: teamOrder })).map(teamOut));
+}));
+
+app.post('/api/admin/team-members', auth(['admin']), wrap(async (req, res) => {
+  const { name, role, bio, photo } = req.body || {};
+  if (!name || !role) throw new HttpError(400, 'Name and role are required.');
+  if (!isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
+  const count = await prisma.teamMember.count();
+  const m = await prisma.teamMember.create({ data: { id: newId('team'), name, role, bio: bio || '', photo: photo || null, sortOrder: count } });
+  res.json(teamOut(m));
+}));
+
+app.patch('/api/admin/team-members/:id', auth(['admin']), wrap(async (req, res) => {
+  const { name, role, bio, photo } = req.body || {};
+  if (photo !== undefined && !isValidPhoto(photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
+  const existing = await prisma.teamMember.findUnique({ where: { id: req.params.id } });
+  if (!existing) throw new HttpError(404, 'Team member not found.');
+  const data = {};
+  if (name !== undefined) data.name = name;
+  if (role !== undefined) data.role = role;
+  if (bio !== undefined) data.bio = bio;
+  if (photo !== undefined) data.photo = photo || null;
+  res.json(teamOut(await prisma.teamMember.update({ where: { id: existing.id }, data })));
+}));
+
+app.delete('/api/admin/team-members/:id', auth(['admin']), wrap(async (req, res) => {
+  const existing = await prisma.teamMember.findUnique({ where: { id: req.params.id } });
+  if (!existing) throw new HttpError(404, 'Team member not found.');
+  await prisma.teamMember.delete({ where: { id: existing.id } });
+  res.json({ ok: true });
+}));
+
+// ---------- CONTACT ----------
+
+app.post('/api/contact', formLimiter, wrap(async (req, res) => {
+  const { name, message } = req.body || {};
+  const email = normEmail(req.body && req.body.email);
+  if (!name || !email || !message) throw new HttpError(400, 'Name, email and message are required.');
+  if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  await prisma.contactMessage.create({ data: { id: newId('msg'), name, email, message: String(message).slice(0, 5000) } });
+  const s = await settings.getAll().catch(() => null);
+  if (s) {
+    await mailer.send({
+      to: [s.contactEmail, ...(s.notifyEmails || [])],
+      subject: `Website message from ${name}`,
+      text: `From: ${name} <${email}>\n\n${message}`
+    }).catch(() => {});
+  }
+  res.json({ ok: true });
+}));
+
+app.get('/api/admin/contact-messages', auth(['admin']), wrap(async (req, res) => {
+  res.json(await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' }, take: 500 }));
+}));
+
+// ---------- health check ----------
+
+app.get('/api/health', wrap(async (req, res) => {
+  await prisma.$queryRaw`SELECT 1`;
+  res.json({ ok: true });
+}));
+
+// Unknown API routes → JSON 404.
+app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
+
+// Unknown page → home page (nice for old/direct links).
+app.get('*', (req, res, next) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'), err => { if (err) next(); });
+});
+
+// Errors → clean JSON.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'That photo is too large. Please use an image under 3MB.' });
+  }
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid request.' });
+  if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
+  console.error(err);
+  res.status(500).json({ error: 'Something went wrong on our side. Please try again.' });
+});
+
+module.exports = app;

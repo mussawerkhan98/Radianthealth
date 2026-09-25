@@ -19,6 +19,7 @@ const video = require('./video');
 const marketing = require('./marketing');
 const audience = require('./audience');
 const clinicLocation = require('./location');
+const { canonicalCountry } = require('./countries');
 const { newId } = require('./ids');
 const { normalizePhone, displayPatientId } = require('./phone');
 const { PERMISSIONS, VALID: VALID_PERMS, parsePerms, permsForRole } = require('./permissions');
@@ -161,7 +162,8 @@ function doctorOut(d, { includeEmail = true } = {}) {
     photo: d.photo, mustChangePassword: d.mustChangePassword,
     workingHours: { start: d.workStart, end: d.workEnd, slotMinutes: d.slotMinutes },
     workingDays: parseDays(d.workingDays),
-    offersVideo: !!d.offersVideo
+    offersVideo: !!d.offersVideo,
+    country: d.country || '', city: d.city || ''
   };
   if (includeEmail) out.email = d.email;
   return out;
@@ -477,6 +479,7 @@ app.delete('/api/admin/departments/:id', perm('directory.manage'), wrap(async (r
 app.get('/api/doctors', wrap(async (req, res) => {
   const where = { active: true };
   if (req.query.department) where.departmentId = String(req.query.department);
+  if (req.query.country) where.country = canonicalCountry(req.query.country);
   const doctors = await prisma.doctor.findMany({ where, orderBy: { createdAt: 'asc' } });
   res.json(doctors.map(d => doctorOut(d)));
 }));
@@ -641,6 +644,7 @@ app.post('/api/admin/doctors', perm('doctors.manage'), wrap(async (req, res) => 
   const d = await prisma.doctor.create({
     data: {
       id: newId('doc'), name, departmentId, specialty: specialty || '', bio: bio || '', photo: photo || null,
+      country: canonicalCountry(req.body.country), city: String(req.body.city || '').trim().slice(0, 80),
       email, passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true
     }
   });
@@ -669,6 +673,8 @@ app.patch('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, res
   }
   if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort().join(',');
   if (req.body && req.body.offersVideo !== undefined) data.offersVideo = !!req.body.offersVideo;
+  if (req.body && req.body.country !== undefined) data.country = canonicalCountry(req.body.country);
+  if (req.body && req.body.city !== undefined) data.city = String(req.body.city || '').trim().slice(0, 80);
   const start = data.workStart || existing.workStart, end = data.workEnd || existing.workEnd;
   if (start >= end) throw new HttpError(400, 'Finishing time must be after the starting time.');
   if (req.body && req.body.email !== undefined) {
@@ -1125,10 +1131,15 @@ function campaignData(b, { partial = false } = {}) {
 }
 
 app.get('/api/admin/campaigns', perm('marketing.send'), wrap(async (req, res) => {
-  const [campaigns, people] = await Promise.all([
+  const [campaigns, people, clickSums, clickers] = await Promise.all([
     prisma.campaign.findMany({ select: CAMPAIGN_META, orderBy: { createdAt: 'desc' }, take: 200 }),
-    audience.everyone(prisma)
+    audience.everyone(prisma),
+    prisma.campaignRecipient.groupBy({ by: ['campaignId'], _sum: { clicks: true } }),
+    prisma.campaignRecipient.groupBy({ by: ['campaignId'], where: { clicks: { gt: 0 } }, _count: { _all: true } })
   ]);
+  const sums = new Map(clickSums.map(x => [x.campaignId, x._sum.clicks || 0]));
+  const uniq = new Map(clickers.map(x => [x.campaignId, x._count._all]));
+  campaigns.forEach(c => { c.totalClicks = sums.get(c.id) || 0; c.clickedCount = uniq.get(c.id) || 0; });
   const active = people.filter(p => !p.optOut);
   res.json({
     campaigns: campaigns.map(campaignOut), audience: active.length, unsubscribed: people.length - active.length,
@@ -1154,6 +1165,7 @@ app.delete('/api/admin/campaigns/:id', perm('marketing.send'), wrap(async (req, 
   const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: { status: true } });
   if (!c) throw new HttpError(404, 'Promotion not found.');
   if (c.status === 'sending') throw new HttpError(400, 'This promotion is being sent right now.');
+  await prisma.campaignRecipient.deleteMany({ where: { campaignId: req.params.id } });
   await prisma.campaign.delete({ where: { id: req.params.id } });
   res.json({ ok: true });
 }));
@@ -1188,7 +1200,7 @@ function contactData(b) {
   const data = {};
   if (b.name !== undefined) data.name = audience.clean(b.name, 120);
   if (b.phone !== undefined) data.phone = audience.clean(b.phone, 40);
-  if (b.country !== undefined) data.country = audience.clean(b.country, 80);
+  if (b.country !== undefined) data.country = audience.canonicalCountry(b.country);
   if (b.region !== undefined) data.region = audience.clean(b.region, 80);
   if (b.groups !== undefined) data.groups = audience.joinGroups(b.groups);
   return data;
@@ -1269,13 +1281,13 @@ app.post('/api/admin/contacts/import', perm('marketing.send'), wrap(async (req, 
     const cur = existing.get(email);
     if (cur) {
       const data = { groups: audience.joinGroups([...audience.parseGroups(cur.groups), ...groups]) };
-      for (const k of ['name', 'phone', 'country', 'region']) { const v = audience.clean(r[k], k === 'name' ? 120 : 80); if (v && !cur[k]) data[k] = v; }
+      for (const k of ['name', 'phone', 'country', 'region']) { const v = k === 'country' ? audience.canonicalCountry(r[k]) : audience.clean(r[k], k === 'name' ? 120 : 80); if (v && !cur[k]) data[k] = v; }
       await prisma.marketingContact.update({ where: { id: cur.id }, data });
       updated++;
     } else {
       await prisma.marketingContact.create({ data: {
         id: newId('mc'), email, source: 'import', groups: audience.joinGroups(groups),
-        name: audience.clean(r.name, 120), phone: audience.clean(r.phone, 40), country: audience.clean(r.country, 80), region: audience.clean(r.region, 80)
+        name: audience.clean(r.name, 120), phone: audience.clean(r.phone, 40), country: audience.canonicalCountry(r.country), region: audience.clean(r.region, 80)
       } });
       added++;
     }
@@ -1297,6 +1309,40 @@ app.get('/api/admin/contacts/export', perm('marketing.send'), wrap(async (req, r
   ]);
   res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="radiant-contacts-${new Date().toISOString().slice(0, 10)}.csv"`, 'Cache-Control': 'no-store' });
   res.send(csv);
+}));
+
+// Tracked link in a promotion email: count the click, then go to the button link.
+// Never redirects anywhere except the campaign's own saved link (or the website).
+const BOT_UA = /bot|crawl|spider|slurp|preview|scanner|safelinks|proofpoint|mimecast|barracuda|headless|python|curl|wget|go-http|java\//i;
+app.get('/api/r/:token', wrap(async (req, res) => {
+  const r = await prisma.campaignRecipient.findUnique({ where: { token: String(req.params.token) } });
+  const c = r ? await prisma.campaign.findUnique({ where: { id: r.campaignId }, select: { buttonUrl: true } }) : null;
+  const dest = (c && c.buttonUrl) || SITE_URL();
+  if (r && !BOT_UA.test(String(req.get('user-agent') || '')) && req.method === 'GET') {
+    const now = new Date();
+    await prisma.campaignRecipient.update({ where: { id: r.id }, data: { clicks: { increment: 1 }, lastClickAt: now, ...(r.firstClickAt ? {} : { firstClickAt: now }) } })
+      .catch(err => console.error('click track:', err.message));
+  }
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, dest);
+}));
+
+// Who a promotion went to and who clicked (?format=csv to download).
+app.get('/api/admin/campaigns/:id/results', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: { id: true, subject: true, sentCount: true, sentAt: true, buttonUrl: true } });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  const rows = await prisma.campaignRecipient.findMany({ where: { campaignId: c.id }, orderBy: [{ clicks: 'desc' }, { firstClickAt: 'asc' }, { email: 'asc' }],
+    select: { email: true, name: true, personKind: true, clicks: true, firstClickAt: true, lastClickAt: true } });
+  const clicked = rows.filter(r => r.clicks > 0);
+  const summary = { sent: rows.length || c.sentCount, clickedCount: clicked.length, totalClicks: rows.reduce((n, r) => n + r.clicks, 0),
+    clickRate: rows.length ? Math.round(clicked.length / rows.length * 1000) / 10 : 0, trackable: !!c.buttonUrl };
+  if (req.query.format === 'csv') {
+    const csv = audience.toCsv([['name', 'email', 'type', 'clicks', 'first click', 'last click'],
+      ...rows.map(r => [r.name, r.email, r.personKind, r.clicks, r.firstClickAt ? r.firstClickAt.toISOString() : '', r.lastClickAt ? r.lastClickAt.toISOString() : ''])]);
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="promotion-results-${c.id}.csv"`, 'Cache-Control': 'no-store' });
+    return res.send(csv);
+  }
+  res.json({ campaign: c, summary, recipients: rows.slice(0, 1000) });
 }));
 
 // Public: the offer image (emails load it from here).
@@ -1344,12 +1390,18 @@ app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (re
   try {
     const people = await audience.resolveAudience(prisma, audience.parseAudience(c.audience));
     await audience.ensureKeys(prisma, people); // unsubscribe secret, made once per person
-    const recipients = people.map(p => ({
-      email: p.email, name: p.name,
+    // One tracking row per person (their links count clicks).
+    const rows = people.map(p => ({ id: newId('rcp'), campaignId: c.id, token: crypto.randomBytes(16).toString('base64url'),
+      personKind: p.kind, personId: p.id, email: p.email, name: String(p.name || '').slice(0, 120) }));
+    await prisma.campaignRecipient.deleteMany({ where: { campaignId: c.id } });
+    for (let i = 0; i < rows.length; i += 200) await prisma.campaignRecipient.createMany({ data: rows.slice(i, i + 200) });
+    const recipients = people.map((p, i) => ({
+      email: p.email, name: p.name, clickUrl: c.buttonUrl ? `${SITE_URL()}/api/r/${rows[i].token}` : '',
       unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`,
       oneClickUrl: `${SITE_URL()}/api/unsubscribe/one-click?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`
     }));
     result = await marketing.sendCampaign(c, recipients, await campaignEmailOpts(c));
+    if (result.failedEmails.length) await prisma.campaignRecipient.deleteMany({ where: { campaignId: c.id, email: { in: result.failedEmails } } });
   } catch (e) {
     await prisma.campaign.update({ where: { id: c.id }, data: { status: 'draft' } });
     throw e;
@@ -1462,7 +1514,7 @@ app.patch('/api/admin/patients/:id', perm('patients.edit'), wrap(async (req, res
   }
   if (b.dob !== undefined) data.dob = String(b.dob).slice(0, 20);
   if (b.gender !== undefined) data.gender = String(b.gender).slice(0, 30);
-  if (b.country !== undefined) data.country = audience.clean(b.country, 80);
+  if (b.country !== undefined) data.country = audience.canonicalCountry(b.country);
   if (b.region !== undefined) data.region = audience.clean(b.region, 80);
   const updated = await prisma.patient.update({ where: { id: p.id }, data });
   if (b.marketingOptOut !== undefined) { await audience.setOptOut(prisma, updated.email, !!b.marketingOptOut); updated.marketingOptOut = !!b.marketingOptOut; }
@@ -1808,7 +1860,8 @@ async function profileOut(type, o) {
     experienceYears: o.experienceYears || 0, certificates: certs.map(certOut)
   };
   if (type === 'doctor') return { ...base, title: o.specialty, specialty: o.specialty, department: o.department ? { id: o.department.id, name: o.department.name } : null,
-    offersVideo: !!o.offersVideo, workingDays: parseDays(o.workingDays), workingHours: { start: o.workStart, end: o.workEnd } };
+    offersVideo: !!o.offersVideo, workingDays: parseDays(o.workingDays), workingHours: { start: o.workStart, end: o.workEnd },
+    country: o.country || '', city: o.city || '' };
   return { ...base, title: o.role, role: o.role };
 }
 
@@ -1854,6 +1907,8 @@ app.patch('/api/admin/profiles/:type/:id', perm('profiles.manage'), wrap(async (
     if (b.role !== undefined) { const v = String(b.role).trim().slice(0, 120); if (!v) throw new HttpError(400, 'Role cannot be empty.'); data.role = v; }
   }
   if (type === 'doctor' && b.specialty !== undefined) data.specialty = String(b.specialty).trim().slice(0, 120);
+  if (type === 'doctor' && b.country !== undefined) data.country = canonicalCountry(b.country);
+  if (type === 'doctor' && b.city !== undefined) data.city = String(b.city || '').trim().slice(0, 80);
   if (b.photo !== undefined) {
     if (!isValidPhoto(b.photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
     data.photo = b.photo || null;

@@ -5,6 +5,7 @@
 // Empty list = any. Within a list it's "any of"; across lists it's "and".
 // Unsubscribing is per email: opted out anywhere = never sent.
 const crypto = require('crypto');
+const { canonicalCountry } = require('./countries');
 
 // Country from the phone's country code (used when a patient has no country set).
 const CALLING_CODES = [
@@ -14,7 +15,7 @@ const CALLING_CODES = [
   ['216', 'Tunisia'], ['249', 'Sudan'], ['91', 'India'], ['92', 'Pakistan'], ['880', 'Bangladesh'], ['94', 'Sri Lanka'],
   ['977', 'Nepal'], ['93', 'Afghanistan'], ['63', 'Philippines'], ['62', 'Indonesia'], ['60', 'Malaysia'], ['86', 'China'],
   ['7', 'Russia'], ['44', 'United Kingdom'], ['33', 'France'], ['49', 'Germany'], ['39', 'Italy'], ['34', 'Spain'],
-  ['31', 'Netherlands'], ['1', 'USA / Canada'], ['61', 'Australia'], ['27', 'South Africa'], ['234', 'Nigeria'],
+  ['31', 'Netherlands'], ['1', 'United States'], ['61', 'Australia'], ['27', 'South Africa'], ['234', 'Nigeria'],
   ['254', 'Kenya'], ['251', 'Ethiopia']
 ].sort((a, b) => b[0].length - a[0].length);
 function countryFromPhoneKey(key) {
@@ -42,7 +43,7 @@ function normAudience(a) {
   const list = v => (Array.isArray(v) ? v : []).map(x => clean(x, 80)).filter(Boolean).slice(0, 100);
   return {
     source: ['patients', 'contacts'].includes(a.source) ? a.source : 'all',
-    countries: list(a.countries), regions: list(a.regions), groups: list(a.groups)
+    countries: list(a.countries).map(canonicalCountry), regions: list(a.regions), groups: list(a.groups)
   };
 }
 function parseAudience(json) {
@@ -65,7 +66,7 @@ async function everyone(prisma) {
     if (!realEmail(p.email)) continue;
     byEmail.set(p.email.toLowerCase(), {
       kind: 'patient', id: p.id, email: p.email, name: p.name, phone: p.phone,
-      country: p.country || countryFromPhoneKey(p.phoneKey), region: p.region, groups: ['Patients'],
+      country: canonicalCountry(p.country) || countryFromPhoneKey(p.phoneKey), region: p.region, groups: ['Patients'],
       key: p.marketingKey, optOut: optedOut.has(p.email.toLowerCase())
     });
   }
@@ -75,12 +76,12 @@ async function everyone(prisma) {
     const groups = parseGroups(c.groups);
     if (existing) { // same person: patient record wins, but add their contact groups/details
       existing.groups = [...existing.groups, ...groups.filter(g => !existing.groups.some(x => x.toLowerCase() === g.toLowerCase()))];
-      existing.country = existing.country || c.country; existing.region = existing.region || c.region;
+      existing.country = existing.country || canonicalCountry(c.country); existing.region = existing.region || c.region;
       existing.alsoContactId = c.id;
       continue;
     }
     byEmail.set(k, {
-      kind: 'contact', id: c.id, email: c.email, name: c.name, phone: c.phone, country: c.country, region: c.region,
+      kind: 'contact', id: c.id, email: c.email, name: c.name, phone: c.phone, country: canonicalCountry(c.country), region: c.region,
       groups, key: c.unsubKey, optOut: optedOut.has(k), source: c.source, createdAt: c.createdAt
     });
   }
@@ -160,7 +161,7 @@ function describeAudience(a) {
   return parts.join(' · ');
 }
 
-module.exports = {
+module.exports = { canonicalCountry,
   countryFromPhoneKey, parseGroups, joinGroups, normAudience, parseAudience, realEmail, clean,
   everyone, resolveAudience, segmentOptions, ensureKeys, setOptOut, toCsv, describeAudience
 };

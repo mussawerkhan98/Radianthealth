@@ -17,12 +17,14 @@ const paragraphs = text => plain(text).trim().split(/\n{2,}/).filter(Boolean)
 function buildEmail(c, { siteUrl, imageUrl, phone, values } = {}) {
   const name = values ? esc(values.NAME) : '{{params.NAME}}';
   const unsub = values ? esc(values.UNSUB) : '{{params.UNSUB}}';
+  // Tracked link for this person (counts clicks, then goes to the button link).
+  const link = (values && values.CLICK) || c.buttonUrl;
   const button = c.buttonText && c.buttonUrl
     ? `<tr><td align="center" style="padding:8px 32px 28px;">
-         <a href="${esc(c.buttonUrl)}" target="_blank" style="display:inline-block;background:#e39a3b;color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 32px;border-radius:999px;">${esc(plain(c.buttonText))}</a>
+         <a href="${esc(link)}" target="_blank" style="display:inline-block;background:#e39a3b;color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 32px;border-radius:999px;">${esc(plain(c.buttonText))}</a>
        </td></tr>` : '';
   const image = imageUrl
-    ? `<tr><td style="padding:0;">${c.buttonUrl ? `<a href="${esc(c.buttonUrl)}" target="_blank">` : ''}<img src="${esc(imageUrl)}" width="600" alt="${esc(plain(c.headline || c.subject))}" style="display:block;width:100%;max-width:600px;height:auto;border:0;">${c.buttonUrl ? '</a>' : ''}</td></tr>` : '';
+    ? `<tr><td style="padding:0;">${c.buttonUrl ? `<a href="${esc(link)}" target="_blank">` : ''}<img src="${esc(imageUrl)}" width="600" alt="${esc(plain(c.headline || c.subject))}" style="display:block;width:100%;max-width:600px;height:auto;border:0;">${c.buttonUrl ? '</a>' : ''}</td></tr>` : '';
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(plain(c.subject))}</title></head>
 <body style="margin:0;padding:0;background:#f2f5f6;font-family:Arial,Helvetica,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f5f6;"><tr><td align="center" style="padding:24px 12px;">
@@ -47,7 +49,7 @@ function buildEmail(c, { siteUrl, imageUrl, phone, values } = {}) {
   const text = [
     `Dear ${values ? values.NAME : '{{params.NAME}}'},`, '',
     plain(c.headline), '', plain(c.body), '',
-    c.buttonText && c.buttonUrl ? `${plain(c.buttonText)}: ${c.buttonUrl}` : '', '',
+    c.buttonText && c.buttonUrl ? `${plain(c.buttonText)}: ${link}` : '', '',
     `Unsubscribe from offers: ${values ? values.UNSUB : '{{params.UNSUB}}'}`
   ].join('\n');
   return { html, text };
@@ -81,20 +83,22 @@ function unsubHeaders(oneClickUrl) {
   };
 }
 
-// recipients: [{ email, name, unsubUrl, oneClickUrl }]. Returns { sent, failed, error }.
+// recipients: [{ email, name, unsubUrl, oneClickUrl, clickUrl }].
+// Returns { sent, failed, error, failedEmails }.
 // One personal email per patient (so each gets their own unsubscribe header),
 // a few at a time.
 async function sendCampaign(c, recipients, opts) {
   let sent = 0, failed = 0, error = '', stop = false, next = 0;
+  const done = new Set(), failedEmails = [];
   const one = async (r) => {
     const first = plain(r.name).split(' ')[0] || 'Patient';
-    const { html, text } = buildEmail(c, { ...opts, values: { NAME: first, UNSUB: r.unsubUrl } });
+    const { html, text } = buildEmail(c, { ...opts, values: { NAME: first, UNSUB: r.unsubUrl, CLICK: r.clickUrl } });
     const payload = {
       sender: SENDER, replyTo: SENDER, to: [{ email: r.email, name: plain(r.name).slice(0, 70) }],
       subject: plain(c.subject), htmlContent: html, textContent: text, tags: ['promotion'], headers: unsubHeaders(r.oneClickUrl)
     };
     for (let attempt = 0; ; attempt++) {
-      try { await post(payload); sent++; return; }
+      try { await post(payload); sent++; done.add(r.email); return; }
       catch (e) {
         if (e.status === 429 && attempt < 2) { await new Promise(res => setTimeout(res, 1500 * (attempt + 1))); continue; }
         failed++; error = error || e.message;
@@ -108,7 +112,8 @@ async function sendCampaign(c, recipients, opts) {
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   failed += recipients.length - sent - failed; // not attempted after a stop
-  return { sent, failed, error };
+  for (const r of recipients) if (!done.has(r.email)) failedEmails.push(r.email);
+  return { sent, failed, error, failedEmails };
 }
 
 // One test email to a staff member (same headers as the real thing).

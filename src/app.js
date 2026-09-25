@@ -16,6 +16,7 @@ const settings = require('./settings');
 const mailer = require('./mailer');
 const brevo = require('./brevo');
 const video = require('./video');
+const marketing = require('./marketing');
 const { newId } = require('./ids');
 const { normalizePhone, displayPatientId } = require('./phone');
 const { PERMISSIONS, VALID: VALID_PERMS, parsePerms, permsForRole } = require('./permissions');
@@ -57,7 +58,11 @@ function sanitize(value, key) {
 app.use((req, res, next) => { if (req.body) req.body = sanitize(req.body); next(); });
 
 // Static frontend (on Vercel the CDN serves /public directly instead).
-app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  extensions: ['html'],
+  // Emails show the logo, so other sites (mail apps) may load images.
+  setHeaders: (res, file) => { if (/[\\/]assets[\\/][^\\/]+\.(png|jpe?g|gif|webp|svg)$/i.test(file)) res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); }
+}));
 
 // ---------- helpers ----------
 
@@ -738,7 +743,7 @@ const hasRealEmail = e => !!e && !String(e).toLowerCase().endsWith('.invalid');
 const patientOut = p => ({
   id: p.id, patientId: displayPatientId(p.phoneKey), name: p.name,
   email: hasRealEmail(p.email) ? p.email : '', phone: p.phone, dob: p.dob, gender: p.gender,
-  isGuest: p.isGuest, createdAt: p.createdAt
+  isGuest: p.isGuest, createdAt: p.createdAt, marketingOptOut: !!p.marketingOptOut
 });
 
 // Find the patient by phone (the Patient ID); otherwise by email; otherwise
@@ -982,6 +987,162 @@ app.get('/api/video/:id', videoLimiter, wrap(async (req, res) => {
   res.json({ ...base, status: 'open', joinUrl });
 }));
 
+// ---------- MARKETING (promotion emails) ----------
+// Everyone with a real email who hasn't unsubscribed.
+const AUDIENCE = { marketingOptOut: false, NOT: [{ email: { endsWith: '.invalid' } }, { email: { startsWith: 'deleted+' } }] };
+const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+const MAX_CAMPAIGN_IMAGE = 1.5 * 1024 * 1024;
+const CAMPAIGN_META = { id: true, subject: true, headline: true, body: true, buttonText: true, buttonUrl: true, imageMime: true, status: true, sentAt: true, sentCount: true, failedCount: true, createdAt: true, updatedAt: true };
+const campaignImageUrl = c => c.imageMime ? `${SITE_URL()}/api/campaigns/${c.id}/image?v=${new Date(c.updatedAt).getTime()}` : '';
+const campaignOut = c => ({ ...c, imageUrl: campaignImageUrl(c) });
+
+function campaignData(b, { partial = false } = {}) {
+  const data = {};
+  const str = (k, max) => { if (b[k] !== undefined) data[k] = marketing.plain(b[k]).trim().slice(0, max); };
+  str('subject', 150); str('headline', 200); str('body', 5000); str('buttonText', 40);
+  if (b.buttonUrl !== undefined) {
+    const u = String(b.buttonUrl || '').trim();
+    if (u) {
+      let ok = false;
+      try { const x = new URL(u); ok = x.protocol === 'https:' || x.protocol === 'http:'; } catch (e) { /* invalid */ }
+      if (!ok) throw new HttpError(400, 'The button link must be a full web address starting with https://');
+    }
+    data.buttonUrl = u.slice(0, 1000);
+  }
+  if (!partial && !data.subject) throw new HttpError(400, 'Please enter an email subject.');
+  if (data.subject === '') throw new HttpError(400, 'Please enter an email subject.');
+  if (b.image !== undefined) {
+    if (!b.image) { data.imageData = null; data.imageMime = ''; }
+    else {
+      const m = /^data:image\/(png|jpe?g|gif|webp);base64,([A-Za-z0-9+/=\s]+)$/.exec(String(b.image));
+      if (!m) throw new HttpError(400, 'The image must be a JPG, PNG, GIF or WEBP file.');
+      const buf = Buffer.from(m[2], 'base64');
+      const ext = m[1] === 'jpg' ? 'jpeg' : m[1];
+      if (!buf.length || !FILE_TYPES[ext].magic(buf)) throw new HttpError(400, "That image file doesn't look right. Please try another.");
+      if (buf.length > MAX_CAMPAIGN_IMAGE) throw new HttpError(413, 'The image is larger than 1.5 MB. Please use a smaller one (emails load faster).');
+      data.imageData = buf; data.imageMime = FILE_TYPES[ext].mime;
+    }
+  }
+  return data;
+}
+
+app.get('/api/admin/campaigns', perm('marketing.send'), wrap(async (req, res) => {
+  const [campaigns, audience, unsubscribed] = await Promise.all([
+    prisma.campaign.findMany({ select: CAMPAIGN_META, orderBy: { createdAt: 'desc' }, take: 200 }),
+    prisma.patient.count({ where: AUDIENCE }),
+    prisma.patient.count({ where: { marketingOptOut: true } })
+  ]);
+  res.json({ campaigns: campaigns.map(campaignOut), audience, unsubscribed, emailReady: brevo.isConfigured() });
+}));
+
+app.post('/api/admin/campaigns', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.create({ data: { id: newId('cmp'), ...campaignData(req.body || {}), createdById: req.user.sub }, select: CAMPAIGN_META });
+  res.json(campaignOut(c));
+}));
+
+app.patch('/api/admin/campaigns/:id', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: { status: true } });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  if (c.status !== 'draft') throw new HttpError(400, 'This promotion was already sent. Use "Copy" to make a new one.');
+  const u = await prisma.campaign.update({ where: { id: req.params.id }, data: campaignData(req.body || {}, { partial: true }), select: CAMPAIGN_META });
+  res.json(campaignOut(u));
+}));
+
+app.delete('/api/admin/campaigns/:id', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: { status: true } });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  if (c.status === 'sending') throw new HttpError(400, 'This promotion is being sent right now.');
+  await prisma.campaign.delete({ where: { id: req.params.id } });
+  res.json({ ok: true });
+}));
+
+// Copy (e.g. to re-send an old offer).
+app.post('/api/admin/campaigns/:id/copy', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  const n = await prisma.campaign.create({ data: {
+    id: newId('cmp'), subject: c.subject, headline: c.headline, body: c.body, buttonText: c.buttonText, buttonUrl: c.buttonUrl,
+    imageData: c.imageData, imageMime: c.imageMime, createdById: req.user.sub
+  }, select: CAMPAIGN_META });
+  res.json(campaignOut(n));
+}));
+
+// Public: the offer image (emails load it from here).
+app.get('/api/campaigns/:id/image', wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: { imageData: true, imageMime: true } });
+  if (!c || !c.imageData || !c.imageMime) throw new HttpError(404, 'Not found.');
+  res.set({ 'Content-Type': c.imageMime, 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff',
+    'Cross-Origin-Resource-Policy': 'cross-origin' }); // mail apps load it from their own sites
+  res.send(Buffer.from(c.imageData));
+}));
+
+async function campaignEmailOpts(c) {
+  const s = await settings.getAll();
+  return { siteUrl: SITE_URL(), imageUrl: campaignImageUrl(c), phone: s.phone };
+}
+
+// Preview exactly what patients will get (shown in Admin).
+app.get('/api/admin/campaigns/:id/preview', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: CAMPAIGN_META });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  const { html } = marketing.buildEmail(c, { ...(await campaignEmailOpts(c)), values: { NAME: 'Aisha', UNSUB: '#' } });
+  res.json({ html });
+}));
+
+app.post('/api/admin/campaigns/:id/test', perm('marketing.send'), wrap(async (req, res) => {
+  if (!brevo.isConfigured()) throw new HttpError(400, 'Email sending (Brevo) is not set up.');
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: CAMPAIGN_META });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  const email = normEmail((req.body && req.body.email) || req.account.email);
+  if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address for the test.');
+  try { await marketing.sendTest(c, { email, name: req.account.name }, await campaignEmailOpts(c)); }
+  catch (e) { throw new HttpError(502, 'The test email could not be sent: ' + e.message); }
+  res.json({ ok: true, email });
+}));
+
+// One click: send to every patient who hasn't unsubscribed.
+app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (req, res) => {
+  if (!brevo.isConfigured()) throw new HttpError(400, 'Email sending (Brevo) is not set up.');
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: CAMPAIGN_META });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  // Lock so a double click can't send twice.
+  const lock = await prisma.campaign.updateMany({ where: { id: c.id, status: 'draft' }, data: { status: 'sending' } });
+  if (lock.count === 0) throw new HttpError(409, 'This promotion was already sent.');
+  let result;
+  try {
+    const patients = await prisma.patient.findMany({ where: AUDIENCE, select: { id: true, name: true, email: true, marketingKey: true } });
+    for (const p of patients.filter(p => !p.marketingKey)) { // unsubscribe secret, made once per patient
+      p.marketingKey = crypto.randomBytes(18).toString('base64url');
+      await prisma.patient.update({ where: { id: p.id }, data: { marketingKey: p.marketingKey } });
+    }
+    const recipients = patients.map(p => ({
+      email: p.email, name: p.name,
+      unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.marketingKey)}`
+    }));
+    result = await marketing.sendCampaign(c, recipients, await campaignEmailOpts(c));
+  } catch (e) {
+    await prisma.campaign.update({ where: { id: c.id }, data: { status: 'draft' } });
+    throw e;
+  }
+  if (result.sent === 0) {
+    await prisma.campaign.update({ where: { id: c.id }, data: { status: 'draft', failedCount: result.failed } });
+    throw new HttpError(502, 'Nothing was sent: ' + (result.error || 'there are no patients to send to.'));
+  }
+  const u = await prisma.campaign.update({ where: { id: c.id }, data: { status: 'sent', sentAt: new Date(), sentCount: result.sent, failedCount: result.failed }, select: CAMPAIGN_META });
+  res.json({ ...campaignOut(u), error: result.error });
+}));
+
+// Public: unsubscribe / re-subscribe from the link in the email.
+const unsubLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many attempts. Please wait a few minutes.' } });
+app.post('/api/unsubscribe', unsubLimiter, wrap(async (req, res) => {
+  const { p, k, resubscribe } = req.body || {};
+  const pt = p ? await prisma.patient.findUnique({ where: { id: String(p) }, select: { id: true, marketingKey: true } }) : null;
+  if (!pt || !pt.marketingKey || !sameKey(k, pt.marketingKey)) throw new HttpError(404, 'This unsubscribe link is not valid. Please contact the clinic and we will remove you.');
+  await prisma.patient.update({ where: { id: pt.id }, data: { marketingOptOut: !resubscribe } });
+  res.json({ ok: true, subscribed: !!resubscribe });
+}));
+
 // ---------- MEDICAL RECORDS ----------
 
 app.get('/api/patients/me/records', auth(['patient']), wrap(async (req, res) => {
@@ -1053,6 +1214,7 @@ app.patch('/api/admin/patients/:id', perm('patients.edit'), wrap(async (req, res
   }
   if (b.dob !== undefined) data.dob = String(b.dob).slice(0, 20);
   if (b.gender !== undefined) data.gender = String(b.gender).slice(0, 30);
+  if (b.marketingOptOut !== undefined) data.marketingOptOut = !!b.marketingOptOut;
   const updated = await prisma.patient.update({ where: { id: p.id }, data });
   res.json(patientOut(updated));
 }));

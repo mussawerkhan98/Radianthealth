@@ -1,0 +1,10 @@
+-- Public department pages.
+ALTER TABLE "Department" ADD COLUMN "tagline" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Department" ADD COLUMN "about" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Department" ADD COLUMN "services" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Department" ADD COLUMN "conditions" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Department" ADD COLUMN "hours" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Department" ADD COLUMN "faqs" TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE "Department" ADD COLUMN "bannerData" BLOB;
+ALTER TABLE "Department" ADD COLUMN "bannerMime" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Department" ADD COLUMN "bannerVersion" INTEGER NOT NULL DEFAULT 0;

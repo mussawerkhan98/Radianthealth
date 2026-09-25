@@ -380,7 +380,75 @@ app.get('/api/departments', wrap(async (req, res) => {
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     include: { _count: { select: { doctors: { where: { active: true } } } } }
   });
-  res.json(depts.map(d => ({ id: d.id, name: d.name, description: d.description, icon: d.icon, doctorCount: d._count.doctors })));
+  res.json(depts.map(d => ({ id: d.id, name: d.name, description: d.description, icon: d.icon, doctorCount: d._count.doctors,
+    tagline: d.tagline, bannerUrl: deptBannerUrl(d) })));
+}));
+
+// ---- Department pages (department.html) ----
+const deptBannerUrl = d => d.bannerMime ? `/api/departments/${d.id}/banner?v=${d.bannerVersion}` : '';
+const deptLines = v => String(v || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+function parseFaqs(v) {
+  try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.filter(f => f && f.q && f.a).map(f => ({ q: String(f.q), a: String(f.a) })) : []; }
+  catch (e) { return []; }
+}
+const deptPageOut = d => ({
+  id: d.id, name: d.name, description: d.description, tagline: d.tagline, about: d.about,
+  services: deptLines(d.services), conditions: deptLines(d.conditions), hours: deptLines(d.hours), faqs: parseFaqs(d.faqs),
+  bannerUrl: deptBannerUrl(d)
+});
+
+app.get('/api/departments/:id', wrap(async (req, res) => {
+  const d = await prisma.department.findUnique({ where: { id: String(req.params.id) } });
+  if (!d || !d.active) throw new HttpError(404, 'Department not found.');
+  const doctors = await prisma.doctor.findMany({ where: { departmentId: d.id, active: true }, orderBy: { createdAt: 'asc' } });
+  res.json({ ...deptPageOut(d), doctors: doctors.map(x => doctorOut(x, { includeEmail: false })) });
+}));
+
+app.get('/api/departments/:id/banner', wrap(async (req, res) => {
+  const d = await prisma.department.findUnique({ where: { id: String(req.params.id) }, select: { bannerData: true, bannerMime: true, active: true } });
+  if (!d || !d.active || !d.bannerData) throw new HttpError(404, 'Not found.');
+  res.set({ 'Content-Type': d.bannerMime, 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' });
+  res.send(Buffer.from(d.bannerData));
+}));
+
+// Admin: the raw text for the page editor.
+app.get('/api/admin/departments/:id', perm('directory.manage'), wrap(async (req, res) => {
+  const d = await prisma.department.findUnique({ where: { id: String(req.params.id) } });
+  if (!d || !d.active) throw new HttpError(404, 'Department not found.');
+  res.json({ id: d.id, name: d.name, description: d.description, tagline: d.tagline, about: d.about,
+    services: d.services, conditions: d.conditions, hours: d.hours, faqs: parseFaqs(d.faqs), bannerUrl: deptBannerUrl(d) });
+}));
+
+app.patch('/api/admin/departments/:id', perm('directory.manage'), wrap(async (req, res) => {
+  const d = await prisma.department.findUnique({ where: { id: String(req.params.id) } });
+  if (!d || !d.active) throw new HttpError(404, 'Department not found.');
+  const b = req.body || {};
+  const data = {};
+  const str = (k, max) => { if (b[k] !== undefined) data[k] = String(b[k] == null ? '' : b[k]).replace(/\r/g, '').trim().slice(0, max); };
+  str('description', 300); str('tagline', 200); str('about', 6000); str('services', 4000); str('conditions', 4000); str('hours', 1000);
+  if (b.name !== undefined) { const n = String(b.name).trim().slice(0, 120); if (!n) throw new HttpError(400, 'Department name cannot be empty.'); data.name = n; }
+  if (b.faqs !== undefined) {
+    if (!Array.isArray(b.faqs)) throw new HttpError(400, 'FAQs must be a list.');
+    const faqs = b.faqs.map(f => ({ q: String((f && f.q) || '').trim().slice(0, 300), a: String((f && f.a) || '').trim().slice(0, 2000) })).filter(f => f.q || f.a);
+    if (faqs.some(f => !f.q || !f.a)) throw new HttpError(400, 'Each FAQ needs both a question and an answer.');
+    if (faqs.length > 30) throw new HttpError(400, 'At most 30 FAQs per department.');
+    data.faqs = JSON.stringify(faqs);
+  }
+  if (b.banner !== undefined) {
+    if (!b.banner) { data.bannerData = null; data.bannerMime = ''; }
+    else {
+      const m = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=\s]+)$/.exec(String(b.banner));
+      if (!m) throw new HttpError(400, 'The banner must be a JPG, PNG or WEBP image.');
+      const buf = Buffer.from(m[2], 'base64');
+      const ext = m[1] === 'jpg' ? 'jpeg' : m[1];
+      if (!buf.length || !FILE_TYPES[ext].magic(buf)) throw new HttpError(400, "That image file doesn't look right. Please try another.");
+      if (buf.length > 1.5 * 1024 * 1024) throw new HttpError(413, 'The banner is larger than 1.5 MB. Please use a smaller image.');
+      data.bannerData = buf; data.bannerMime = FILE_TYPES[ext].mime;
+    }
+    data.bannerVersion = d.bannerVersion + 1;
+  }
+  const u = await prisma.department.update({ where: { id: d.id }, data });
+  res.json(deptPageOut(u));
 }));
 
 app.post('/api/admin/departments', perm('directory.manage'), wrap(async (req, res) => {

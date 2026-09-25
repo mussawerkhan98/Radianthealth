@@ -305,16 +305,27 @@
               <h3 id="patientReportName" style="margin-bottom:0.2rem;"></h3>
               <p style="margin:0 0 0.3rem;"><span class="badge" id="patientReportId"></span></p>
               <p id="patientReportMeta"></p>
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.4rem;">
+                <button type="button" class="btn btn-outline" id="editPatientBtn" data-perm="patients.edit" style="padding:0.4rem 0.9rem; font-size:0.82rem;">Edit patient details</button>
+                <button type="button" class="btn btn-danger" id="deletePatientBtn" data-perm="patients.delete" style="padding:0.4rem 0.9rem; font-size:0.82rem;">Delete patient</button>
+              </div>
+              <div id="editPatientAlert" class="alert" style="margin-top:0.8rem;"></div>
               <div data-perm="patients.edit">
-                <button type="button" class="btn btn-outline" id="editPatientBtn" style="padding:0.35rem 0.8rem; font-size:0.8rem;">Edit contact details</button>
-                <div id="editPatientAlert" class="alert" style="margin-top:0.8rem;"></div>
-                <form id="editPatientForm" style="display:none; margin-top:0.8rem;">
+                <form id="editPatientForm" class="card" style="display:none; margin-top:0.8rem; padding:1.2rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
                   <div class="form-row">
                     <div class="form-group"><label for="epName">Full name</label><input type="text" id="epName" required maxlength="120"></div>
                     <div class="form-group"><label for="epPhone">Mobile (Patient ID)</label><input type="tel" id="epPhone" required></div>
-                    <div class="form-group"><label for="epEmail">Email</label><input type="email" id="epEmail"></div>
                   </div>
-                  <button type="submit" class="btn btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;">Save</button>
+                  <div class="form-row">
+                    <div class="form-group"><label for="epEmail">Email</label><input type="email" id="epEmail"></div>
+                    <div class="form-group"><label for="epDob">Date of birth</label><input type="date" id="epDob"></div>
+                    <div class="form-group"><label for="epGender">Gender</label><select id="epGender"><option value="">Not set</option><option>Female</option><option>Male</option><option>Other</option></select></div>
+                  </div>
+                  <p style="font-size:0.82rem; color:var(--ink-soft); margin:0 0 0.8rem;">Changing the mobile number changes the Patient ID.</p>
+                  <div style="display:flex; gap:0.5rem;">
+                    <button type="submit" class="btn btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;">Save changes</button>
+                    <button type="button" class="btn btn-outline" id="epCancel" style="padding:0.45rem 1rem; font-size:0.85rem;">Cancel</button>
+                  </div>
                 </form>
               </div>
               <h4 style="margin-top:1.6rem;">Appointments</h4>
@@ -873,13 +884,23 @@
         <div class="list-item" style="cursor:pointer; flex-wrap:wrap; gap:0.6rem;" data-patient="${p.id}" tabindex="0" role="button">
           <div><strong>${escAttr(p.name)}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ' <span class="badge" style="color:var(--danger);">no ID — add phone</span>'}<br>
             <span style="color:var(--ink-soft); font-size:0.85rem;">${[p.phone, p.email].filter(Boolean).map(escAttr).join(' · ')}</span></div>
-          <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'}${can('records.view') ? ` · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}` : ''}</span>
+          <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+            <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'}${can('records.view') ? ` · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}` : ''}</span>
+            ${can('patients.edit') ? `<button type="button" class="btn btn-outline" data-edit-patient="${p.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Edit</button>` : ''}
+            ${can('patients.delete') ? `<button type="button" class="btn btn-danger" data-delete-patient="${p.id}" data-name="${escAttr(p.name)}" data-appts="${p.appointmentCount}" data-records="${p.recordCount}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Delete</button>` : ''}
+          </div>
         </div>
       `).join('') : `<div class="empty-state">${q ? 'No patients match that search.' : 'No patients yet.'}</div>`;
       el.querySelectorAll('[data-patient]').forEach(row => {
-        row.addEventListener('click', () => openPatientReport(row.dataset.patient));
+        row.addEventListener('click', (e) => { if (!e.target.closest('button')) openPatientReport(row.dataset.patient); });
         row.addEventListener('keydown', e => { if (e.key === 'Enter') openPatientReport(row.dataset.patient); });
       });
+      el.querySelectorAll('[data-edit-patient]').forEach(b => b.addEventListener('click', async () => {
+        await openPatientReport(b.dataset.editPatient);
+        showEditPatientForm();
+      }));
+      el.querySelectorAll('[data-delete-patient]').forEach(b => b.addEventListener('click', () =>
+        deletePatient(b.dataset.deletePatient, b.dataset.name, Number(b.dataset.appts), Number(b.dataset.records))));
     } catch (e) {
       el.innerHTML = '<div class="empty-state">Could not load patients.</div>';
     }
@@ -912,7 +933,7 @@
       document.getElementById('patientsList').style.display = 'none';
       document.getElementById('patientDetail').style.display = 'block';
       document.getElementById('patientReportName').textContent = patient.name;
-      document.getElementById('patientReportMeta').textContent = [patient.phone, patient.email, patient.dob ? 'DOB ' + patient.dob : ''].filter(Boolean).join(' · ');
+      document.getElementById('patientReportMeta').textContent = [patient.phone, patient.email, patient.dob ? 'DOB ' + patient.dob : '', patient.gender].filter(Boolean).join(' · ');
 
       document.getElementById('patientReportAppts').innerHTML = appointments.length ? appointments.map(a => `
         <div class="list-item">
@@ -948,25 +969,63 @@
     }
   }
 
-  document.getElementById('editPatientBtn').addEventListener('click', () => {
+  function showEditPatientForm() {
     const f = document.getElementById('editPatientForm');
     const p = currentReportPatient || {};
     document.getElementById('epName').value = p.name || '';
     document.getElementById('epPhone').value = p.phone || '';
     document.getElementById('epEmail').value = p.email || '';
-    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('epDob').value = /^\d{4}-\d{2}-\d{2}$/.test(p.dob || '') ? p.dob : '';
+    document.getElementById('epDob').max = new Date().toISOString().slice(0, 10);
+    const g = document.getElementById('epGender');
+    if (p.gender && ![...g.options].some(o => o.value === p.gender)) g.add(new Option(p.gender, p.gender));
+    g.value = p.gender || '';
+    f.style.display = 'block';
+    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('epName').focus({ preventScroll: true });
+  }
+  document.getElementById('editPatientBtn').addEventListener('click', () => {
+    const f = document.getElementById('editPatientForm');
+    if (f.style.display === 'none') showEditPatientForm(); else f.style.display = 'none';
   });
+  document.getElementById('epCancel').addEventListener('click', () => { document.getElementById('editPatientForm').style.display = 'none'; });
   document.getElementById('editPatientForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const alertEl = document.getElementById('editPatientAlert');
     hideAlert(alertEl);
     try {
       const upd = await API.patch(`/api/admin/patients/${currentReportPatientId}`, {
-        name: document.getElementById('epName').value, phone: document.getElementById('epPhone').value, email: document.getElementById('epEmail').value
+        name: document.getElementById('epName').value, phone: document.getElementById('epPhone').value, email: document.getElementById('epEmail').value,
+        dob: document.getElementById('epDob').value, gender: document.getElementById('epGender').value
       });
       await openPatientReport(currentReportPatientId);
       showAlert(alertEl, `Saved. Patient ID is ${upd.patientId}.`, 'success');
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
+  });
+
+  async function deletePatient(id, name, appts, records) {
+    const parts = [];
+    if (appts) parts.push(`${appts} appointment${appts === 1 ? '' : 's'}`);
+    if (records) parts.push(`${records} report${records === 1 ? '' : 's'} and their files`);
+    const typed = prompt(`Delete ${name} permanently?\n\n` +
+      (parts.length ? `This also deletes ${parts.join(' and ')}. ` : '') +
+      `Upcoming appointments are removed from the doctor's calendar.\nThis cannot be undone.\n\nType DELETE to confirm:`);
+    if (typed === null) return;
+    if (typed.trim().toUpperCase() !== 'DELETE') { alert('Not deleted — you need to type DELETE.'); return; }
+    try {
+      await API.del(`/api/admin/patients/${id}`);
+      document.getElementById('patientDetail').style.display = 'none';
+      document.getElementById('patientsList').style.display = 'block';
+      currentReportPatientId = null; currentReportPatient = null;
+      await loadPatients();
+      alert(`${name} was deleted.`);
+    } catch (err) { alert(err.message); }
+  }
+  document.getElementById('deletePatientBtn').addEventListener('click', () => {
+    const p = currentReportPatient; if (!p) return;
+    const appts = document.querySelectorAll('#patientReportAppts .list-item').length;
+    const recs = document.querySelectorAll('#patientReportRecords .timeline-item').length;
+    deletePatient(p.id, p.name, appts, recs);
   });
 
   function readFileAsDataUrl(file) {

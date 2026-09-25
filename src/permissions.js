@@ -14,6 +14,7 @@ const PERMISSIONS = [
   { key: 'doctors.view',        group: 'Doctors',      label: "See doctors and their calendars" },
   { key: 'doctors.manage',      group: 'Doctors',      label: 'Add and edit doctors, working hours and doctor logins' },
   { key: 'directory.manage',    group: 'Website',      label: 'Edit departments and the Team page' },
+  { key: 'profiles.manage',     group: 'Website',      label: 'Edit public profiles of doctors and team — bio, qualifications, certificates' },
   { key: 'settings.manage',     group: 'Website',      label: 'Site settings and email settings' },
   { key: 'marketing.send',      group: 'Marketing',    label: 'Create and send promotion emails to patients' },
   { key: 'staff.manage',        group: 'Staff',        label: 'Manage staff logins, roles and permissions' }

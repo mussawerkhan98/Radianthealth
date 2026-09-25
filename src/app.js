@@ -426,18 +426,40 @@ app.get('/api/doctors/me/appointments', auth(['doctor']), wrap(async (req, res) 
   }));
 }));
 
+// My patients (booked with me). With ?q= and the "search all patients" rule
+// on, searches every patient in the clinic instead.
 app.get('/api/doctors/me/patients', auth(['doctor']), wrap(async (req, res) => {
-  const patients = await prisma.patient.findMany({
+  const q = String(req.query.q || '').trim().slice(0, 100);
+  const rules = await doctorRules();
+  const mine = await prisma.patient.findMany({
     where: { appointments: { some: { doctorId: req.user.sub } } },
     orderBy: { name: 'asc' }
   });
-  res.json(patients.map(patientOut));
+  const mineIds = new Set(mine.map(p => p.id));
+  if (!q || !rules.searchAllPatients) {
+    res.set('X-Search-All', rules.searchAllPatients ? '1' : '0');
+    return res.json(mine.map(p => ({ ...patientOut(p), mine: true })));
+  }
+  if (q.length < 2) throw new HttpError(400, 'Type at least 2 characters to search.');
+  const digits = q.replace(/\D/g, '');
+  const or = [{ name: { contains: q } }, { email: { contains: q.toLowerCase() } }];
+  if (digits.length >= 3) or.push({ phoneKey: { contains: digits.replace(/^0+/, '') } });
+  const found = await prisma.patient.findMany({ where: { OR: or }, orderBy: { name: 'asc' }, take: 50 });
+  res.set('X-Search-All', '1');
+  res.json(found.map(p => ({ ...patientOut(p), mine: mineIds.has(p.id) })));
 }));
 
 // A doctor may only see/add records for patients who have booked with them.
+async function doctorRules() {
+  const s = await settings.getAll();
+  return { searchAllPatients: !!(s.doctorRules && s.doctorRules.searchAllPatients) };
+}
 async function assertDoctorPatient(doctorId, patientId) {
   const link = await prisma.appointment.findFirst({ where: { doctorId, patientId }, select: { id: true } });
-  if (!link) throw new HttpError(404, 'Patient not found.');
+  if (link) return;
+  // Rule (Admin → Roles & Permissions): doctors may open any patient.
+  if ((await doctorRules()).searchAllPatients && await prisma.patient.findUnique({ where: { id: String(patientId) }, select: { id: true } })) return;
+  throw new HttpError(404, 'Patient not found.');
 }
 
 app.get('/api/doctors/me/patients/:patientId/records', auth(['doctor']), wrap(async (req, res) => {
@@ -1688,8 +1710,127 @@ app.patch('/api/admin/team-members/:id', perm('directory.manage'), wrap(async (r
 app.delete('/api/admin/team-members/:id', perm('directory.manage'), wrap(async (req, res) => {
   const existing = await prisma.teamMember.findUnique({ where: { id: req.params.id } });
   if (!existing) throw new HttpError(404, 'Team member not found.');
+  await prisma.profileCertificate.deleteMany({ where: { ownerType: 'team', ownerId: existing.id } });
   await prisma.teamMember.delete({ where: { id: existing.id } });
   res.json({ ok: true });
+}));
+
+// ---------- PUBLIC PROFILES (doctors + team) ----------
+const lines = v => String(v || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+const list = v => String(v || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+const PROFILE_MODELS = { doctor: 'doctor', team: 'teamMember' };
+const CERT_TYPES = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+const certOut = c => ({
+  id: c.id, title: c.title, issuer: c.issuer, year: c.year, filename: c.filename, mimeType: c.mimeType, size: c.size,
+  isImage: /^image\//.test(c.mimeType), fileUrl: c.size ? `/api/certificates/${c.id}/file` : ''
+});
+async function findProfileOwner(type, id, { publicOnly = false } = {}) {
+  const model = PROFILE_MODELS[type];
+  if (!model) throw new HttpError(404, 'Profile not found.');
+  const o = await prisma[model].findUnique({ where: { id: String(id) }, include: type === 'doctor' ? { department: true } : undefined });
+  if (!o || (type === 'doctor' && publicOnly && !o.active)) throw new HttpError(404, 'Profile not found.');
+  return o;
+}
+async function profileOut(type, o) {
+  const certs = await prisma.profileCertificate.findMany({ where: { ownerType: type, ownerId: o.id }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, title: true, issuer: true, year: true, filename: true, mimeType: true, size: true } });
+  const base = {
+    type, id: o.id, name: o.name, photo: o.photo, bio: o.bio, about: o.about,
+    qualifications: lines(o.qualifications), education: lines(o.education), expertise: list(o.expertise), languages: list(o.languages),
+    experienceYears: o.experienceYears || 0, certificates: certs.map(certOut)
+  };
+  if (type === 'doctor') return { ...base, title: o.specialty, specialty: o.specialty, department: o.department ? { id: o.department.id, name: o.department.name } : null,
+    offersVideo: !!o.offersVideo, workingDays: parseDays(o.workingDays), workingHours: { start: o.workStart, end: o.workEnd } };
+  return { ...base, title: o.role, role: o.role };
+}
+
+app.get('/api/profiles/:type/:id', wrap(async (req, res) => {
+  const o = await findProfileOwner(req.params.type, req.params.id, { publicOnly: true });
+  res.json(await profileOut(req.params.type, o));
+}));
+
+// Public: a certificate file (image or PDF) shown on a profile.
+app.get('/api/certificates/:id/file', wrap(async (req, res) => {
+  const c = await prisma.profileCertificate.findUnique({ where: { id: req.params.id } });
+  if (!c || !c.data) throw new HttpError(404, 'Not found.');
+  if (c.ownerType === 'doctor') {
+    const d = await prisma.doctor.findUnique({ where: { id: c.ownerId }, select: { active: true } });
+    if (!d || !d.active) throw new HttpError(404, 'Not found.');
+  }
+  res.set({ 'Content-Type': c.mimeType, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'public, max-age=86400',
+    'Content-Disposition': `inline; filename="${encodeURIComponent(c.filename || 'certificate')}"` });
+  res.send(Buffer.from(c.data));
+}));
+
+app.get('/api/admin/profiles/:type/:id', perm('profiles.manage'), wrap(async (req, res) => {
+  const o = await findProfileOwner(req.params.type, req.params.id);
+  res.json({ ...(await profileOut(req.params.type, o)), raw: {
+    qualifications: o.qualifications, education: o.education, expertise: o.expertise, languages: o.languages
+  } });
+}));
+
+app.patch('/api/admin/profiles/:type/:id', perm('profiles.manage'), wrap(async (req, res) => {
+  const type = req.params.type;
+  const o = await findProfileOwner(type, req.params.id);
+  const b = req.body || {};
+  const str = (k, max) => { if (b[k] !== undefined) data[k] = String(b[k] == null ? '' : b[k]).replace(/\r/g, '').trim().slice(0, max); };
+  const data = {};
+  str('bio', 1000); str('about', 5000); str('qualifications', 3000); str('education', 3000); str('expertise', 1000); str('languages', 300);
+  if (b.experienceYears !== undefined) {
+    const n = Number(b.experienceYears);
+    if (!Number.isInteger(n) || n < 0 || n > 70) throw new HttpError(400, 'Years of experience must be a whole number between 0 and 70.');
+    data.experienceYears = n;
+  }
+  if (type === 'team') {
+    if (b.name !== undefined) { const v = String(b.name).trim().slice(0, 120); if (!v) throw new HttpError(400, 'Name cannot be empty.'); data.name = v; }
+    if (b.role !== undefined) { const v = String(b.role).trim().slice(0, 120); if (!v) throw new HttpError(400, 'Role cannot be empty.'); data.role = v; }
+  }
+  if (type === 'doctor' && b.specialty !== undefined) data.specialty = String(b.specialty).trim().slice(0, 120);
+  if (b.photo !== undefined) {
+    if (!isValidPhoto(b.photo)) throw new HttpError(400, 'Photo must be a JPG, PNG, WEBP, or GIF image.');
+    data.photo = b.photo || null;
+  }
+  const u = await prisma[PROFILE_MODELS[type]].update({ where: { id: o.id }, data, include: type === 'doctor' ? { department: true } : undefined });
+  res.json(await profileOut(type, u));
+}));
+
+app.post('/api/admin/profiles/:type/:id/certificates', perm('profiles.manage'), wrap(async (req, res) => {
+  const type = req.params.type;
+  const o = await findProfileOwner(type, req.params.id);
+  const b = req.body || {};
+  const title = String(b.title || '').trim().slice(0, 200);
+  if (!title) throw new HttpError(400, 'Please give the certificate a name (e.g. "DHA Licence").');
+  if ((await prisma.profileCertificate.count({ where: { ownerType: type, ownerId: o.id } })) >= 30) throw new HttpError(400, 'A profile can have at most 30 certificates.');
+  const data = { id: newId('cert'), ownerType: type, ownerId: o.id, title, issuer: String(b.issuer || '').trim().slice(0, 200), year: String(b.year || '').trim().slice(0, 20) };
+  if (b.data) {
+    const name = cleanFilename(b.filename);
+    const ext = ((name.match(/\.([a-z0-9]+)$/i) || [])[1] || '').toLowerCase();
+    if (!CERT_TYPES.includes(ext)) throw new HttpError(400, 'Certificates can be PDF, JPG, PNG or WEBP files.');
+    const buf = Buffer.from(String(b.data).replace(/^data:[^;,]*;base64,/, ''), 'base64');
+    if (!buf.length || !FILE_TYPES[ext].magic(buf)) throw new HttpError(400, `"${name}" doesn't look like a real .${ext} file.`);
+    if (buf.length > MAX_FILE_BYTES) throw new HttpError(413, `"${name}" is larger than 3 MB. Please use a smaller file.`);
+    Object.assign(data, { filename: name, mimeType: FILE_TYPES[ext].mime, size: buf.length, data: buf });
+  }
+  data.sortOrder = await prisma.profileCertificate.count({ where: { ownerType: type, ownerId: o.id } });
+  const c = await prisma.profileCertificate.create({ data, select: { id: true, title: true, issuer: true, year: true, filename: true, mimeType: true, size: true } });
+  res.json(certOut(c));
+}));
+
+app.delete('/api/admin/certificates/:id', perm('profiles.manage'), wrap(async (req, res) => {
+  const c = await prisma.profileCertificate.findUnique({ where: { id: req.params.id }, select: { id: true } });
+  if (!c) throw new HttpError(404, 'Certificate not found.');
+  await prisma.profileCertificate.delete({ where: { id: c.id } });
+  res.json({ ok: true });
+}));
+
+// Rules for what doctors can do in the Doctor Portal.
+app.get('/api/admin/doctor-rules', perm('staff.manage'), wrap(async (req, res) => { res.json(await doctorRules()); }));
+app.patch('/api/admin/doctor-rules', perm('staff.manage'), wrap(async (req, res) => {
+  const b = req.body || {};
+  const next = { ...(await doctorRules()) };
+  if (b.searchAllPatients !== undefined) next.searchAllPatients = !!b.searchAllPatients;
+  await settings.setKey('doctorRules', next);
+  res.json(next);
 }));
 
 // ---------- CONTACT ----------

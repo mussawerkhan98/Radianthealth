@@ -486,7 +486,13 @@
                   <button type="button" class="btn btn-outline" id="mkTestBtn">Send test</button>
                 </div>
                 <strong style="display:block; margin-top:1.1rem;">2. Send it</strong>
-                <button type="button" class="btn btn-amber" id="mkSendBtn" style="margin-top:0.6rem;">Send</button>
+                <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-top:0.6rem;">
+                  <button type="button" class="btn btn-amber" id="mkSendBtn">Send</button>
+                  <span style="color:var(--ink-soft); font-size:0.88rem;">or schedule it:</span>
+                  <input type="datetime-local" id="mkSchedAt" style="flex:0 1 230px;" aria-label="Date and time to send">
+                  <button type="button" class="btn btn-outline" id="mkSchedBtn">Schedule</button>
+                </div>
+                <p id="mkSchedHint" style="font-size:0.8rem; color:var(--ink-soft); margin:0.4rem 0 0;"></p>
               </div>
             </form>
           </div>
@@ -1952,13 +1958,19 @@
     if (!keepAlert) hideAlert(mkAlert);
     mkEl('mkList').innerHTML = '<div class="empty-state">Loading…</div>';
     try {
+      await API.post('/api/admin/campaigns/run-due', {}).catch(() => {}); // sends anything overdue
       const [data, site, seg] = await Promise.all([API.get('/api/admin/campaigns'), API.get('/api/settings'), API.get('/api/admin/marketing/segments')]);
+      MK.scheduler = data.scheduler;
       MK.list = data.campaigns; MK.audience = data.audience; MK.seg = seg; MK.whatsapp = String(site.whatsapp || '').replace(/\D/g, '');
       fillMkDatalists();
       mkEl('mkStats').innerHTML = `<div><div style="font-size:1.6rem; font-weight:800;">${data.audience}</div><div style="font-size:0.85rem; color:var(--ink-soft);">${data.audience === 1 ? 'person receives' : 'people receive'} offers<br>(${plural(data.patients, 'patient')} · ${plural(data.contacts, 'contact')})</div></div>
         <div><div style="font-size:1.6rem; font-weight:800;">${data.unsubscribed}</div><div style="font-size:0.85rem; color:var(--ink-soft);">unsubscribed</div></div>
         <div style="flex:1 1 260px; font-size:0.85rem; color:var(--ink-soft);">${data.emailReady ? 'Sent from info@radianthealthalliance.com through Brevo. Brevo’s free plan sends up to 300 emails a day — upgrade in Brevo if you have more patients.' : '<span style="color:var(--danger);">Email sending (Brevo) is not set up, so promotions can’t be sent yet.</span>'}</div>`;
       renderMkList();
+      const hasScheduled = data.campaigns.some(c => c.status === 'scheduled');
+      if (hasScheduled && data.scheduler && !data.scheduler.timerReady) {
+        mkEl('mkStats').insertAdjacentHTML('beforeend', '<div style="flex:1 1 100%; font-size:0.85rem; color:var(--amber-deep, #D68A34);"><strong>Scheduling tip:</strong> the automatic timer isn’t set up yet, so scheduled promotions go out when someone opens this Marketing page or at the daily check (10:00 AM). Finish the one-time timer setup to send exactly on time.</div>');
+      }
     } catch (err) { mkEl('mkList').innerHTML = `<div class="empty-state">${escAttr(err.message)}</div>`; }
   }
 
@@ -1971,10 +1983,13 @@
           <span style="color:var(--ink-soft); font-size:0.85rem;">${c.status === 'sent'
             ? `Sent ${new Date(c.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })} to ${c.sentCount} ${c.sentCount === 1 ? 'person' : 'people'}${c.failedCount ? ` · <span style="color:var(--danger);">${c.failedCount} failed</span>` : ''}` +
               (c.buttonUrl ? `<br><strong style="color:var(--teal-deep);">${c.clickedCount} clicked${c.sentCount ? ` (${Math.round(c.clickedCount / c.sentCount * 1000) / 10}%)` : ''}</strong> · ${c.totalClicks} click${c.totalClicks === 1 ? '' : 's'} in total` : '')
-            : c.status === 'sending' ? 'Sending…' : 'Draft — not sent yet'}<br><span style="font-size:0.8rem;">To: ${escAttr(c.audienceText || 'Everyone')}</span></span></div>
+            : c.status === 'sending' ? 'Sending…'
+            : c.status === 'scheduled' ? `<strong style="color:var(--blue);">Scheduled for ${new Date(c.scheduledAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</strong>`
+            : 'Draft — not sent yet' + (c.sendError ? `<br><span style="color:var(--danger);">Scheduled send failed: ${escAttr(c.sendError)}</span>` : '')}<br><span style="font-size:0.8rem;">To: ${escAttr(c.audienceText || 'Everyone')}</span></span></div>
         </div>
         <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
-          <span class="badge ${c.status === 'sent' ? 'confirmed' : ''}">${c.status}</span>
+          <span class="badge ${c.status === 'sent' ? 'confirmed' : ''}"${c.status === 'scheduled' ? ' style="background:rgba(61,125,183,0.12); color:var(--blue-deep, #2C5F8C);"' : ''}>${c.status}</span>
+          ${c.status === 'scheduled' ? `<button type="button" class="btn btn-outline" data-mk-unsched="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Cancel schedule</button>` : ''}
           ${c.status === 'draft' ? `<button type="button" class="btn btn-outline" data-mk-edit="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Edit</button>` : ''}
           ${c.status === 'sent' ? `<button type="button" class="btn btn-primary" data-mk-results="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Results</button>` : ''}
           <button type="button" class="btn btn-outline" data-mk-preview="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Preview</button>
@@ -1983,6 +1998,11 @@
         </div>
       </div>`).join('') : '<div class="empty-state">No promotions yet. Click “New promotion” to write your first offer.</div>';
     mkEl('mkList').querySelectorAll('[data-mk-edit]').forEach(b => b.addEventListener('click', () => openMkEditor(MK.list.find(c => c.id === b.dataset.mkEdit))));
+    mkEl('mkList').querySelectorAll('[data-mk-unsched]').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Cancel the schedule? It goes back to a draft you can edit or send.')) return;
+      try { await API.post(`/api/admin/campaigns/${b.dataset.mkUnsched}/unschedule`, {}); loadMarketing(); showAlert(mkAlert, 'Schedule cancelled — it’s a draft again.', 'success'); }
+      catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    }));
     mkEl('mkList').querySelectorAll('[data-mk-results]').forEach(b => b.addEventListener('click', () => openResults(b.dataset.mkResults)));
     mkEl('mkList').querySelectorAll('[data-mk-preview]').forEach(b => b.addEventListener('click', () => previewCampaign(b.dataset.mkPreview)));
     mkEl('mkList').querySelectorAll('[data-mk-copy]').forEach(b => b.addEventListener('click', async () => {
@@ -2034,6 +2054,13 @@
     mkEl('mkLinkType').value = type;
     mkShowLinkFields();
     mkShowImage();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const pad = n => String(n).padStart(2, '0');
+    const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const tomorrow9 = new Date(); tomorrow9.setDate(tomorrow9.getDate() + 1); tomorrow9.setHours(9, 0, 0, 0);
+    mkEl('mkSchedAt').value = toLocal(c && c.scheduledAt ? new Date(c.scheduledAt) : tomorrow9);
+    mkEl('mkSchedAt').min = toLocal(new Date(Date.now() + 2 * 60000));
+    mkEl('mkSchedHint').textContent = `Times are in your time zone (${tz}). A scheduled promotion goes to whoever matches “Who receives it” at the moment it’s sent.`;
     const a = (c && c.audience) || { source: 'all', countries: [], regions: [], groups: [] };
     mkEl('mkSource').value = a.source || 'all';
     renderSegments(a);
@@ -2617,6 +2644,26 @@
       if (!res.ok) throw new Error('Download failed.');
       saveBlob(await res.blob(), `promotion-results-${new Date().toISOString().slice(0, 10)}.csv`);
     } catch (err) { alert(err.message); }
+  });
+</script>
+<script>
+  document.getElementById('mkSchedBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('mkSchedBtn');
+    hideAlert(mkAlert);
+    const v = document.getElementById('mkSchedAt').value;
+    if (!v) return showAlert(mkAlert, 'Please choose a date and time.', 'error');
+    const at = new Date(v); // local time from the picker
+    try {
+      const c = await saveMk();
+      await updateAudienceCount();
+      if (!MK.audienceCount && !confirm('Right now nobody matches “Who receives it”. Schedule anyway? (It goes to whoever matches at send time.)')) return;
+      if (!confirm(`Schedule “${c.subject}” for ${at.toLocaleString(undefined, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' })}?\n\nCurrently ${MK.audienceCount} ${MK.audienceCount === 1 ? 'person matches' : 'people match'}. You can cancel the schedule any time before then.`)) return;
+      btn.disabled = true;
+      await API.post(`/api/admin/campaigns/${c.id}/schedule`, { at: at.toISOString() });
+      closeMkEditor();
+      showAlert(mkAlert, `Scheduled for ${at.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}.`, 'success');
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    btn.disabled = false;
   });
 </script>
 </body>

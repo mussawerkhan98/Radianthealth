@@ -81,6 +81,8 @@ model Patient {
   // Promotion emails: sent to everyone with a real email unless they unsubscribe.
   marketingOptOut Boolean      @default(false)
   marketingKey    String       @default("") // secret for the unsubscribe link (made on first send)
+  country         String       @default("") // for marketing groups; blank = guessed from phone
+  region          String       @default("") // e.g. emirate / city
   createdAt    DateTime        @default(now())
   appointments Appointment[]
   records      MedicalRecord[]
@@ -200,6 +202,24 @@ model Campaign {
   sentCount   Int       @default(0)
   failedCount Int       @default(0)
   createdById String    @default("")
+  audience    String    @default("{}") // JSON: who it goes to (source, countries, regions, groups)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// People on the marketing list who aren't (necessarily) patients — added by
+// hand or imported from a CSV. Same email as a patient = same person.
+model MarketingContact {
+  id        String   @id
+  email     String   @unique
+  name      String   @default("")
+  phone     String   @default("")
+  country   String   @default("")
+  region    String   @default("")
+  groups    String   @default("") // comma-separated, e.g. "VIP,Corporate"
+  optOut    Boolean  @default(false)
+  unsubKey  String   @default("")
+  source    String   @default("manual") // manual | import
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

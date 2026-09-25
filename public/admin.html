@@ -322,6 +322,10 @@
                     <div class="form-group"><label for="epDob">Date of birth</label><input type="date" id="epDob"></div>
                     <div class="form-group"><label for="epGender">Gender</label><select id="epGender"><option value="">Not set</option><option>Female</option><option>Male</option><option>Other</option></select></div>
                   </div>
+                  <div class="form-row">
+                    <div class="form-group"><label for="epCountry">Country</label><input type="text" id="epCountry" list="mkCountryList" maxlength="80"></div>
+                    <div class="form-group"><label for="epRegion">Region / city</label><input type="text" id="epRegion" list="mkRegionList" maxlength="80" placeholder="e.g. Dubai"></div>
+                  </div>
                   <label style="display:flex; gap:0.5rem; align-items:center; font-weight:500; margin:0 0 0.8rem;"><input type="checkbox" id="epOffers" style="width:auto; flex:0 0 auto; margin:0;"> Receives offers and promotion emails</label>
                   <p style="font-size:0.82rem; color:var(--ink-soft); margin:0 0 0.8rem;">Changing the mobile number changes the Patient ID.</p>
                   <div style="display:flex; gap:0.5rem;">
@@ -375,10 +379,15 @@
 
         <div id="tab-marketing" style="display:none;">
           <h2>Marketing</h2>
-          <p>Send offers and news to your patients by email. Every email has an unsubscribe link; patients who unsubscribe are skipped automatically.</p>
+          <p>Send offers and news by email to your patients and other contacts. Every email has an unsubscribe link; anyone who unsubscribes is skipped automatically.</p>
           <div id="mkStats" class="card" style="padding:1rem 1.3rem; margin-bottom:1.2rem; display:flex; flex-wrap:wrap; gap:1.4rem; align-items:center;"></div>
           <div id="mkAlert" class="alert"></div>
+          <div class="mk-subtabs" role="tablist" style="display:flex; gap:0.4rem; margin-bottom:1.2rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary" id="mkTabPromos" role="tab" aria-selected="true" style="padding:0.45rem 1rem; font-size:0.85rem;">Promotions</button>
+            <button type="button" class="btn btn-outline" id="mkTabContacts" role="tab" aria-selected="false" style="padding:0.45rem 1rem; font-size:0.85rem;">Contacts &amp; groups</button>
+          </div>
 
+          <div id="mkPromos">
           <div id="mkListWrap">
             <button class="btn btn-primary" id="mkNewBtn" style="margin-bottom:1rem;">+ New promotion</button>
             <div id="mkList"><div class="empty-state">Loading…</div></div>
@@ -421,7 +430,7 @@
                   <option value="/contact.html">Contact</option>
                   <option value="/about.html">About</option>
                 </select></div>
-              <div class="form-group" id="mkWhatsappWrap" style="display:none;"><label for="mkWhatsappText">Message the patient sends you on WhatsApp</label>
+              <div class="form-group" id="mkWhatsappWrap" style="display:none;"><label for="mkWhatsappText">Message they send you on WhatsApp</label>
                 <input type="text" id="mkWhatsappText" maxlength="300" placeholder="e.g. Hi, I'd like the check-up offer">
                 <small style="color:var(--ink-soft);" id="mkWhatsappHint"></small></div>
               <div class="form-group" id="mkOtherWrap" style="display:none;"><label for="mkOtherUrl">Link (full address)</label>
@@ -431,17 +440,84 @@
                 <button type="submit" class="btn btn-outline" id="mkSaveBtn">Save draft</button>
                 <button type="button" class="btn btn-outline" id="mkPreviewBtn">Preview</button>
               </div>
+              <h4 style="margin:1.6rem 0 0.4rem;">Who receives it</h4>
+              <div class="form-group" style="max-width:360px;"><label for="mkSource">Send to</label>
+                <select id="mkSource">
+                  <option value="all">Everyone (patients + contacts)</option>
+                  <option value="patients">Patients only</option>
+                  <option value="contacts">Imported / added contacts only</option>
+                </select></div>
+              <div id="mkSegCountries" class="mk-seg"></div>
+              <div id="mkSegRegions" class="mk-seg"></div>
+              <div id="mkSegGroups" class="mk-seg"></div>
+              <p id="mkAudienceCount" style="font-weight:700; margin:0.6rem 0 0;"></p>
+              <p style="font-size:0.82rem; color:var(--ink-soft); margin:0.2rem 0 0;">Tick nothing in a section to include everyone. Ticking several in one section means “any of these”.</p>
+
               <div class="card" style="margin-top:1.4rem; padding:1.1rem 1.2rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
                 <strong>1. Send yourself a test</strong>
                 <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.6rem;">
                   <input type="email" id="mkTestEmail" placeholder="your@email.com" style="flex:1 1 220px;">
                   <button type="button" class="btn btn-outline" id="mkTestBtn">Send test</button>
                 </div>
-                <strong style="display:block; margin-top:1.1rem;">2. Send to patients</strong>
-                <button type="button" class="btn btn-amber" id="mkSendBtn" style="margin-top:0.6rem;">Send to all patients</button>
+                <strong style="display:block; margin-top:1.1rem;">2. Send it</strong>
+                <button type="button" class="btn btn-amber" id="mkSendBtn" style="margin-top:0.6rem;">Send</button>
               </div>
             </form>
           </div>
+
+          </div><!-- /mkPromos -->
+
+          <div id="mkContacts" style="display:none;">
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.9rem;">
+              <button type="button" class="btn btn-primary" id="mcAddBtn" style="padding:0.45rem 1rem; font-size:0.85rem;">+ Add contact</button>
+              <button type="button" class="btn btn-outline" id="mcImportBtn" style="padding:0.45rem 1rem; font-size:0.85rem;">Import CSV</button>
+              <button type="button" class="btn btn-outline" id="mcExportBtn" style="padding:0.45rem 1rem; font-size:0.85rem;">Export CSV</button>
+            </div>
+
+            <form id="mcForm" class="card" style="display:none; padding:1.2rem; margin-bottom:1rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
+              <h4 id="mcFormTitle" style="margin-top:0;">Add contact</h4>
+              <div class="form-row">
+                <div class="form-group"><label for="mcEmail">Email *</label><input type="email" id="mcEmail" required maxlength="200"></div>
+                <div class="form-group"><label for="mcName">Name</label><input type="text" id="mcName" maxlength="120"></div>
+                <div class="form-group"><label for="mcPhone">Phone</label><input type="tel" id="mcPhone" maxlength="40"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label for="mcCountry">Country</label><input type="text" id="mcCountry" list="mkCountryList" maxlength="80" placeholder="e.g. United Arab Emirates"></div>
+                <div class="form-group"><label for="mcRegion">Region / city</label><input type="text" id="mcRegion" list="mkRegionList" maxlength="80" placeholder="e.g. Dubai"></div>
+                <div class="form-group"><label for="mcGroups">Groups</label><input type="text" id="mcGroups" list="mkGroupList" maxlength="400" placeholder="e.g. VIP, Corporate"></div>
+              </div>
+              <label style="display:flex; gap:0.5rem; align-items:center; font-weight:500; margin:0 0 0.8rem;"><input type="checkbox" id="mcSubscribed" checked style="width:auto; flex:0 0 auto; margin:0;"> Receives offers</label>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="submit" class="btn btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;">Save</button>
+                <button type="button" class="btn btn-outline" id="mcCancel" style="padding:0.45rem 1rem; font-size:0.85rem;">Cancel</button>
+                <button type="button" class="btn btn-danger" id="mcDelete" style="padding:0.45rem 1rem; font-size:0.85rem; margin-left:auto; display:none;">Delete contact</button>
+              </div>
+            </form>
+
+            <div id="mcImport" class="card" style="display:none; padding:1.2rem; margin-bottom:1rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
+              <h4 style="margin-top:0;">Import contacts from a CSV file</h4>
+              <p style="font-size:0.88rem; margin:0 0 0.6rem;">Columns can be: <strong>email</strong> (required), name, phone, country, region, groups. From Excel or Google Sheets use <em>File → Save as / Download → CSV</em>. <a href="#" id="mcSample">Download a sample file</a>.</p>
+              <input type="file" id="mcFile" accept=".csv,text/csv">
+              <div id="mcPreview" style="margin-top:0.8rem;"></div>
+              <div id="mcImportOpts" style="display:none;">
+                <div class="form-group" style="max-width:420px; margin-top:0.8rem;"><label for="mcAddGroups">Also add everyone in this file to group(s)</label><input type="text" id="mcAddGroups" list="mkGroupList" maxlength="200" placeholder="e.g. Expo 2026 leads"></div>
+                <label style="display:flex; gap:0.5rem; align-items:flex-start; font-weight:500; margin:0 0 0.9rem;"><input type="checkbox" id="mcConsent" style="width:auto; flex:0 0 auto; margin:0.2rem 0 0;"> <span>These people agreed to receive offers from Radiant Health Alliance. <small style="display:block; font-weight:400; color:var(--ink-soft);">Sending to bought or scraped lists breaks UAE data law and gets your emails marked as spam.</small></span></label>
+                <div style="display:flex; gap:0.5rem;">
+                  <button type="button" class="btn btn-primary" id="mcDoImport" style="padding:0.45rem 1rem; font-size:0.85rem;">Import</button>
+                  <button type="button" class="btn btn-outline" id="mcImportCancel" style="padding:0.45rem 1rem; font-size:0.85rem;">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.8rem;">
+              <input type="search" id="mcSearch" placeholder="Search name, email, country, group…" style="flex:1 1 240px;">
+              <select id="mcKind" style="flex:0 1 200px;"><option value="">Patients + contacts</option><option value="patient">Patients only</option><option value="contact">Contacts only</option></select>
+              <select id="mcGroupFilter" style="flex:0 1 200px;"><option value="">All groups</option></select>
+            </div>
+            <p id="mcCount" style="font-size:0.85rem; color:var(--ink-soft); margin:0 0 0.5rem;"></p>
+            <div id="mcList"><div class="empty-state">Loading…</div></div>
+          </div>
+          <datalist id="mkCountryList"></datalist><datalist id="mkRegionList"></datalist><datalist id="mkGroupList"></datalist>
 
           <div id="mkPreviewModal" style="display:none; position:fixed; inset:0; background:rgba(15,25,30,0.6); z-index:1000; padding:2vh 12px; overflow:auto;" role="dialog" aria-modal="true" aria-label="Email preview">
             <div style="max-width:680px; margin:0 auto; background:#fff; border-radius:14px; overflow:hidden;">
@@ -1065,6 +1141,10 @@
     if (p.gender && ![...g.options].some(o => o.value === p.gender)) g.add(new Option(p.gender, p.gender));
     g.value = p.gender || '';
     document.getElementById('epOffers').checked = !p.marketingOptOut;
+    document.getElementById('epCountry').value = p.country || '';
+    document.getElementById('epCountry').placeholder = p.countryGuess ? `${p.countryGuess} (from phone)` : 'e.g. United Arab Emirates';
+    document.getElementById('epRegion').value = p.region || '';
+    fillMkDatalists();
     f.style.display = 'block';
     f.scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('epName').focus({ preventScroll: true });
@@ -1082,7 +1162,8 @@
       const upd = await API.patch(`/api/admin/patients/${currentReportPatientId}`, {
         name: document.getElementById('epName').value, phone: document.getElementById('epPhone').value, email: document.getElementById('epEmail').value,
         dob: document.getElementById('epDob').value, gender: document.getElementById('epGender').value,
-        marketingOptOut: !document.getElementById('epOffers').checked
+        marketingOptOut: !document.getElementById('epOffers').checked,
+        country: document.getElementById('epCountry').value, region: document.getElementById('epRegion').value
       });
       await openPatientReport(currentReportPatientId);
       showAlert(alertEl, `Saved. Patient ID is ${upd.patientId}.`, 'success');
@@ -1576,20 +1657,21 @@
 </script>
 <script>
   // ---------- Marketing (promotion emails) ----------
-  const MK = { list: [], audience: 0, current: null, image: undefined, imageUrl: '', whatsapp: '' };
+  const MK = { list: [], audience: 0, audienceCount: 0, current: null, image: undefined, imageUrl: '', whatsapp: '', seg: null };
   const mkAlert = document.getElementById('mkAlert');
   const mkEl = id => document.getElementById(id);
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-  async function loadMarketing() {
-    hideAlert(mkAlert);
+  async function loadMarketing(keepAlert) {
+    if (!keepAlert) hideAlert(mkAlert);
     mkEl('mkList').innerHTML = '<div class="empty-state">Loading…</div>';
     try {
-      const [data, site] = await Promise.all([API.get('/api/admin/campaigns'), API.get('/api/settings')]);
-      MK.list = data.campaigns; MK.audience = data.audience; MK.whatsapp = String(site.whatsapp || '').replace(/\D/g, '');
-      mkEl('mkStats').innerHTML = `<div><div style="font-size:1.6rem; font-weight:800;">${data.audience}</div><div style="font-size:0.85rem; color:var(--ink-soft);">patients will receive offers</div></div>
+      const [data, site, seg] = await Promise.all([API.get('/api/admin/campaigns'), API.get('/api/settings'), API.get('/api/admin/marketing/segments')]);
+      MK.list = data.campaigns; MK.audience = data.audience; MK.seg = seg; MK.whatsapp = String(site.whatsapp || '').replace(/\D/g, '');
+      fillMkDatalists();
+      mkEl('mkStats').innerHTML = `<div><div style="font-size:1.6rem; font-weight:800;">${data.audience}</div><div style="font-size:0.85rem; color:var(--ink-soft);">${data.audience === 1 ? 'person receives' : 'people receive'} offers<br>(${plural(data.patients, 'patient')} · ${plural(data.contacts, 'contact')})</div></div>
         <div><div style="font-size:1.6rem; font-weight:800;">${data.unsubscribed}</div><div style="font-size:0.85rem; color:var(--ink-soft);">unsubscribed</div></div>
         <div style="flex:1 1 260px; font-size:0.85rem; color:var(--ink-soft);">${data.emailReady ? 'Sent from info@radianthealthalliance.com through Brevo. Brevo’s free plan sends up to 300 emails a day — upgrade in Brevo if you have more patients.' : '<span style="color:var(--danger);">Email sending (Brevo) is not set up, so promotions can’t be sent yet.</span>'}</div>`;
-      mkEl('mkSendBtn').textContent = mkSendLabel();
       renderMkList();
     } catch (err) { mkEl('mkList').innerHTML = `<div class="empty-state">${escAttr(err.message)}</div>`; }
   }
@@ -1601,8 +1683,8 @@
           ${c.imageUrl ? `<img src="${escAttr(c.imageUrl)}" alt="" style="width:64px; height:40px; object-fit:cover; border-radius:6px; flex:0 0 auto;">` : ''}
           <div style="min-width:0;"><strong>${escAttr(c.subject)}</strong><br>
           <span style="color:var(--ink-soft); font-size:0.85rem;">${c.status === 'sent'
-            ? `Sent ${new Date(c.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })} to ${c.sentCount} patient${c.sentCount === 1 ? '' : 's'}${c.failedCount ? ` · <span style="color:var(--danger);">${c.failedCount} failed</span>` : ''}`
-            : c.status === 'sending' ? 'Sending…' : 'Draft — not sent yet'}</span></div>
+            ? `Sent ${new Date(c.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })} to ${c.sentCount} ${c.sentCount === 1 ? 'person' : 'people'}${c.failedCount ? ` · <span style="color:var(--danger);">${c.failedCount} failed</span>` : ''}`
+            : c.status === 'sending' ? 'Sending…' : 'Draft — not sent yet'}<br><span style="font-size:0.8rem;">To: ${escAttr(c.audienceText || 'Everyone')}</span></span></div>
         </div>
         <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
           <span class="badge ${c.status === 'sent' ? 'confirmed' : ''}">${c.status}</span>
@@ -1625,7 +1707,7 @@
     }));
   }
 
-  const mkSendLabel = () => MK.audience === 1 ? 'Send to 1 patient' : `Send to all ${MK.audience} patients`;
+  const mkSendLabel = () => MK.audienceCount === 1 ? 'Send to 1 person' : `Send to ${MK.audienceCount} people`;
   function waLink(text) { return `https://wa.me/${MK.whatsapp}${text ? '?text=' + encodeURIComponent(text) : ''}`; }
   function mkShowLinkFields() {
     const t = mkEl('mkLinkType').value;
@@ -1663,6 +1745,10 @@
     mkEl('mkLinkType').value = type;
     mkShowLinkFields();
     mkShowImage();
+    const a = (c && c.audience) || { source: 'all', countries: [], regions: [], groups: [] };
+    mkEl('mkSource').value = a.source || 'all';
+    renderSegments(a);
+    updateAudienceCount();
     mkEl('mkListWrap').style.display = 'none';
     mkEl('mkEditor').style.display = 'block';
     mkEl('mkSubject').focus();
@@ -1696,7 +1782,8 @@
     const url = mkButtonUrl();
     const body = {
       subject: mkEl('mkSubject').value, headline: mkEl('mkHeadline').value, body: mkEl('mkBody').value,
-      buttonText: url ? (mkEl('mkBtnText').value.trim() || 'Learn more') : '', buttonUrl: url
+      buttonText: url ? (mkEl('mkBtnText').value.trim() || 'Learn more') : '', buttonUrl: url,
+      audience: currentAudience()
     };
     if (!body.subject.trim()) throw new Error('Please enter an email subject.');
     if (MK.image !== undefined) body.image = MK.image;
@@ -1743,14 +1830,243 @@
     hideAlert(mkAlert);
     try {
       const c = await saveMk();
-      if (!MK.audience) return showAlert(mkAlert, 'There are no patients with an email address to send to yet.', 'error');
-      if (!confirm(`Send “${c.subject}” to ${MK.audience} patient${MK.audience === 1 ? '' : 's'} now?\n\nThis can't be undone. Tip: send yourself a test first.`)) return;
+      await updateAudienceCount();
+      const n = MK.audienceCount;
+      if (!n) return showAlert(mkAlert, 'Nobody matches who you chose to send to. Change “Who receives it”.', 'error');
+      if (!confirm(`Send “${c.subject}” to ${n} ${n === 1 ? 'person' : 'people'} now?\n\nTo: ${c.audienceText}\n\nThis can't be undone. Tip: send yourself a test first.`)) return;
       btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sending…';
       const r = await API.post(`/api/admin/campaigns/${c.id}/send`, {});
       closeMkEditor();
-      showAlert(mkAlert, `Sent to ${r.sentCount} patient${r.sentCount === 1 ? '' : 's'}.` + (r.failedCount ? ` ${r.failedCount} could not be sent: ${r.error}` : ''), r.failedCount ? 'error' : 'success');
+      showAlert(mkAlert, `Sent to ${r.sentCount} ${r.sentCount === 1 ? 'person' : 'people'}.` + (r.failedCount ? ` ${r.failedCount} could not be sent: ${r.error}` : ''), r.failedCount ? 'error' : 'success');
     } catch (err) { showAlert(mkAlert, err.message, 'error'); }
     btn.disabled = false; btn.textContent = mkSendLabel();
+  });
+</script>
+<script>
+  // ---------- Marketing: audience picker, contacts, import/export ----------
+  const UAE_REGIONS = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah', 'Al Ain'];
+  const COMMON_COUNTRIES = ['United Arab Emirates', 'Saudi Arabia', 'Oman', 'Qatar', 'Bahrain', 'Kuwait', 'India', 'Pakistan', 'Philippines', 'Egypt', 'United Kingdom'];
+  function fillMkDatalists() {
+    const seg = MK.seg || { countries: [], regions: [], groups: [] };
+    const uniq = arr => [...new Map(arr.filter(Boolean).map(v => [v.toLowerCase(), v])).values()];
+    const opts = arr => arr.map(v => `<option value="${escAttr(v)}"></option>`).join('');
+    mkEl('mkCountryList').innerHTML = opts(uniq([...seg.countries.map(x => x.name), ...COMMON_COUNTRIES]));
+    mkEl('mkRegionList').innerHTML = opts(uniq([...seg.regions.map(x => x.name), ...UAE_REGIONS]));
+    mkEl('mkGroupList').innerHTML = opts(uniq(seg.groups.map(x => x.name).filter(g => g !== 'Patients')));
+  }
+
+  // Sub-tabs
+  function mkShowSub(which) {
+    const promos = which === 'promos';
+    mkEl('mkPromos').style.display = promos ? '' : 'none';
+    mkEl('mkContacts').style.display = promos ? 'none' : '';
+    mkEl('mkTabPromos').className = 'btn ' + (promos ? 'btn-primary' : 'btn-outline');
+    mkEl('mkTabContacts').className = 'btn ' + (promos ? 'btn-outline' : 'btn-primary');
+    mkEl('mkTabPromos').setAttribute('aria-selected', promos); mkEl('mkTabContacts').setAttribute('aria-selected', !promos);
+    if (!promos) loadContacts();
+  }
+  mkEl('mkTabPromos').addEventListener('click', () => mkShowSub('promos'));
+  mkEl('mkTabContacts').addEventListener('click', () => mkShowSub('contacts'));
+
+  // "Who receives it"
+  function segBox(id, title, items, selected) {
+    const el = mkEl(id);
+    if (!items.length) { el.innerHTML = ''; return; }
+    const sel = new Set((selected || []).map(v => v.toLowerCase()));
+    // keep previously chosen values even if nobody has them now
+    const all = [...items, ...(selected || []).filter(v => !items.some(i => i.name.toLowerCase() === v.toLowerCase())).map(v => ({ name: v, count: 0 }))];
+    el.innerHTML = `<div style="font-weight:700; font-size:0.9rem; margin:0.8rem 0 0.4rem;">${title}</div><div style="display:flex; flex-wrap:wrap; gap:0.4rem;">` +
+      all.map(i => `<label class="cal-chip" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.3rem 0.7rem; border:1px solid var(--line, #d7dfe2); border-radius:999px; font-size:0.85rem; cursor:pointer; font-weight:500;">
+        <input type="checkbox" value="${escAttr(i.name)}" ${sel.has(i.name.toLowerCase()) ? 'checked' : ''} style="width:auto; flex:0 0 auto; margin:0;"> ${escAttr(i.name)} <span style="color:var(--ink-soft);">${i.count}</span></label>`).join('') + '</div>';
+    el.querySelectorAll('input').forEach(i => i.addEventListener('change', updateAudienceCount));
+  }
+  function renderSegments(a) {
+    const seg = MK.seg || { countries: [], regions: [], groups: [] };
+    segBox('mkSegCountries', 'Country', seg.countries, a.countries);
+    segBox('mkSegRegions', 'Region / city', seg.regions, a.regions);
+    segBox('mkSegGroups', 'Groups', seg.groups, a.groups);
+  }
+  const checkedIn = id => [...mkEl(id).querySelectorAll('input:checked')].map(i => i.value);
+  const currentAudience = () => ({ source: mkEl('mkSource').value, countries: checkedIn('mkSegCountries'), regions: checkedIn('mkSegRegions'), groups: checkedIn('mkSegGroups') });
+  let audTimer = null;
+  async function updateAudienceCount() {
+    clearTimeout(audTimer);
+    try {
+      const { count } = await API.post('/api/admin/campaigns/audience-count', { audience: currentAudience() });
+      MK.audienceCount = count;
+      mkEl('mkAudienceCount').textContent = count === 1 ? '1 person will receive this.' : `${count} people will receive this.`;
+      mkEl('mkAudienceCount').style.color = count ? '' : 'var(--danger)';
+      mkEl('mkSendBtn').textContent = mkSendLabel();
+    } catch (e) { mkEl('mkAudienceCount').textContent = ''; }
+  }
+  mkEl('mkSource').addEventListener('change', updateAudienceCount);
+
+  // Contacts list
+  let mcRows = [], mcEditing = null, mcTimer = null;
+  async function loadContacts() {
+    const q = mkEl('mcSearch').value.trim(), kind = mkEl('mcKind').value, group = mkEl('mcGroupFilter').value;
+    const params = new URLSearchParams(); if (q) params.set('q', q); if (kind) params.set('kind', kind); if (group) params.set('group', group);
+    mkEl('mcList').innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const [data, seg] = await Promise.all([API.get('/api/admin/contacts?' + params), API.get('/api/admin/marketing/segments')]);
+      MK.seg = seg; fillMkDatalists();
+      const gf = mkEl('mcGroupFilter'), keep = gf.value;
+      gf.innerHTML = '<option value="">All groups</option>' + seg.groups.map(g => `<option value="${escAttr(g.name)}">${escAttr(g.name)} (${g.count})</option>`).join('');
+      gf.value = keep;
+      mcRows = data.people;
+      mkEl('mcCount').textContent = `${data.total} ${data.total === 1 ? 'person' : 'people'}${data.total > data.people.length ? ` — showing the first ${data.people.length}, search to narrow down` : ''}`;
+      mkEl('mcList').innerHTML = mcRows.length ? mcRows.map((p, i) => `
+        <div class="list-item" style="flex-wrap:wrap; gap:0.5rem;">
+          <div style="min-width:0;"><strong>${escAttr(p.name || p.email)}</strong> <span class="badge">${p.kind === 'patient' ? 'patient' : 'contact'}</span>${p.subscribed ? '' : ' <span class="badge" style="color:var(--danger);">unsubscribed</span>'}<br>
+            <span style="color:var(--ink-soft); font-size:0.85rem;">${[p.email, p.phone, [p.region, p.country].filter(Boolean).join(', ')].filter(Boolean).map(escAttr).join(' · ')}</span>
+            ${p.groups.filter(g => g !== 'Patients').length ? `<div style="margin-top:0.3rem; display:flex; gap:0.3rem; flex-wrap:wrap;">${p.groups.filter(g => g !== 'Patients').map(g => `<span class="badge" style="background:rgba(61,125,183,0.1); color:var(--blue-deep);">${escAttr(g)}</span>`).join('')}</div>` : ''}</div>
+          <button type="button" class="btn btn-outline" data-mc="${i}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">${p.kind === 'patient' ? 'Edit in Patients' : 'Edit'}</button>
+        </div>`).join('') : '<div class="empty-state">Nobody found. Add a contact or import a CSV file.</div>';
+      mkEl('mcList').querySelectorAll('[data-mc]').forEach(b => b.addEventListener('click', () => {
+        const p = mcRows[Number(b.dataset.mc)];
+        if (p.kind === 'patient') {
+          document.querySelector('[data-tab="patients"]').click();
+          setTimeout(() => openPatientReport(p.id).then(() => showEditPatientForm()), 50);
+        } else openContactForm(p);
+      }));
+    } catch (err) { mkEl('mcList').innerHTML = `<div class="empty-state">${escAttr(err.message)}</div>`; }
+  }
+  mkEl('mcSearch').addEventListener('input', () => { clearTimeout(mcTimer); mcTimer = setTimeout(loadContacts, 250); });
+  mkEl('mcKind').addEventListener('change', loadContacts);
+  mkEl('mcGroupFilter').addEventListener('change', loadContacts);
+
+  function openContactForm(p) {
+    mcEditing = p || null;
+    mkEl('mcImport').style.display = 'none';
+    mkEl('mcFormTitle').textContent = p ? 'Edit contact' : 'Add contact';
+    mkEl('mcEmail').value = p ? p.email : '';
+    mkEl('mcName').value = p ? p.name : '';
+    mkEl('mcPhone').value = p ? p.phone : '';
+    mkEl('mcCountry').value = p ? p.country : '';
+    mkEl('mcRegion').value = p ? p.region : '';
+    mkEl('mcGroups').value = p ? p.groups.filter(g => g !== 'Patients').join(', ') : '';
+    mkEl('mcSubscribed').checked = p ? p.subscribed : true;
+    mkEl('mcDelete').style.display = p ? '' : 'none';
+    mkEl('mcForm').style.display = 'block';
+    mkEl('mcEmail').focus();
+  }
+  mkEl('mcAddBtn').addEventListener('click', () => openContactForm(null));
+  mkEl('mcCancel').addEventListener('click', () => { mkEl('mcForm').style.display = 'none'; });
+  mkEl('mcForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); hideAlert(mkAlert);
+    const body = { email: mkEl('mcEmail').value, name: mkEl('mcName').value, phone: mkEl('mcPhone').value, country: mkEl('mcCountry').value,
+      region: mkEl('mcRegion').value, groups: mkEl('mcGroups').value, subscribed: mkEl('mcSubscribed').checked };
+    try {
+      if (mcEditing) await API.patch(`/api/admin/contacts/${mcEditing.contactId || mcEditing.id}`, body);
+      else { const c = await API.post('/api/admin/contacts', body); if (!body.subscribed) await API.patch(`/api/admin/contacts/${c.id}`, { subscribed: false }); }
+      mkEl('mcForm').style.display = 'none';
+      showAlert(mkAlert, 'Contact saved.', 'success');
+      loadContacts(); loadMarketing(true);
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  });
+  mkEl('mcDelete').addEventListener('click', async () => {
+    if (!mcEditing || !confirm(`Remove ${mcEditing.email} from the contact list?`)) return;
+    try { await API.del(`/api/admin/contacts/${mcEditing.contactId || mcEditing.id}`); mkEl('mcForm').style.display = 'none'; loadContacts(); }
+    catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  });
+
+  // Export
+  mkEl('mcExportBtn').addEventListener('click', async () => {
+    hideAlert(mkAlert);
+    try {
+      const kind = mkEl('mcKind').value;
+      const res = await fetch('/api/admin/contacts/export' + (kind ? '?kind=' + kind : ''), { headers: { Authorization: 'Bearer ' + API.token() } });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Export failed.');
+      saveBlob(await res.blob(), `radiant-contacts-${new Date().toISOString().slice(0, 10)}.csv`);
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  });
+
+  // Import: CSV parsed here in the browser, rows sent as JSON.
+  function parseCsv(text) {
+    text = text.replace(/^﻿/, '');
+    const first = text.split(/\r?\n/, 1)[0] || '';
+    const count = ch => first.split(ch).length - 1;
+    const delim = [',', ';', '\t'].sort((a, b) => count(b) - count(a))[0];
+    const rows = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+        else cell += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === delim) { row.push(cell); cell = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(c => String(c).trim()));
+  }
+  const HEADER_MAP = {
+    email: ['email', 'e-mail', 'email address', 'mail', 'البريد الإلكتروني'],
+    name: ['name', 'full name', 'fullname', 'contact name', 'patient name', 'الاسم'],
+    first: ['first name', 'firstname', 'given name'], last: ['last name', 'lastname', 'surname', 'family name'],
+    phone: ['phone', 'mobile', 'phone number', 'mobile number', 'whatsapp', 'tel', 'telephone'],
+    country: ['country', 'nationality'],
+    region: ['region', 'city', 'emirate', 'state', 'area', 'location'],
+    groups: ['groups', 'group', 'tags', 'tag', 'category', 'categories', 'segment', 'list']
+  };
+  let mcImportRows = [];
+  mkEl('mcImportBtn').addEventListener('click', () => {
+    mkEl('mcForm').style.display = 'none';
+    const box = mkEl('mcImport');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  });
+  mkEl('mcImportCancel').addEventListener('click', () => { mkEl('mcImport').style.display = 'none'; mkEl('mcFile').value = ''; mkEl('mcPreview').innerHTML = ''; mkEl('mcImportOpts').style.display = 'none'; });
+  mkEl('mcSample').addEventListener('click', (e) => {
+    e.preventDefault();
+    const csv = '﻿name,email,phone,country,region,groups\r\nAisha Khan,aisha@example.com,+971501234567,United Arab Emirates,Dubai,"VIP, Corporate"\r\nOmar Ali,omar@example.com,+966551234567,Saudi Arabia,Riyadh,Expo leads\r\n';
+    saveBlob(new Blob([csv], { type: 'text/csv' }), 'contacts-sample.csv');
+  });
+  mkEl('mcFile').addEventListener('change', async () => {
+    const f = mkEl('mcFile').files[0];
+    mkEl('mcImportOpts').style.display = 'none'; mcImportRows = [];
+    if (!f) return;
+    if (/\.xlsx?$/i.test(f.name)) { mkEl('mcPreview').innerHTML = '<p style="color:var(--danger);">That is an Excel file. In Excel choose File → Save As → “CSV UTF-8”, then pick that file.</p>'; return; }
+    if (f.size > 5 * 1024 * 1024) { mkEl('mcPreview').innerHTML = '<p style="color:var(--danger);">The file is over 5 MB. Please split it.</p>'; return; }
+    const rows = parseCsv(await f.text());
+    if (rows.length < 2) { mkEl('mcPreview').innerHTML = '<p style="color:var(--danger);">The file needs a header row (e.g. name,email) and at least one contact.</p>'; return; }
+    const head = rows[0].map(h => String(h).trim().toLowerCase());
+    const col = {};
+    for (const [k, names] of Object.entries(HEADER_MAP)) { const i = head.findIndex(h => names.includes(h)); if (i >= 0) col[k] = i; }
+    if (col.email === undefined) { // no header match: look for a column full of emails
+      const i = rows[1].findIndex(c => /@/.test(c)); if (i >= 0) col.email = i;
+    }
+    if (col.email === undefined) { mkEl('mcPreview').innerHTML = '<p style="color:var(--danger);">No “email” column found. Name the column with the email addresses “email”.</p>'; return; }
+    const get = (r, k) => col[k] === undefined ? '' : String(r[col[k]] || '').trim();
+    mcImportRows = rows.slice(1).map(r => ({
+      email: get(r, 'email'), name: get(r, 'name') || [get(r, 'first'), get(r, 'last')].filter(Boolean).join(' '),
+      phone: get(r, 'phone'), country: get(r, 'country'), region: get(r, 'region'), groups: get(r, 'groups')
+    }));
+    const valid = mcImportRows.filter(r => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)).length;
+    const found = Object.keys(col).filter(k => !['first', 'last'].includes(k) || !col.name).map(k => ({ first: 'first name', last: 'last name' }[k] || k));
+    mkEl('mcPreview').innerHTML = `<p style="margin:0 0 0.4rem;"><strong>${mcImportRows.length}</strong> rows · <strong>${valid}</strong> with a valid email${mcImportRows.length - valid ? ` · <span style="color:var(--danger);">${mcImportRows.length - valid} will be skipped</span>` : ''}</p>
+      <p style="font-size:0.85rem; color:var(--ink-soft); margin:0 0 0.5rem;">Columns found: ${found.join(', ')}</p>
+      <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:0.82rem;"><thead><tr>${['Name', 'Email', 'Phone', 'Country', 'Region', 'Groups'].map(h => `<th style="text-align:left; padding:0.3rem 0.5rem; border-bottom:1px solid var(--line, #e3e8ea);">${h}</th>`).join('')}</tr></thead>
+      <tbody>${mcImportRows.slice(0, 5).map(r => `<tr>${[r.name, r.email, r.phone, r.country, r.region, r.groups].map(v => `<td style="padding:0.3rem 0.5rem; border-bottom:1px solid var(--line, #eef2f3);">${escAttr(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      ${mcImportRows.length > 5 ? `<p style="font-size:0.8rem; color:var(--ink-soft); margin:0.3rem 0 0;">…and ${mcImportRows.length - 5} more</p>` : ''}`;
+    mkEl('mcConsent').checked = false;
+    mkEl('mcImportOpts').style.display = 'block';
+  });
+  mkEl('mcDoImport').addEventListener('click', async () => {
+    hideAlert(mkAlert);
+    if (!mkEl('mcConsent').checked) return showAlert(mkAlert, 'Please tick the box to confirm these people agreed to receive offers.', 'error');
+    const btn = mkEl('mcDoImport'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Importing…';
+    try {
+      const r = await API.post('/api/admin/contacts/import', { rows: mcImportRows, addGroups: mkEl('mcAddGroups').value, consent: true });
+      const bits = [`${r.added} added`, `${r.updated} already on the list (updated)`];
+      if (r.invalid) bits.push(`${r.invalid} skipped — invalid email${r.invalidRows.length ? ` (row ${r.invalidRows.join(', ')}${r.invalid > r.invalidRows.length ? '…' : ''})` : ''}`);
+      if (r.duplicates) bits.push(`${r.duplicates} duplicates in the file`);
+      if (r.alreadyPatients) bits.push(`${r.alreadyPatients} are also patients (merged)`);
+      showAlert(mkAlert, 'Import finished: ' + bits.join(' · ') + '.', 'success');
+      mkEl('mcImportCancel').click();
+      loadContacts(); loadMarketing(true);
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    btn.disabled = false; btn.textContent = 'Import';
   });
 </script>
 </body>

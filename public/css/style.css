@@ -348,3 +348,7 @@ footer.site-footer a:hover { color: #fff; }
 .visit-type:has(input:checked) { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; background: rgba(61,125,183,0.04); }
 .badge.video { background: rgba(61,125,183,0.12); color: var(--blue-deep); }
 @media (max-width: 420px) { .visit-types { grid-template-columns: 1fr; } }
+
+/* WhatsApp chat button (admin patient list) */
+.btn-wa { background: #1fa855; color: #fff; box-shadow: none; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; }
+.btn-wa:hover, .btn-wa:focus-visible { background: #178a45; color: #fff; }

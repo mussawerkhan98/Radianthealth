@@ -18,6 +18,7 @@ const brevo = require('./brevo');
 const video = require('./video');
 const marketing = require('./marketing');
 const audience = require('./audience');
+const clinicLocation = require('./location');
 const { newId } = require('./ids');
 const { normalizePhone, displayPatientId } = require('./phone');
 const { PERMISSIONS, VALID: VALID_PERMS, parsePerms, permsForRole } = require('./permissions');
@@ -367,7 +368,8 @@ app.post('/api/change-password', auth(), wrap(async (req, res) => {
 
 app.get('/api/settings', wrap(async (req, res) => {
   const s = await settings.getAll();
-  res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail, videoEnabled: video.isConfigured() });
+  res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail, videoEnabled: video.isConfigured(),
+    location: clinicLocation.publicLocation(s.location) });
 }));
 
 // ---------- DEPARTMENTS ----------
@@ -702,6 +704,8 @@ async function createBooking({ patient, doctorId, date, time, reason, honeypot, 
   }
   const departmentName = doctor.department && doctor.department.name;
   const links = videoLinks(appt);
+  // In-clinic visits: tell the patient where we are.
+  const loc = isVideo ? null : clinicLocation.publicLocation((await settings.getAll()).location);
   let emailSent = false;
   if (brevo.isConfigured() && !honeypot) {
     // Brevo: template auto-reply to the patient + notification to the clinic.
@@ -710,18 +714,18 @@ async function createBooking({ patient, doctorId, date, time, reason, honeypot, 
       date: formatWhen(date, time),
       service: [departmentName, doctor.name].filter(Boolean).join(' — ') + (links ? ' (video call)' : ''),
       message: reason || '',
-      videoLink: links && links.patient, doctorName: doctor.name
+      videoLink: links && links.patient, doctorName: doctor.name, location: loc
     });
     emailSent = r.autoReply;
   }
   // Doctor gets a calendar invite (.ics) for the appointment.
-  const doctorInvited = await brevo.sendDoctorInvite({ kind: 'booked', appointment: appt, doctor, patient, departmentName, videoLink: links && links.doctor })
+  const doctorInvited = await brevo.sendDoctorInvite({ kind: 'booked', appointment: appt, doctor, patient, departmentName, videoLink: links && links.doctor, location: loc })
     .catch(err => { console.error('doctor invite:', err.message); return false; });
   // SMTP (if configured in Admin → Settings) notifies extra addresses; the
   // patient/doctor are skipped when Brevo already emailed them.
   await mailer.notifyBooking({ appointment: appt, doctor, patient, departmentName, skipPatient: emailSent, skipDoctor: doctorInvited })
     .catch(err => console.error('notifyBooking:', err.message));
-  return { ...apptOut(appt), emailSent, ...(links ? { videoLink: links.patient } : {}) };
+  return { ...apptOut(appt), emailSent, ...(links ? { videoLink: links.patient } : {}), ...(loc ? { location: loc } : {}) };
 }
 
 app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, res) => {
@@ -1603,6 +1607,11 @@ app.patch('/api/admin/settings', perm('settings.manage'), wrap(async (req, res) 
   const body = req.body || {};
   for (const k of ['phone', 'whatsapp', 'contactEmail']) {
     if (body[k] !== undefined) await settings.setKey(k, String(body[k]).trim());
+  }
+  if (body.location !== undefined) {
+    let loc;
+    try { loc = clinicLocation.normalize(body.location); } catch (e) { throw new HttpError(e.status || 400, e.message); }
+    await settings.setKey('location', loc);
   }
   if (body.notifyEmails !== undefined) {
     if (!Array.isArray(body.notifyEmails)) throw new HttpError(400, 'notifyEmails must be a list.');

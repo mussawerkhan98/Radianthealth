@@ -34,7 +34,7 @@ async function brevoSend(payload, label) {
 
 // Sends (a) the template auto-reply to the patient and (b) a notification to
 // the clinic. Returns { autoReply: boolean, clinic: boolean }.
-async function sendBookingEmails({ name, email, phone, date, service, message, videoLink, doctorName }) {
+async function sendBookingEmails({ name, email, phone, date, service, message, videoLink, doctorName, location }) {
   if (!isConfigured()) {
     console.error('Brevo: BREVO_API_KEY is not set — booking emails not sent.');
     return { autoReply: false, clinic: false };
@@ -75,6 +75,22 @@ async function sendBookingEmails({ name, email, phone, date, service, message, v
         `<p>The link opens 15 minutes before your appointment. It works in your phone or computer browser — no app needed. Please allow camera and microphone when asked.</p>` +
         `<p>This link is personal to you — please don't share it.</p><p>Radiant Health Alliance</p>`
     }, 'patient video link');
+  }
+  // In-clinic visits: a short "how to find us" email with the map link.
+  if (!videoLink && location && location.link && realEmail) {
+    await brevoSend({
+      sender: { email: CLINIC.email, name: CLINIC.name },
+      to: [{ email, name }],
+      replyTo: CLINIC,
+      subject: `How to find us – your appointment on ${date}`,
+      htmlContent: `<p>Hello ${esc(name)},</p>` +
+        `<p>Your appointment${doctorName ? ` with ${esc(doctorName)}` : ''} is on <strong>${esc(date)}</strong> at our clinic:</p>` +
+        (location.address ? `<p style="font-size:16px;margin:16px 0"><strong>${esc(location.address).replace(/\n/g, '<br>')}</strong></p>` : '') +
+        (location.notes ? `<p style="color:#5A6B75">${esc(location.notes)}</p>` : '') +
+        `<p style="margin:24px 0"><a href="${esc(location.link)}" style="background:#3D7DB7;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Open in Google Maps</a></p>` +
+        `<p>Please arrive about 10 minutes early. If you need to change your appointment, just reply to this email.</p><p>Radiant Health Alliance</p>`,
+      textContent: `Hello ${name},\n\nYour appointment${doctorName ? ` with ${doctorName}` : ''} is on ${date} at our clinic:\n${location.address || ''}\n${location.notes || ''}\n\nDirections: ${location.link}\n\nRadiant Health Alliance`
+    }, 'patient location');
   }
   return { autoReply, clinic };
 }
@@ -152,7 +168,7 @@ function buildIcs({ method, uid, sequence, start, end, summary, description, doc
 }
 
 // kind: 'booked' | 'cancelled'
-async function sendDoctorInvite({ kind, appointment, doctor, patient, departmentName, videoLink }) {
+async function sendDoctorInvite({ kind, appointment, doctor, patient, departmentName, videoLink, location: place }) {
   if (!isConfigured() || !doctor || !doctor.email || !/@/.test(doctor.email) || doctor.email.startsWith('deleted+')) return false;
   const start = clinicTimeToDate(appointment.date, appointment.time);
   const end = new Date(start.getTime() + (doctor.slotMinutes || 30) * 60000);
@@ -176,7 +192,7 @@ async function sendDoctorInvite({ kind, appointment, doctor, patient, department
     uid: `${appointment.id}@radianthealthalliance.com`,
     sequence: cancelled ? 1 : 0,
     start, end, summary, description, doctor,
-    location: videoLink ? 'Video call (link in description)' : undefined,
+    location: videoLink ? 'Video call (link in description)' : (place && place.address ? `Radiant Health Alliance, ${place.address}` : undefined),
     url: isVideo ? videoLink : undefined
   });
   const rows = [

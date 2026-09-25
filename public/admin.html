@@ -307,6 +307,7 @@
               <p style="margin:0 0 0.3rem;"><span class="badge" id="patientReportId"></span></p>
               <p id="patientReportMeta"></p>
               <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.4rem;">
+                <a class="btn btn-wa" id="patientWaBtn" target="_blank" rel="noopener" style="display:none; padding:0.4rem 0.9rem; font-size:0.82rem;"></a>
                 <button type="button" class="btn btn-outline" id="editPatientBtn" data-perm="patients.edit" style="padding:0.4rem 0.9rem; font-size:0.82rem;">Edit patient details</button>
                 <button type="button" class="btn btn-danger" id="deletePatientBtn" data-perm="patients.delete" style="padding:0.4rem 0.9rem; font-size:0.82rem;">Delete patient</button>
               </div>
@@ -1034,6 +1035,22 @@
     btn.textContent = 'Book Appointment';
   });
 
+  // WhatsApp chat with a patient, message pre-filled with who is writing.
+  const WA_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 11.5a8.4 8.4 0 0 1-12.5 7.3L3 20.5l1.8-5.3A8.4 8.4 0 1 1 21 11.5z"/><path d="M9 9.5c.3 1.8 2.7 4.2 4.5 4.5l1.2-1.2 1.8.9-.4 1.5c-3.4.4-7.6-3.8-7.2-7.2l1.5-.4.9 1.8L9 9.5z" stroke-width="1.4"/></svg>';
+  function waLinkFor(p) {
+    const digits = String(p.patientId || '').replace(/\D/g, '');
+    if (digits.length < 8) return '';
+    const first = String(p.name || '').trim().split(/\s+/)[0];
+    const me = (ME && ME.name) || 'the team';
+    const msg = `Hi${first ? ' ' + first : ''}, this is ${me} from Radiant Health Alliance.`;
+    return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+  }
+  function waButton(p, small) {
+    const url = waLinkFor(p);
+    if (!url) return '';
+    return `<a class="btn btn-wa" href="${escAttr(url)}" target="_blank" rel="noopener" title="WhatsApp ${escAttr(p.name)} (${escAttr(p.patientId)})" aria-label="WhatsApp ${escAttr(p.name)}" style="padding:${small ? '0.25rem 0.7rem' : '0.4rem 0.9rem'}; font-size:0.78rem;">${WA_ICON} WhatsApp</a>`;
+  }
+
   async function loadPatients() {
     const el = document.getElementById('patientsList');
     el.innerHTML = '<div class="empty-state">Loading…</div>';
@@ -1046,13 +1063,14 @@
             <span style="color:var(--ink-soft); font-size:0.85rem;">${[p.phone, p.email].filter(Boolean).map(escAttr).join(' · ')}</span></div>
           <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
             <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'}${can('records.view') ? ` · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}` : ''}</span>
+            ${waButton(p, true)}
             ${can('patients.edit') ? `<button type="button" class="btn btn-outline" data-edit-patient="${p.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Edit</button>` : ''}
             ${can('patients.delete') ? `<button type="button" class="btn btn-danger" data-delete-patient="${p.id}" data-name="${escAttr(p.name)}" data-appts="${p.appointmentCount}" data-records="${p.recordCount}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Delete</button>` : ''}
           </div>
         </div>
       `).join('') : `<div class="empty-state">${q ? 'No patients match that search.' : 'No patients yet.'}</div>`;
       el.querySelectorAll('[data-patient]').forEach(row => {
-        row.addEventListener('click', (e) => { if (!e.target.closest('button')) openPatientReport(row.dataset.patient); });
+        row.addEventListener('click', (e) => { if (!e.target.closest('button, a')) openPatientReport(row.dataset.patient); });
         row.addEventListener('keydown', e => { if (e.key === 'Enter') openPatientReport(row.dataset.patient); });
       });
       el.querySelectorAll('[data-edit-patient]').forEach(b => b.addEventListener('click', async () => {
@@ -1077,6 +1095,9 @@
         API.get(`/api/admin/patients/${id}`), API.get('/api/doctors')
       ]);
       currentReportPatient = patient;
+      const waBtn = document.getElementById('patientWaBtn'), waUrl = waLinkFor(patient);
+      waBtn.style.display = waUrl ? '' : 'none';
+      if (waUrl) { waBtn.href = waUrl; waBtn.innerHTML = WA_ICON + ' WhatsApp'; waBtn.title = `Chat with ${patient.name} on WhatsApp (${patient.patientId})`; }
       document.getElementById('patientReportId').textContent = patient.patientId ? 'Patient ID ' + patient.patientId : 'No Patient ID yet — add a mobile number';
       document.getElementById('recordsSection').style.display = canViewRecords ? '' : 'none';
       document.getElementById('editPatientForm').style.display = 'none';

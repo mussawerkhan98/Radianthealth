@@ -1,6 +1,7 @@
 // src/location.js — the clinic's location (Admin → Site Settings → Clinic Location).
 // Stored in the Setting table under "location":
-//   { address, mapsUrl, embedUrl, notes }
+//   { enabled, address, mapsUrl, embedUrl, notes }
+// enabled = false keeps the details saved but shares nothing with patients.
 // Shown on the booking page for in-clinic visits and emailed to patients
 // after they book an in-clinic visit.
 
@@ -14,7 +15,7 @@ const isGoogleHost = h => /(^|\.)google\.[a-z.]{2,6}$/i.test(h) || /^(maps\.app\
 // Validates what the admin typed. Throws { status: 400, message } on bad input.
 function normalize(input) {
   const b = input || {};
-  const out = { address: clean(b.address, 300), notes: clean(b.notes, 300), mapsUrl: '', embedUrl: '' };
+  const out = { enabled: b.enabled !== false, address: clean(b.address, 300), notes: clean(b.notes, 300), mapsUrl: '', embedUrl: '' };
   const bad = msg => { const e = new Error(msg); e.status = 400; throw e; };
 
   const link = clean(b.mapsUrl, 1000);
@@ -38,9 +39,10 @@ function normalize(input) {
   return out;
 }
 
-// What the site and emails use. null when nothing is set.
+// What the site and emails use. null when nothing is set or sharing is off.
 function publicLocation(loc) {
   loc = loc || {};
+  if (loc.enabled === false) return null;
   const address = clean(loc.address, 300);
   if (!address && !loc.mapsUrl && !loc.embedUrl) return null;
   const q = encodeURIComponent(address);

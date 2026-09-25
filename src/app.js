@@ -17,6 +17,7 @@ const mailer = require('./mailer');
 const brevo = require('./brevo');
 const video = require('./video');
 const marketing = require('./marketing');
+const audience = require('./audience');
 const { newId } = require('./ids');
 const { normalizePhone, displayPatientId } = require('./phone');
 const { PERMISSIONS, VALID: VALID_PERMS, parsePerms, permsForRole } = require('./permissions');
@@ -743,7 +744,8 @@ const hasRealEmail = e => !!e && !String(e).toLowerCase().endsWith('.invalid');
 const patientOut = p => ({
   id: p.id, patientId: displayPatientId(p.phoneKey), name: p.name,
   email: hasRealEmail(p.email) ? p.email : '', phone: p.phone, dob: p.dob, gender: p.gender,
-  isGuest: p.isGuest, createdAt: p.createdAt, marketingOptOut: !!p.marketingOptOut
+  isGuest: p.isGuest, createdAt: p.createdAt, marketingOptOut: !!p.marketingOptOut,
+  country: p.country || '', region: p.region || '', countryGuess: audience.countryFromPhoneKey(p.phoneKey)
 });
 
 // Find the patient by phone (the Patient ID); otherwise by email; otherwise
@@ -988,18 +990,20 @@ app.get('/api/video/:id', videoLimiter, wrap(async (req, res) => {
 }));
 
 // ---------- MARKETING (promotion emails) ----------
-// Everyone with a real email who hasn't unsubscribed.
-const AUDIENCE = { marketingOptOut: false, NOT: [{ email: { endsWith: '.invalid' } }, { email: { startsWith: 'deleted+' } }] };
 const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const MAX_CAMPAIGN_IMAGE = 1.5 * 1024 * 1024;
-const CAMPAIGN_META = { id: true, subject: true, headline: true, body: true, buttonText: true, buttonUrl: true, imageMime: true, status: true, sentAt: true, sentCount: true, failedCount: true, createdAt: true, updatedAt: true };
+const CAMPAIGN_META = { id: true, subject: true, headline: true, body: true, buttonText: true, buttonUrl: true, imageMime: true, status: true, sentAt: true, sentCount: true, failedCount: true, audience: true, createdAt: true, updatedAt: true };
 const campaignImageUrl = c => c.imageMime ? `${SITE_URL()}/api/campaigns/${c.id}/image?v=${new Date(c.updatedAt).getTime()}` : '';
-const campaignOut = c => ({ ...c, imageUrl: campaignImageUrl(c) });
+const campaignOut = c => {
+  const a = audience.parseAudience(c.audience);
+  return { ...c, audience: a, audienceText: audience.describeAudience(a), imageUrl: campaignImageUrl(c) };
+};
 
 function campaignData(b, { partial = false } = {}) {
   const data = {};
   const str = (k, max) => { if (b[k] !== undefined) data[k] = marketing.plain(b[k]).trim().slice(0, max); };
   str('subject', 150); str('headline', 200); str('body', 5000); str('buttonText', 40);
+  if (b.audience !== undefined) data.audience = JSON.stringify(audience.normAudience(b.audience));
   if (b.buttonUrl !== undefined) {
     const u = String(b.buttonUrl || '').trim();
     if (u) {
@@ -1027,12 +1031,16 @@ function campaignData(b, { partial = false } = {}) {
 }
 
 app.get('/api/admin/campaigns', perm('marketing.send'), wrap(async (req, res) => {
-  const [campaigns, audience, unsubscribed] = await Promise.all([
+  const [campaigns, people] = await Promise.all([
     prisma.campaign.findMany({ select: CAMPAIGN_META, orderBy: { createdAt: 'desc' }, take: 200 }),
-    prisma.patient.count({ where: AUDIENCE }),
-    prisma.patient.count({ where: { marketingOptOut: true } })
+    audience.everyone(prisma)
   ]);
-  res.json({ campaigns: campaigns.map(campaignOut), audience, unsubscribed, emailReady: brevo.isConfigured() });
+  const active = people.filter(p => !p.optOut);
+  res.json({
+    campaigns: campaigns.map(campaignOut), audience: active.length, unsubscribed: people.length - active.length,
+    patients: active.filter(p => p.kind === 'patient').length, contacts: active.filter(p => p.kind === 'contact').length,
+    emailReady: brevo.isConfigured()
+  });
 }));
 
 app.post('/api/admin/campaigns', perm('marketing.send'), wrap(async (req, res) => {
@@ -1062,9 +1070,139 @@ app.post('/api/admin/campaigns/:id/copy', perm('marketing.send'), wrap(async (re
   if (!c) throw new HttpError(404, 'Promotion not found.');
   const n = await prisma.campaign.create({ data: {
     id: newId('cmp'), subject: c.subject, headline: c.headline, body: c.body, buttonText: c.buttonText, buttonUrl: c.buttonUrl,
-    imageData: c.imageData, imageMime: c.imageMime, createdById: req.user.sub
+    imageData: c.imageData, imageMime: c.imageMime, audience: c.audience, createdById: req.user.sub
   }, select: CAMPAIGN_META });
   res.json(campaignOut(n));
+}));
+
+// How many people a chosen audience reaches (live count in the editor).
+app.post('/api/admin/campaigns/audience-count', perm('marketing.send'), wrap(async (req, res) => {
+  const people = await audience.resolveAudience(prisma, (req.body || {}).audience);
+  res.json({ count: people.length });
+}));
+
+// Countries / regions / groups that exist, with counts, for the picker.
+app.get('/api/admin/marketing/segments', perm('marketing.send'), wrap(async (req, res) => {
+  res.json(await audience.segmentOptions(prisma));
+}));
+
+// ---------- MARKETING CONTACTS (people who aren't patients, imports) ----------
+const contactOut = c => ({ id: c.id, email: c.email, name: c.name, phone: c.phone, country: c.country, region: c.region,
+  groups: audience.parseGroups(c.groups), subscribed: !c.optOut, source: c.source, createdAt: c.createdAt });
+
+function contactData(b) {
+  const data = {};
+  if (b.name !== undefined) data.name = audience.clean(b.name, 120);
+  if (b.phone !== undefined) data.phone = audience.clean(b.phone, 40);
+  if (b.country !== undefined) data.country = audience.clean(b.country, 80);
+  if (b.region !== undefined) data.region = audience.clean(b.region, 80);
+  if (b.groups !== undefined) data.groups = audience.joinGroups(b.groups);
+  return data;
+}
+
+// Everyone on the list (patients + contacts), filterable.
+app.get('/api/admin/contacts', perm('marketing.send'), wrap(async (req, res) => {
+  const q = String(req.query.q || '').trim().toLowerCase();
+  const group = String(req.query.group || '').toLowerCase();
+  const kind = String(req.query.kind || '');
+  let people = await audience.everyone(prisma);
+  if (!staffCan(req, 'patients.view')) people = people.filter(p => p.kind === 'contact');
+  if (kind === 'patient' || kind === 'contact') people = people.filter(p => p.kind === kind);
+  if (group) people = people.filter(p => p.groups.some(g => g.toLowerCase() === group));
+  if (q) people = people.filter(p => [p.name, p.email, p.phone, p.country, p.region, ...p.groups].some(v => String(v || '').toLowerCase().includes(q)));
+  const total = people.length;
+  people.sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+  res.json({ total, people: people.slice(0, 500).map(p => ({
+    kind: p.kind, id: p.id, email: p.email, name: p.name, phone: p.phone, country: p.country, region: p.region,
+    groups: p.groups, subscribed: !p.optOut, contactId: p.kind === 'contact' ? p.id : (p.alsoContactId || null)
+  })) });
+}));
+
+app.post('/api/admin/contacts', perm('marketing.send'), wrap(async (req, res) => {
+  const b = req.body || {};
+  const email = normEmail(b.email);
+  if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+  if (await prisma.marketingContact.findUnique({ where: { email } })) throw new HttpError(409, 'That email is already on the list.');
+  const c = await prisma.marketingContact.create({ data: { id: newId('mc'), email, source: 'manual', ...contactData(b) } });
+  res.json(contactOut(c));
+}));
+
+app.patch('/api/admin/contacts/:id', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.marketingContact.findUnique({ where: { id: req.params.id } });
+  if (!c) throw new HttpError(404, 'Contact not found.');
+  const b = req.body || {};
+  const data = contactData(b);
+  if (b.email !== undefined) {
+    const email = normEmail(b.email);
+    if (!isEmail(email)) throw new HttpError(400, 'Please enter a valid email address.');
+    if (email !== c.email && await prisma.marketingContact.findUnique({ where: { email } })) throw new HttpError(409, 'That email is already on the list.');
+    data.email = email;
+  }
+  const u = await prisma.marketingContact.update({ where: { id: c.id }, data });
+  if (b.subscribed !== undefined) await audience.setOptOut(prisma, u.email, !b.subscribed);
+  res.json(contactOut(await prisma.marketingContact.findUnique({ where: { id: c.id } })));
+}));
+
+app.delete('/api/admin/contacts/:id', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.marketingContact.findUnique({ where: { id: req.params.id } });
+  if (!c) throw new HttpError(404, 'Contact not found.');
+  await prisma.marketingContact.delete({ where: { id: c.id } });
+  res.json({ ok: true });
+}));
+
+// Import rows parsed from a CSV in the browser. Same email = update (add
+// groups, fill blanks). Never re-subscribes someone who unsubscribed.
+app.post('/api/admin/contacts/import', perm('marketing.send'), wrap(async (req, res) => {
+  const b = req.body || {};
+  if (!b.consent) throw new HttpError(400, 'Please confirm these people agreed to receive offers from the clinic.');
+  const rows = Array.isArray(b.rows) ? b.rows : [];
+  if (!rows.length) throw new HttpError(400, 'The file has no rows.');
+  if (rows.length > 5000) throw new HttpError(400, 'Please import at most 5,000 rows at a time (split the file).');
+  const extraGroups = audience.parseGroups(b.addGroups);
+  const existing = new Map((await prisma.marketingContact.findMany()).map(c => [c.email, c]));
+  const patientEmails = new Set((await prisma.patient.findMany({ select: { email: true } })).map(p => p.email.toLowerCase()));
+  let added = 0, updated = 0, invalid = 0, duplicates = 0, patients = 0;
+  const invalidRows = [];
+  const seen = new Set();
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i] || {};
+    const email = normEmail(r.email);
+    if (!isEmail(email)) { invalid++; if (invalidRows.length < 10) invalidRows.push(i + 2); continue; }
+    if (seen.has(email)) { duplicates++; continue; }
+    seen.add(email);
+    if (patientEmails.has(email)) patients++;
+    const groups = audience.parseGroups([...audience.parseGroups(r.groups), ...extraGroups]);
+    const cur = existing.get(email);
+    if (cur) {
+      const data = { groups: audience.joinGroups([...audience.parseGroups(cur.groups), ...groups]) };
+      for (const k of ['name', 'phone', 'country', 'region']) { const v = audience.clean(r[k], k === 'name' ? 120 : 80); if (v && !cur[k]) data[k] = v; }
+      await prisma.marketingContact.update({ where: { id: cur.id }, data });
+      updated++;
+    } else {
+      await prisma.marketingContact.create({ data: {
+        id: newId('mc'), email, source: 'import', groups: audience.joinGroups(groups),
+        name: audience.clean(r.name, 120), phone: audience.clean(r.phone, 40), country: audience.clean(r.country, 80), region: audience.clean(r.region, 80)
+      } });
+      added++;
+    }
+  }
+  console.log(`Contacts import by ${req.user.sub}: ${added} added, ${updated} updated, ${invalid} invalid`);
+  res.json({ added, updated, invalid, invalidRows, duplicates, alreadyPatients: patients });
+}));
+
+// Download everyone as CSV (opens in Excel). Patients only for roles that may see them.
+app.get('/api/admin/contacts/export', perm('marketing.send'), wrap(async (req, res) => {
+  let people = await audience.everyone(prisma);
+  if (!staffCan(req, 'patients.view')) people = people.filter(p => p.kind === 'contact');
+  const kind = String(req.query.kind || '');
+  if (kind === 'patient' || kind === 'contact') people = people.filter(p => p.kind === kind);
+  people.sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+  const csv = audience.toCsv([
+    ['name', 'email', 'phone', 'country', 'region', 'groups', 'type', 'subscribed'],
+    ...people.map(p => [p.name, p.email, p.phone, p.country, p.region, p.groups.filter(g => g !== 'Patients').join(', '), p.kind, p.optOut ? 'no' : 'yes'])
+  ]);
+  res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="radiant-contacts-${new Date().toISOString().slice(0, 10)}.csv"`, 'Cache-Control': 'no-store' });
+  res.send(csv);
 }));
 
 // Public: the offer image (emails load it from here).
@@ -1110,15 +1248,12 @@ app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (re
   if (lock.count === 0) throw new HttpError(409, 'This promotion was already sent.');
   let result;
   try {
-    const patients = await prisma.patient.findMany({ where: AUDIENCE, select: { id: true, name: true, email: true, marketingKey: true } });
-    for (const p of patients.filter(p => !p.marketingKey)) { // unsubscribe secret, made once per patient
-      p.marketingKey = crypto.randomBytes(18).toString('base64url');
-      await prisma.patient.update({ where: { id: p.id }, data: { marketingKey: p.marketingKey } });
-    }
-    const recipients = patients.map(p => ({
+    const people = await audience.resolveAudience(prisma, audience.parseAudience(c.audience));
+    await audience.ensureKeys(prisma, people); // unsubscribe secret, made once per person
+    const recipients = people.map(p => ({
       email: p.email, name: p.name,
-      unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.marketingKey)}`,
-      oneClickUrl: `${SITE_URL()}/api/unsubscribe/one-click?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.marketingKey)}`
+      unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`,
+      oneClickUrl: `${SITE_URL()}/api/unsubscribe/one-click?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`
     }));
     result = await marketing.sendCampaign(c, recipients, await campaignEmailOpts(c));
   } catch (e) {
@@ -1127,19 +1262,27 @@ app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (re
   }
   if (result.sent === 0) {
     await prisma.campaign.update({ where: { id: c.id }, data: { status: 'draft', failedCount: result.failed } });
-    throw new HttpError(502, 'Nothing was sent: ' + (result.error || 'there are no patients to send to.'));
+    throw new HttpError(502, 'Nothing was sent: ' + (result.error || 'nobody matches the groups you chose.'));
   }
   const u = await prisma.campaign.update({ where: { id: c.id }, data: { status: 'sent', sentAt: new Date(), sentCount: result.sent, failedCount: result.failed }, select: CAMPAIGN_META });
   res.json({ ...campaignOut(u), error: result.error });
 }));
 
+// The person behind an unsubscribe link (patient "pt_…" or contact "mc_…"), if the key matches.
+async function unsubscriber(id, key) {
+  id = String(id || ''); key = String(key || '');
+  if (!id || !key) return null;
+  const rec = id.startsWith('mc_')
+    ? await prisma.marketingContact.findUnique({ where: { id }, select: { email: true, unsubKey: true } }).then(c => c && { email: c.email, key: c.unsubKey })
+    : await prisma.patient.findUnique({ where: { id }, select: { email: true, marketingKey: true } }).then(p => p && { email: p.email, key: p.marketingKey });
+  return rec && rec.key && sameKey(key, rec.key) ? rec : null;
+}
 const unsubLimiterOneClick = rateLimit({ windowMs: 10 * 60 * 1000, limit: 120, standardHeaders: true, legacyHeaders: false });
 // Public: one-click unsubscribe, called by Gmail/Yahoo/Outlook's own
 // "Unsubscribe" button (RFC 8058: POST with body List-Unsubscribe=One-Click).
 app.post('/api/unsubscribe/one-click', unsubLimiterOneClick, express.urlencoded({ extended: false, limit: '2kb' }), wrap(async (req, res) => {
-  const p = String(req.query.p || ''), k = String(req.query.k || '');
-  const pt = p ? await prisma.patient.findUnique({ where: { id: p }, select: { id: true, marketingKey: true } }) : null;
-  if (pt && pt.marketingKey && sameKey(k, pt.marketingKey)) await prisma.patient.update({ where: { id: pt.id }, data: { marketingOptOut: true } });
+  const who = await unsubscriber(req.query.p, req.query.k);
+  if (who) await audience.setOptOut(prisma, who.email, true);
   res.json({ ok: true }); // same answer either way
 }));
 
@@ -1148,9 +1291,9 @@ const unsubLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 30, standardHe
   message: { error: 'Too many attempts. Please wait a few minutes.' } });
 app.post('/api/unsubscribe', unsubLimiter, wrap(async (req, res) => {
   const { p, k, resubscribe } = req.body || {};
-  const pt = p ? await prisma.patient.findUnique({ where: { id: String(p) }, select: { id: true, marketingKey: true } }) : null;
-  if (!pt || !pt.marketingKey || !sameKey(k, pt.marketingKey)) throw new HttpError(404, 'This unsubscribe link is not valid. Please contact the clinic and we will remove you.');
-  await prisma.patient.update({ where: { id: pt.id }, data: { marketingOptOut: !resubscribe } });
+  const who = await unsubscriber(p, k);
+  if (!who) throw new HttpError(404, 'This unsubscribe link is not valid. Please contact the clinic and we will remove you.');
+  await audience.setOptOut(prisma, who.email, !resubscribe);
   res.json({ ok: true, subscribed: !!resubscribe });
 }));
 
@@ -1225,8 +1368,10 @@ app.patch('/api/admin/patients/:id', perm('patients.edit'), wrap(async (req, res
   }
   if (b.dob !== undefined) data.dob = String(b.dob).slice(0, 20);
   if (b.gender !== undefined) data.gender = String(b.gender).slice(0, 30);
-  if (b.marketingOptOut !== undefined) data.marketingOptOut = !!b.marketingOptOut;
+  if (b.country !== undefined) data.country = audience.clean(b.country, 80);
+  if (b.region !== undefined) data.region = audience.clean(b.region, 80);
   const updated = await prisma.patient.update({ where: { id: p.id }, data });
+  if (b.marketingOptOut !== undefined) { await audience.setOptOut(prisma, updated.email, !!b.marketingOptOut); updated.marketingOptOut = !!b.marketingOptOut; }
   res.json(patientOut(updated));
 }));
 

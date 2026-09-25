@@ -143,7 +143,7 @@
     const doctorsInDept = (deptId ? doctors.filter(d => d.departmentId === deptId) : doctors).filter(d => !video || d.offersVideo);
     const prevValue = keepSelection ? doctorSelect.value : '';
     doctorSelect.innerHTML = '<option value="">Choose a doctor…</option>' +
-      doctorsInDept.map(d => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('');
+      doctorsInDept.map(d => `<option value="${d.id}">${d.name} — ${d.specialty}${d.country ? ` (${[d.city, d.country].filter(Boolean).join(', ')})` : ''}</option>`).join('');
     if (prevValue && doctorsInDept.find(d => d.id === prevValue)) doctorSelect.value = prevValue;
   }
 

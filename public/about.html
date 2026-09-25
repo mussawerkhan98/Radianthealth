@@ -75,7 +75,8 @@
           ${avatarHtml(d)}
           <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${escP(d.name)}</h3>
           <div class="doctor-specialty">${escP(d.specialty)}</div>
-          <span class="profile-link-cta">View profile &rarr;</span>
+          ${doctorLocationHtml(d)}
+          <span class="profile-link-cta" style="display:block;">View profile &rarr;</span>
         </a>
       `).join('') : '<div class="empty-state">No doctors added yet.</div>';
 

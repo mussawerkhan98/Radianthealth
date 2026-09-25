@@ -64,7 +64,9 @@
     try { p = await API.get(`/api/profiles/${type}/${encodeURIComponent(id)}`); }
     catch (e) { el.innerHTML = '<div class="empty-state">This profile is not available. <a href="about.html">See our team</a>.</div>'; return; }
     document.title = `${p.name} — Radiant Health Alliance`;
+    const place = [p.city, p.country].filter(Boolean).join(', ');
     const facts = [
+      place ? `<span class="profile-fact">Based in <strong>${esc(place)}</strong></span>` : '',
       p.experienceYears ? `<span class="profile-fact"><strong>${p.experienceYears}+</strong> years experience</span>` : '',
       p.languages.length ? `<span class="profile-fact">Speaks <strong>${p.languages.map(esc).join(', ')}</strong></span>` : '',
       p.offersVideo ? '<span class="profile-fact"><strong>Video</strong> consultations</span>' : ''

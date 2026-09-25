@@ -84,6 +84,10 @@
                 <label for="docSpecialty">Specialty</label>
                 <input type="text" id="docSpecialty">
               </div>
+              <div class="form-row">
+                <div class="form-group"><label for="docCountry">Country (where they're based)</label><input type="text" id="docCountry" list="mkCountryList" maxlength="80" placeholder="e.g. United Arab Emirates"></div>
+                <div class="form-group"><label for="docCity">City</label><input type="text" id="docCity" maxlength="80" placeholder="e.g. Dubai"></div>
+              </div>
               <div class="form-group">
                 <label for="docBio">Short Bio (optional)</label>
                 <textarea id="docBio"></textarea>
@@ -691,6 +695,10 @@
         <div class="form-group"><label for="pfRole">Role / title</label><input type="text" id="pfRole" maxlength="120"></div>
       </div>
       <div class="form-group" id="pfSpecWrap"><label for="pfSpecialty">Specialty / title</label><input type="text" id="pfSpecialty" maxlength="120" placeholder="e.g. Consultant Cardiologist"></div>
+      <div class="form-row" id="pfLocWrap">
+        <div class="form-group"><label for="pfCountry">Country (where they're based)</label><input type="text" id="pfCountry" list="mkCountryList" maxlength="80" placeholder="e.g. United Kingdom"></div>
+        <div class="form-group"><label for="pfCity">City</label><input type="text" id="pfCity" maxlength="80" placeholder="e.g. London"></div>
+      </div>
       <div class="form-group"><label for="pfPhoto">Photo</label><input type="file" id="pfPhoto" accept="image/png,image/jpeg,image/webp,image/gif"></div>
       <div class="form-group"><label for="pfBio">Short intro <span style="font-weight:400; color:var(--ink-soft);">(shown under the name)</span></label><textarea id="pfBio" rows="2" maxlength="1000"></textarea></div>
       <div class="form-group"><label for="pfAbout">About <span style="font-weight:400; color:var(--ink-soft);">(longer story — leave an empty line between paragraphs)</span></label><textarea id="pfAbout" rows="5" maxlength="5000"></textarea></div>
@@ -757,9 +765,30 @@
     </form>
   </div>
 </div>
+
+<!-- Promotion results (clicks) -->
+<div id="mrModal" class="pf-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="mrTitle">
+  <div class="pf-panel card">
+    <div class="pf-head">
+      <div style="min-width:0;"><h3 id="mrTitle" style="margin:0;">Results</h3><p id="mrSub" style="margin:0; font-size:0.85rem; color:var(--ink-soft);"></p></div>
+      <div style="display:flex; gap:0.5rem;">
+        <button type="button" class="btn btn-outline" id="mrCsv" style="padding:0.35rem 0.8rem; font-size:0.8rem;">Download CSV</button>
+        <button type="button" class="btn btn-outline" id="mrClose" style="padding:0.35rem 0.8rem; font-size:0.8rem;">Close</button>
+      </div>
+    </div>
+    <div id="mrStats" class="mr-stats"></div>
+    <p id="mrNote" style="font-size:0.82rem; color:var(--ink-soft); margin:0.6rem 0 1rem;"></p>
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.7rem;">
+      <select id="mrFilter" style="flex:0 1 220px;"><option value="clicked">People who clicked</option><option value="not">Didn’t click</option><option value="all">Everyone it was sent to</option></select>
+      <input type="search" id="mrSearch" placeholder="Search name or email…" style="flex:1 1 200px;">
+    </div>
+    <div id="mrList"></div>
+  </div>
+</div>
 <footer class="site-footer" id="site-footer"></footer>
 
 <script src="js/app.js"></script>
+<script src="js/countries.js"></script>
 <script>
   const user = requireRole(['admin', 'staff']);
   let ME = { permissions: [] };
@@ -849,7 +878,7 @@
       if (dept && d.departmentId !== dept) return false;
       if (!q) return true;
       const dn = (departments.find(x => x.id === d.departmentId) || {}).name || '';
-      return [d.name, d.specialty, d.email, dn].some(v => String(v || '').toLowerCase().includes(q));
+      return [d.name, d.specialty, d.email, dn, d.country, d.city].some(v => String(v || '').toLowerCase().includes(q));
     });
     document.getElementById('docCount').textContent = (q || dept) ? `${doctors.length} of ${allDoctors.length} doctors` : `${allDoctors.length} doctors`;
     if (!doctors.length) { document.getElementById('docList').innerHTML = '<div class="empty-state">No doctors match your search.</div>'; return; }
@@ -861,7 +890,7 @@
             ${avatarHtml(d, 'doctor-avatar-sm')}
             <div>
               <strong>${d.name}</strong> — ${d.specialty}${d.offersVideo ? ' <span class="badge video">Video</span>' : ''}<br>
-              <span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''} · ${d.email}</span>
+              <span style="color:var(--ink-soft); font-size:0.85rem;">${dept ? dept.name : ''}${d.country ? ' · ' + escAttr([d.city, d.country].filter(Boolean).join(', ')) : ''} · ${d.email}</span>
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
@@ -1831,6 +1860,8 @@
         name: document.getElementById('docName').value,
         departmentId: document.getElementById('docDept').value,
         specialty: document.getElementById('docSpecialty').value,
+        country: canonicalCountryJs(document.getElementById('docCountry').value),
+        city: document.getElementById('docCity').value,
         bio: document.getElementById('docBio').value,
         email: document.getElementById('docEmail').value,
         password: document.getElementById('docPassword').value,
@@ -1938,18 +1969,21 @@
           ${c.imageUrl ? `<img src="${escAttr(c.imageUrl)}" alt="" style="width:64px; height:40px; object-fit:cover; border-radius:6px; flex:0 0 auto;">` : ''}
           <div style="min-width:0;"><strong>${escAttr(c.subject)}</strong><br>
           <span style="color:var(--ink-soft); font-size:0.85rem;">${c.status === 'sent'
-            ? `Sent ${new Date(c.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })} to ${c.sentCount} ${c.sentCount === 1 ? 'person' : 'people'}${c.failedCount ? ` · <span style="color:var(--danger);">${c.failedCount} failed</span>` : ''}`
+            ? `Sent ${new Date(c.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })} to ${c.sentCount} ${c.sentCount === 1 ? 'person' : 'people'}${c.failedCount ? ` · <span style="color:var(--danger);">${c.failedCount} failed</span>` : ''}` +
+              (c.buttonUrl ? `<br><strong style="color:var(--teal-deep);">${c.clickedCount} clicked${c.sentCount ? ` (${Math.round(c.clickedCount / c.sentCount * 1000) / 10}%)` : ''}</strong> · ${c.totalClicks} click${c.totalClicks === 1 ? '' : 's'} in total` : '')
             : c.status === 'sending' ? 'Sending…' : 'Draft — not sent yet'}<br><span style="font-size:0.8rem;">To: ${escAttr(c.audienceText || 'Everyone')}</span></span></div>
         </div>
         <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
           <span class="badge ${c.status === 'sent' ? 'confirmed' : ''}">${c.status}</span>
           ${c.status === 'draft' ? `<button type="button" class="btn btn-outline" data-mk-edit="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Edit</button>` : ''}
+          ${c.status === 'sent' ? `<button type="button" class="btn btn-primary" data-mk-results="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Results</button>` : ''}
           <button type="button" class="btn btn-outline" data-mk-preview="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Preview</button>
           <button type="button" class="btn btn-outline" data-mk-copy="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Copy</button>
           ${c.status !== 'sending' ? `<button type="button" class="btn btn-danger" data-mk-del="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Delete</button>` : ''}
         </div>
       </div>`).join('') : '<div class="empty-state">No promotions yet. Click “New promotion” to write your first offer.</div>';
     mkEl('mkList').querySelectorAll('[data-mk-edit]').forEach(b => b.addEventListener('click', () => openMkEditor(MK.list.find(c => c.id === b.dataset.mkEdit))));
+    mkEl('mkList').querySelectorAll('[data-mk-results]').forEach(b => b.addEventListener('click', () => openResults(b.dataset.mkResults)));
     mkEl('mkList').querySelectorAll('[data-mk-preview]').forEach(b => b.addEventListener('click', () => previewCampaign(b.dataset.mkPreview)));
     mkEl('mkList').querySelectorAll('[data-mk-copy]').forEach(b => b.addEventListener('click', async () => {
       try { const c = await API.post(`/api/admin/campaigns/${b.dataset.mkCopy}/copy`, {}); await loadMarketing(); openMkEditor(c); showAlert(mkAlert, 'Copied — edit it and send when ready.', 'success'); }
@@ -2100,7 +2134,7 @@
 <script>
   // ---------- Marketing: audience picker, contacts, import/export ----------
   const UAE_REGIONS = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah', 'Al Ain'];
-  const COMMON_COUNTRIES = ['United Arab Emirates', 'Saudi Arabia', 'Oman', 'Qatar', 'Bahrain', 'Kuwait', 'India', 'Pakistan', 'Philippines', 'Egypt', 'United Kingdom'];
+  const COMMON_COUNTRIES = window.COUNTRIES || []; // every country in the world (js/countries.js)
   function fillMkDatalists() {
     const seg = MK.seg || { countries: [], regions: [], groups: [] };
     const uniq = arr => [...new Map(arr.filter(Boolean).map(v => [v.toLowerCase(), v])).values()];
@@ -2126,7 +2160,7 @@
   // "Who receives it"
   function segBox(id, title, items, selected) {
     const el = mkEl(id);
-    if (!items.length) { el.innerHTML = ''; return; }
+    if (!items.length && !(selected || []).length && id !== 'mkSegCountries') { el.innerHTML = ''; return; }
     const sel = new Set((selected || []).map(v => v.toLowerCase()));
     // keep previously chosen values even if nobody has them now
     const all = [...items, ...(selected || []).filter(v => !items.some(i => i.name.toLowerCase() === v.toLowerCase())).map(v => ({ name: v, count: 0 }))];
@@ -2134,6 +2168,36 @@
       all.map(i => `<label class="cal-chip" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.3rem 0.7rem; border:1px solid var(--line, #d7dfe2); border-radius:999px; font-size:0.85rem; cursor:pointer; font-weight:500;">
         <input type="checkbox" value="${escAttr(i.name)}" ${sel.has(i.name.toLowerCase()) ? 'checked' : ''} style="width:auto; flex:0 0 auto; margin:0;"> ${escAttr(i.name)} <span style="color:var(--ink-soft);">${i.count}</span></label>`).join('') + '</div>';
     el.querySelectorAll('input').forEach(i => i.addEventListener('change', updateAudienceCount));
+    if (id === 'mkSegCountries') addCountryPicker(el);
+  }
+  // Target any country — even one nobody on the list is in yet.
+  function addCountryPicker(el) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; gap:0.4rem; margin-top:0.5rem; max-width:420px;';
+    wrap.innerHTML = '<input type="text" list="mkCountryList" placeholder="Add any country…" aria-label="Add a country" style="flex:1;"><button type="button" class="btn btn-outline" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Add</button>';
+    const [inp, btn] = wrap.children;
+    const add = () => {
+      const v = canonicalCountryJs(inp.value);
+      if (!v) return;
+      const chosen = checkedIn('mkSegCountries');
+      if (!chosen.some(x => x.toLowerCase() === v.toLowerCase())) chosen.push(v);
+      const seg = MK.seg || { countries: [] };
+      segBox('mkSegCountries', 'Country', seg.countries, chosen);
+      updateAudienceCount();
+    };
+    btn.addEventListener('click', add);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    el.appendChild(wrap);
+  }
+  function canonicalCountryJs(v) {
+    v = String(v || '').replace(/\s+/g, ' ').trim();
+    if (!v) return '';
+    const k = x => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.'’]/g, '').replace(/[^a-z0-9/ ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const hit = (window.COUNTRIES || []).find(c => k(c) === k(v));
+    if (hit) return hit;
+    const al = window.COUNTRY_ALIASES || {};
+    const a = Object.keys(al).find(x => k(x) === k(v));
+    return a ? al[a] : v;
   }
   function renderSegments(a) {
     const seg = MK.seg || { countries: [], regions: [], groups: [] };
@@ -2342,6 +2406,9 @@
       pfEl('pfPublic').href = `profile.html?${type}=${encodeURIComponent(id)}`;
       pfEl('pfTeamBasics').style.display = type === 'team' ? '' : 'none';
       pfEl('pfSpecWrap').style.display = type === 'doctor' ? '' : 'none';
+      pfEl('pfLocWrap').style.display = type === 'doctor' ? '' : 'none';
+      pfEl('pfCountry').value = p.country || ''; pfEl('pfCity').value = p.city || '';
+      fillMkDatalists();
       pfEl('pfName').value = p.name; pfEl('pfRole').value = p.role || ''; pfEl('pfSpecialty').value = p.specialty || '';
       pfEl('pfPhoto').value = '';
       pfEl('pfBio').value = p.bio || ''; pfEl('pfAbout').value = p.about || '';
@@ -2394,7 +2461,7 @@
       languages: pfEl('pfLang').value, qualifications: pfEl('pfQual').value, education: pfEl('pfEdu').value, expertise: pfEl('pfExpertise').value
     };
     if (PF.type === 'team') { body.name = pfEl('pfName').value; body.role = pfEl('pfRole').value; }
-    else body.specialty = pfEl('pfSpecialty').value;
+    else { body.specialty = pfEl('pfSpecialty').value; body.country = canonicalCountryJs(pfEl('pfCountry').value); body.city = pfEl('pfCity').value; }
     if (PF.photo) body.photo = PF.photo;
     try {
       const p = await API.patch(`/api/admin/profiles/${PF.type}/${encodeURIComponent(PF.id)}`, body);
@@ -2504,6 +2571,52 @@
       showAlert(dpEl('dpAlert'), 'Saved — the department page is updated.', 'success');
     } catch (err) { showAlert(dpEl('dpAlert'), err.message, 'error'); }
     dpEl('dpModal').querySelector('.pf-panel').scrollTop = 0;
+  });
+</script>
+<script>
+  // ---------- Promotion results ----------
+  const MR = { id: '', rows: [] };
+  const mrEl = id => document.getElementById(id);
+  async function openResults(id) {
+    MR.id = id;
+    mrEl('mrModal').style.display = 'block'; document.body.style.overflow = 'hidden';
+    mrEl('mrList').innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const r = await API.get(`/api/admin/campaigns/${encodeURIComponent(id)}/results`);
+      MR.rows = r.recipients;
+      mrEl('mrTitle').textContent = r.campaign.subject;
+      mrEl('mrSub').textContent = r.campaign.sentAt ? 'Sent ' + new Date(r.campaign.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+      const s = r.summary;
+      mrEl('mrStats').innerHTML = [
+        [s.sent, 'sent'], [s.clickedCount, 'people clicked'], [s.clickRate + '%', 'click rate'], [s.totalClicks, 'total clicks']
+      ].map(([n, l]) => `<div class="mr-stat"><div class="mr-num">${n}</div><div class="mr-label">${l}</div></div>`).join('');
+      mrEl('mrNote').textContent = s.trackable
+        ? 'A click is counted when someone taps the button or image in the email. Some email security scanners open links automatically; we ignore the ones we can recognise.'
+        : 'This promotion had no button link, so there were no clicks to track.';
+      mrEl('mrFilter').value = s.clickedCount ? 'clicked' : 'all';
+      renderResults();
+    } catch (err) { mrEl('mrList').innerHTML = `<div class="empty-state">${escAttr(err.message)}</div>`; }
+  }
+  function renderResults() {
+    const f = mrEl('mrFilter').value, q = mrEl('mrSearch').value.trim().toLowerCase();
+    const rows = MR.rows.filter(r => (f === 'all' || (f === 'clicked' ? r.clicks > 0 : r.clicks === 0)) && (!q || [r.name, r.email].some(v => String(v || '').toLowerCase().includes(q))));
+    const when = d => d ? new Date(d).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    mrEl('mrList').innerHTML = rows.length ? rows.map(r => `
+      <div class="list-item" style="gap:0.6rem; flex-wrap:wrap;">
+        <div style="min-width:0;"><strong>${escAttr(r.name || r.email)}</strong> <span class="badge">${r.personKind}</span><br><span style="color:var(--ink-soft); font-size:0.85rem;">${escAttr(r.email)}</span></div>
+        ${r.clicks ? `<div style="text-align:right; font-size:0.85rem;"><strong style="color:var(--teal-deep);">${r.clicks} click${r.clicks === 1 ? '' : 's'}</strong><br><span style="color:var(--ink-soft);">first ${when(r.firstClickAt)}</span></div>` : '<span style="color:var(--ink-soft); font-size:0.85rem;">no clicks</span>'}
+      </div>`).join('') : '<div class="empty-state">Nobody here yet.</div>';
+  }
+  mrEl('mrFilter').addEventListener('change', renderResults);
+  mrEl('mrSearch').addEventListener('input', renderResults);
+  mrEl('mrClose').addEventListener('click', () => { mrEl('mrModal').style.display = 'none'; document.body.style.overflow = ''; });
+  mrEl('mrModal').addEventListener('click', e => { if (e.target.id === 'mrModal') mrEl('mrClose').click(); });
+  mrEl('mrCsv').addEventListener('click', async () => {
+    try {
+      const res = await fetch(`/api/admin/campaigns/${encodeURIComponent(MR.id)}/results?format=csv`, { headers: { Authorization: 'Bearer ' + API.token() } });
+      if (!res.ok) throw new Error('Download failed.');
+      saveBlob(await res.blob(), `promotion-results-${new Date().toISOString().slice(0, 10)}.csv`);
+    } catch (err) { alert(err.message); }
   });
 </script>
 </body>

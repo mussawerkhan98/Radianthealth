@@ -69,6 +69,7 @@
                   ${avatarHtml(doc)}
                   <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${esc(doc.name)}</h3>
                   <div class="doctor-specialty">${esc(doc.specialty)}</div>
+                  ${doctorLocationHtml(doc)}
                   ${doc.offersVideo ? '<span class="badge video" style="margin-top:0.5rem; display:inline-block;">Video visits</span>' : ''}
                   <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap; margin-top:0.9rem;">
                     <a href="profile.html?doctor=${encodeURIComponent(doc.id)}" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.83rem;">View Profile</a>

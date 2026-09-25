@@ -16,10 +16,13 @@
   <div class="container">
     <span class="eyebrow">Our Doctors</span>
     <h1>Meet the team <em>behind</em> your care</h1>
-    <p class="lead">Filter by department to find the right doctor, then book directly from their profile.</p>
-    <div style="margin-top:1.4rem; max-width:280px;">
-      <select id="deptFilter">
+    <p class="lead">Our doctors see patients in person and by video from around the world. Filter by department or country, then book directly.</p>
+    <div style="margin-top:1.4rem; display:flex; gap:0.6rem; flex-wrap:wrap; max-width:600px;">
+      <select id="deptFilter" style="flex:1 1 220px;" aria-label="Filter by department">
         <option value="">All Departments</option>
+      </select>
+      <select id="countryFilter" style="flex:1 1 220px; display:none;" aria-label="Filter by country">
+        <option value="">All Countries</option>
       </select>
     </div>
   </div>
@@ -48,16 +51,31 @@
       departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
     select.value = initialDept;
     select.addEventListener('change', () => loadDoctors(select.value));
+    // Countries that have doctors
+    const all = await API.get('/api/doctors');
+    const countries = [...new Set(all.map(d => d.country).filter(Boolean))].sort();
+    const cf = document.getElementById('countryFilter');
+    if (countries.length) {
+      cf.innerHTML = '<option value="">All Countries</option>' + countries.map(c => `<option value="${escHtmlD(c)}">${escHtmlD(c)}</option>`).join('');
+      cf.value = params.get('country') || '';
+      cf.style.display = '';
+      cf.addEventListener('change', () => loadDoctors(select.value));
+    }
   }
+  const escHtmlD = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   async function loadDoctors(departmentId) {
     const grid = document.getElementById('doctorGrid');
     grid.innerHTML = '<div class="empty-state">Loading doctors…</div>';
     try {
-      const url = departmentId ? `/api/doctors?department=${departmentId}` : '/api/doctors';
+      const qs = new URLSearchParams();
+      if (departmentId) qs.set('department', departmentId);
+      const country = document.getElementById('countryFilter').value;
+      if (country) qs.set('country', country);
+      const url = '/api/doctors' + (qs.toString() ? '?' + qs : '');
       const doctors = await API.get(url);
       if (doctors.length === 0) {
-        grid.innerHTML = '<div class="empty-state">No doctors found in this department yet.</div>';
+        grid.innerHTML = '<div class="empty-state">No doctors match these filters yet.</div>';
         return;
       }
       grid.innerHTML = doctors.map(d => {
@@ -67,6 +85,7 @@
             ${avatarHtml(d)}
             <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
             <div class="doctor-specialty">${d.specialty}</div>
+            ${doctorLocationHtml(d)}
             <p style="font-size:0.85rem; margin:0.6rem 0 0.9rem;">${dept ? dept.name : ''}</p>
             <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
               <a href="profile.html?doctor=${d.id}" class="btn btn-outline" style="padding:0.55rem 1.1rem; font-size:0.85rem;">View Profile</a>

@@ -560,6 +560,11 @@
             <p>Shown on the booking page for in-clinic visits, and emailed to patients after they book an in-clinic visit (video visits don't get it).</p>
             <div id="locationAlert" class="alert"></div>
             <form id="locationForm">
+              <label style="display:flex; gap:0.6rem; align-items:flex-start; font-weight:600; margin:0 0 1.1rem; padding:0.8rem 1rem; border:1px solid var(--line, #e3e8ea); border-radius:12px;">
+                <input type="checkbox" id="locEnabled" checked style="width:auto; flex:0 0 auto; margin:0.2rem 0 0;">
+                <span>Share clinic location with patients
+                  <small id="locEnabledHint" style="display:block; font-weight:400; color:var(--ink-soft);"></small></span>
+              </label>
               <div class="form-group">
                 <label for="locAddress">Clinic address</label>
                 <textarea id="locAddress" rows="2" maxlength="300" placeholder="e.g. Office 204, Al Wasl Building, Sheikh Zayed Road, Dubai"></textarea>
@@ -1502,6 +1507,8 @@
       document.getElementById('setWhatsapp').value = s.whatsapp || '';
       document.getElementById('setContactEmail').value = s.contactEmail || '';
       const loc = s.location || {};
+      document.getElementById('locEnabled').checked = loc.enabled !== false;
+      showLocEnabledHint();
       document.getElementById('locAddress').value = loc.address || '';
       document.getElementById('locMapsUrl').value = loc.mapsUrl || '';
       document.getElementById('locEmbed').value = loc.embedUrl || '';
@@ -1578,6 +1585,15 @@
     const f = document.getElementById('locPreviewFrame');
     if (embed && f.getAttribute('src') !== embed) f.src = embed;
   }
+  function showLocEnabledHint() {
+    const on = document.getElementById('locEnabled').checked;
+    const h = document.getElementById('locEnabledHint');
+    h.textContent = on
+      ? 'On: the map shows on the booking page and in-clinic patients get the address and directions by email.'
+      : 'Off: nothing is shown or sent — no map on the booking page and no address in emails. Your details below stay saved.';
+    h.style.color = on ? '' : 'var(--danger)';
+  }
+  document.getElementById('locEnabled').addEventListener('change', showLocEnabledHint);
   let locTimer;
   ['locAddress', 'locMapsUrl', 'locEmbed'].forEach(id => document.getElementById(id).addEventListener('input', () => { clearTimeout(locTimer); locTimer = setTimeout(showLocationPreview, 700); }));
   document.getElementById('locationForm').addEventListener('submit', async (e) => {
@@ -1585,12 +1601,16 @@
     const alertEl = document.getElementById('locationAlert');
     hideAlert(alertEl);
     try {
+      const enabled = document.getElementById('locEnabled').checked;
       await API.patch('/api/admin/settings', { location: {
+        enabled,
         address: document.getElementById('locAddress').value, mapsUrl: document.getElementById('locMapsUrl').value,
         embed: document.getElementById('locEmbed').value, notes: document.getElementById('locNotes').value
       } });
       await loadSettings();
-      showAlert(alertEl, 'Location saved. Patients booking an in-clinic visit will now see the map and get the directions link by email.', 'success');
+      showAlert(alertEl, enabled
+        ? 'Location saved. Patients booking an in-clinic visit will see the map and get the address and directions by email.'
+        : 'Saved. Location sharing is OFF — patients won’t see the map or get the address.', 'success');
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
   });
 

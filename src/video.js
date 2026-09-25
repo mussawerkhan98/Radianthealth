@@ -1,15 +1,25 @@
-// src/video.js — video appointments via Daily.co (https://www.daily.co).
-// Needs DAILY_API_KEY (Daily dashboard → Developers → API key). Without it,
-// the "Video call" option is simply hidden.
+// src/video.js — video appointments.
 //
-// How it works: each video appointment has two secret keys (patient, doctor).
+// Default: Jitsi Meet (https://meet.jit.si) — completely free, no account or
+// API key needed. Each appointment gets its own long, random, unguessable room
+// name. Patients just click; on meet.jit.si the first person may be asked to
+// sign in (Google/GitHub) once to start the meeting — that's the doctor.
+//   JITSI_DOMAIN   optional, e.g. your own Jitsi server later (default meet.jit.si)
+//   VIDEO_ENABLED  set to "false" to hide the "Video call" option entirely
+//
+// Optional upgrade: if DAILY_API_KEY is set, Daily.co private rooms with
+// time-limited tokens are used instead (no code change needed).
+//
 // People open  /video.html?a=<appointment id>&k=<their key>  — the server
-// checks the key and time window, creates a PRIVATE Daily room the first time
-// it's needed, and hands back a personal join link (a short-lived token).
+// checks the key and time window, creates the room the first time it's
+// needed, and hands back their personal join link.
 const crypto = require('crypto');
 
 const API = 'https://api.daily.co/v1';
-const isConfigured = () => !!process.env.DAILY_API_KEY;
+const useDaily = () => !!process.env.DAILY_API_KEY;
+const isConfigured = () => String(process.env.VIDEO_ENABLED || '').toLowerCase() !== 'false';
+const provider = () => (useDaily() ? 'daily' : 'jitsi');
+const jitsiDomain = () => String(process.env.JITSI_DOMAIN || 'meet.jit.si').replace(/^https?:\/\//, '').replace(/\/+$/, '');
 const EARLY_MIN = 15;   // join opens this many minutes before the start
 const LATE_MIN = 30;    // and closes this long after the scheduled end
 
@@ -40,8 +50,13 @@ function joinWindow(start, slotMinutes) {
   return { opens, closes };
 }
 
-// Private room that only works during the appointment window.
 async function createRoom({ appointmentId, opens, closes }) {
+  if (!useDaily()) {
+    // 128 random bits — impossible to guess, so only people with the link get in.
+    const name = `RadiantHealth-${crypto.randomBytes(16).toString('hex')}`;
+    return { name, url: `https://${jitsiDomain()}/${name}` };
+  }
+  // Daily: private room that only works during the appointment window.
   const name = `rha-${appointmentId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${crypto.randomBytes(4).toString('hex')}`;
   const room = await daily('POST', '/rooms', {
     name,
@@ -60,8 +75,25 @@ async function createRoom({ appointmentId, opens, closes }) {
   return { name: room.name, url: room.url };
 }
 
-// Personal link into the room (doctor = room owner).
+const isJitsiRoom = (roomUrl) => /^https:\/\/[^/]+\/RadiantHealth-[0-9a-f]{32}$/.test(String(roomUrl || '')) && !/\.daily\.co\//.test(roomUrl);
+
+// Personal link into the room (doctor = room owner on Daily).
 async function joinLink({ roomName, roomUrl, userName, isOwner, closes }) {
+  if (isJitsiRoom(roomUrl)) {
+    // Jitsi reads settings from the # part (never sent to any server).
+    const h = (k, v) => `${k}=${encodeURIComponent(JSON.stringify(v))}`;
+    return `${roomUrl}#` + [
+      h('userInfo.displayName', String(userName || '').slice(0, 60)),
+      h('config.subject', 'Radiant Health video appointment'),
+      h('config.prejoinConfig.enabled', true),
+      h('config.disableDeepLinking', true)   // phones stay in the browser, no app needed
+    ].join('&');
+  }
+  if (!useDaily()) {
+    const err = new Error('The video service is not available. Please call the clinic.');
+    err.status = 503;
+    throw err;
+  }
   const t = await daily('POST', '/meeting-tokens', {
     properties: {
       room_name: roomName,
@@ -74,9 +106,10 @@ async function joinLink({ roomName, roomUrl, userName, isOwner, closes }) {
   return `${roomUrl}?t=${encodeURIComponent(t.token)}`;
 }
 
+// Jitsi rooms vanish on their own once empty; Daily rooms are deleted.
 async function deleteRoom(roomName) {
-  if (!roomName || !isConfigured()) return;
+  if (!roomName || !useDaily() || String(roomName).startsWith('RadiantHealth-')) return;
   try { await daily('DELETE', `/rooms/${encodeURIComponent(roomName)}`); } catch (e) { /* already gone */ }
 }
 
-module.exports = { isConfigured, newKey, joinWindow, createRoom, joinLink, deleteRoom, EARLY_MIN, LATE_MIN };
+module.exports = { isConfigured, provider, newKey, joinWindow, createRoom, joinLink, deleteRoom, EARLY_MIN, LATE_MIN };

@@ -957,7 +957,7 @@ app.get('/api/video/:id', videoLimiter, wrap(async (req, res) => {
   const base = {
     role, doctorName: a.doctor.name, patientFirstName: String(a.patient.name || '').split(' ')[0],
     date: a.date, time: a.time, startsAt: start.toISOString(), opensAt: opens.toISOString(), closesAt: closes.toISOString(),
-    earlyMinutes: video.EARLY_MIN
+    earlyMinutes: video.EARLY_MIN, provider: video.provider()
   };
   if (a.status === 'cancelled') return res.json({ ...base, status: 'cancelled' });
   const now = Date.now();

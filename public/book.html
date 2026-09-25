@@ -35,6 +35,17 @@
         <p id="videoNote" style="display:none; font-size:0.82rem; color:var(--ink-soft); margin:0.5rem 0 0;">Only doctors who offer video appointments are shown. You'll get a private video link by email.</p>
       </fieldset>
 
+      <!-- Clinic location: shown for in-clinic visits when set in Admin → Site Settings -->
+      <div id="clinicLocation" class="clinic-location" style="display:none;">
+        <div class="clinic-location-text">
+          <strong>Where to find us</strong>
+          <p id="clinicAddress"></p>
+          <p id="clinicNotes" class="clinic-location-notes"></p>
+          <a id="clinicMapLink" class="btn btn-outline" target="_blank" rel="noopener">Get directions</a>
+        </div>
+        <iframe id="clinicMapFrame" title="Map showing Radiant Health Alliance" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+      </div>
+
       <div class="form-group">
         <label for="deptSelect">Department</label>
         <select id="deptSelect"><option value="">Choose a department…</option></select>
@@ -200,19 +211,23 @@
       const result = await API.post(url, body);
       confirmBtn.textContent = 'Booked';
       const emailed = result && result.emailSent;
+      const loc = result && result.location;
+      const locNote = loc && loc.link ? (emailed ? ' We’ve also emailed you directions to the clinic.' : '') : '';
       const videoNote = result && result.visitType === 'video'
         ? (emailed ? ' Your private video link is in a separate email.' : '') + (patient ? ' You can also join from your dashboard.' : '')
         : '';
       if (patient) {
         showAlert(formAlert, (emailed
-          ? "Thanks! We've emailed you a confirmation." + videoNote
+          ? "Thanks! We've emailed you a confirmation." + videoNote + locNote
           : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)' + videoNote), 'success');
+        addDirectionsLink(loc);
         setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
       } else {
         const idNote = result && result.patientId ? ` Your Patient ID is ${result.patientId} (your mobile number).` : '';
         showAlert(formAlert, (emailed
           ? "Thanks! We've emailed you a confirmation." + videoNote
-          : 'Appointment confirmed! We could not send the confirmation email right now — please note your time, and call us if you need to change it.') + idNote, 'success');
+          : 'Appointment confirmed! We could not send the confirmation email right now — please note your time, and call us if you need to change it.') + locNote + idNote, 'success');
+        addDirectionsLink(loc);
       }
     } catch (e) {
       showAlert(formAlert, e.message, 'error');
@@ -221,6 +236,31 @@
       loadSlots();
     }
   });
+
+  // Clinic map for in-clinic visits.
+  let clinicLoc = null;
+  function showClinicLocation() {
+    const box = document.getElementById('clinicLocation');
+    if (!clinicLoc || visitType() === 'video') { box.style.display = 'none'; return; }
+    document.getElementById('clinicAddress').textContent = clinicLoc.address || '';
+    const notes = document.getElementById('clinicNotes');
+    notes.textContent = clinicLoc.notes || ''; notes.style.display = clinicLoc.notes ? '' : 'none';
+    const a = document.getElementById('clinicMapLink');
+    a.style.display = clinicLoc.link ? '' : 'none'; if (clinicLoc.link) a.href = clinicLoc.link;
+    const f = document.getElementById('clinicMapFrame');
+    f.style.display = clinicLoc.embed ? '' : 'none';
+    if (clinicLoc.embed && !f.getAttribute('src')) f.src = clinicLoc.embed;
+    box.style.display = '';
+  }
+  function addDirectionsLink(loc) {
+    if (!loc || !loc.link) return;
+    const a = document.createElement('a');
+    a.href = loc.link; a.target = '_blank'; a.rel = 'noopener';
+    a.className = 'btn btn-outline'; a.style.cssText = 'margin-top:0.7rem; display:inline-block;';
+    a.textContent = 'Get directions to the clinic';
+    formAlert.appendChild(document.createElement('br'));
+    formAlert.appendChild(a);
+  }
 
   (async function () {
     setupMode();
@@ -231,6 +271,8 @@
     // Show the visit-type choice if video calls are on and any doctor offers them.
     try {
       const st = await API.get('/api/settings');
+      clinicLoc = st.location || null;
+      showClinicLocation();
       if (st.videoEnabled && doctors.some(d => d.offersVideo)) {
         document.getElementById('visitTypeWrap').style.display = 'block';
         if (params.get('visit') === 'video') document.querySelector('input[name="visitType"][value="video"]').checked = true;
@@ -238,6 +280,7 @@
     } catch (e) { /* in-clinic only */ }
     document.querySelectorAll('input[name="visitType"]').forEach(r => r.addEventListener('change', () => {
       document.getElementById('videoNote').style.display = visitType() === 'video' ? 'block' : 'none';
+      showClinicLocation();
       loadDoctorsForDept(deptSelect.value, true);
       loadSlots();
     }));

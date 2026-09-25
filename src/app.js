@@ -1092,7 +1092,7 @@ app.get('/api/video/:id', videoLimiter, wrap(async (req, res) => {
 // ---------- MARKETING (promotion emails) ----------
 const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const MAX_CAMPAIGN_IMAGE = 1.5 * 1024 * 1024;
-const CAMPAIGN_META = { id: true, subject: true, headline: true, body: true, buttonText: true, buttonUrl: true, imageMime: true, status: true, sentAt: true, sentCount: true, failedCount: true, audience: true, createdAt: true, updatedAt: true };
+const CAMPAIGN_META = { id: true, subject: true, headline: true, body: true, buttonText: true, buttonUrl: true, imageMime: true, status: true, sentAt: true, sentCount: true, failedCount: true, audience: true, scheduledAt: true, sendError: true, createdAt: true, updatedAt: true };
 const campaignImageUrl = c => c.imageMime ? `${SITE_URL()}/api/campaigns/${c.id}/image?v=${new Date(c.updatedAt).getTime()}` : '';
 const campaignOut = c => {
   const a = audience.parseAudience(c.audience);
@@ -1144,7 +1144,8 @@ app.get('/api/admin/campaigns', perm('marketing.send'), wrap(async (req, res) =>
   res.json({
     campaigns: campaigns.map(campaignOut), audience: active.length, unsubscribed: people.length - active.length,
     patients: active.filter(p => p.kind === 'patient').length, contacts: active.filter(p => p.kind === 'contact').length,
-    emailReady: brevo.isConfigured()
+    emailReady: brevo.isConfigured(),
+    scheduler: { timerReady: !!process.env.CRON_SECRET, lastRun: ((await settings.getAll()).schedulerLastRun) || null }
   });
 }));
 
@@ -1379,13 +1380,15 @@ app.post('/api/admin/campaigns/:id/test', perm('marketing.send'), wrap(async (re
 }));
 
 // One click: send to every patient who hasn't unsubscribed.
-app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (req, res) => {
+// Send a promotion now. `fromStatus` is what it must be (draft, or scheduled
+// for the scheduler) — the status switch is the lock, so nothing sends twice.
+async function sendCampaignNow(id, fromStatus = 'draft') {
   if (!brevo.isConfigured()) throw new HttpError(400, 'Email sending (Brevo) is not set up.');
-  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: CAMPAIGN_META });
+  const c = await prisma.campaign.findUnique({ where: { id }, select: CAMPAIGN_META });
   if (!c) throw new HttpError(404, 'Promotion not found.');
-  // Lock so a double click can't send twice.
-  const lock = await prisma.campaign.updateMany({ where: { id: c.id, status: 'draft' }, data: { status: 'sending' } });
-  if (lock.count === 0) throw new HttpError(409, 'This promotion was already sent.');
+  const lock = await prisma.campaign.updateMany({ where: { id: c.id, status: fromStatus }, data: { status: 'sending', sendError: '' } });
+  if (lock.count === 0) throw new HttpError(409, c.status === 'scheduled' ? 'This promotion is scheduled — cancel the schedule first to send it now.' : 'This promotion was already sent.');
+  const backTo = 'draft'; // a failed send goes back to draft so it can be fixed and re-sent
   let result;
   try {
     const people = await audience.resolveAudience(prisma, audience.parseAudience(c.audience));
@@ -1403,15 +1406,67 @@ app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (re
     result = await marketing.sendCampaign(c, recipients, await campaignEmailOpts(c));
     if (result.failedEmails.length) await prisma.campaignRecipient.deleteMany({ where: { campaignId: c.id, email: { in: result.failedEmails } } });
   } catch (e) {
-    await prisma.campaign.update({ where: { id: c.id }, data: { status: 'draft' } });
+    await prisma.campaign.update({ where: { id: c.id }, data: { status: backTo, scheduledAt: null, sendError: String(e.message || e).slice(0, 300) } });
     throw e;
   }
   if (result.sent === 0) {
-    await prisma.campaign.update({ where: { id: c.id }, data: { status: 'draft', failedCount: result.failed } });
-    throw new HttpError(502, 'Nothing was sent: ' + (result.error || 'nobody matches the groups you chose.'));
+    const why = result.error || 'nobody matches the groups you chose.';
+    await prisma.campaign.update({ where: { id: c.id }, data: { status: backTo, scheduledAt: null, failedCount: result.failed, sendError: why.slice(0, 300) } });
+    throw new HttpError(502, 'Nothing was sent: ' + why);
   }
   const u = await prisma.campaign.update({ where: { id: c.id }, data: { status: 'sent', sentAt: new Date(), sentCount: result.sent, failedCount: result.failed }, select: CAMPAIGN_META });
-  res.json({ ...campaignOut(u), error: result.error });
+  return { ...campaignOut(u), error: result.error };
+}
+
+// One click: send to everyone chosen in "Who receives it".
+app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (req, res) => {
+  res.json(await sendCampaignNow(req.params.id, 'draft'));
+}));
+
+// Schedule for later (time as ISO, e.g. from the browser's date picker).
+app.post('/api/admin/campaigns/:id/schedule', perm('marketing.send'), wrap(async (req, res) => {
+  const c = await prisma.campaign.findUnique({ where: { id: req.params.id }, select: { id: true, status: true } });
+  if (!c) throw new HttpError(404, 'Promotion not found.');
+  const at = new Date(String((req.body || {}).at || ''));
+  if (isNaN(at)) throw new HttpError(400, 'Please choose a date and time.');
+  if (at.getTime() < Date.now() + 60 * 1000) throw new HttpError(400, 'Please choose a time at least a minute from now (or use “Send now”).');
+  if (at.getTime() > Date.now() + 366 * 864e5) throw new HttpError(400, 'Please choose a time within the next year.');
+  const upd = await prisma.campaign.updateMany({ where: { id: c.id, status: { in: ['draft', 'scheduled'] } }, data: { status: 'scheduled', scheduledAt: at, sendError: '' } });
+  if (!upd.count) throw new HttpError(409, 'This promotion was already sent.');
+  res.json(campaignOut(await prisma.campaign.findUnique({ where: { id: c.id }, select: CAMPAIGN_META })));
+}));
+
+app.post('/api/admin/campaigns/:id/unschedule', perm('marketing.send'), wrap(async (req, res) => {
+  const upd = await prisma.campaign.updateMany({ where: { id: req.params.id, status: 'scheduled' }, data: { status: 'draft', scheduledAt: null } });
+  if (!upd.count) throw new HttpError(409, 'This promotion isn’t scheduled (it may already be sending).');
+  res.json(campaignOut(await prisma.campaign.findUnique({ where: { id: req.params.id }, select: CAMPAIGN_META })));
+}));
+
+// Send every scheduled promotion whose time has come.
+async function runDueCampaigns(source) {
+  const due = await prisma.campaign.findMany({ where: { status: 'scheduled', scheduledAt: { lte: new Date() } }, select: { id: true }, orderBy: { scheduledAt: 'asc' }, take: 10 });
+  const results = [];
+  for (const c of due) {
+    try { const r = await sendCampaignNow(c.id, 'scheduled'); results.push({ id: c.id, sent: r.sentCount }); }
+    catch (e) { if (e.status !== 409) console.error(`scheduled send ${c.id}:`, e.message); results.push({ id: c.id, error: e.message }); }
+  }
+  await settings.setKey('schedulerLastRun', { at: new Date().toISOString(), source }).catch(() => {});
+  return results;
+}
+
+// Called by a timer (cron-job.org every few minutes, and Vercel's daily cron).
+// Protected by the CRON_SECRET setting in Vercel.
+app.all('/api/cron/marketing', wrap(async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) throw new HttpError(503, 'Scheduling is not set up (CRON_SECRET is missing).');
+  const given = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '') || String(req.query.key || '');
+  if (!sameKey(given, secret)) throw new HttpError(401, 'Not allowed.');
+  res.json({ ok: true, ran: await runDueCampaigns('timer') });
+}));
+
+// The Marketing tab also sends anything overdue when someone opens it.
+app.post('/api/admin/campaigns/run-due', perm('marketing.send'), wrap(async (req, res) => {
+  res.json({ ok: true, ran: await runDueCampaigns('admin') });
 }));
 
 // The person behind an unsubscribe link (patient "pt_…" or contact "mc_…"), if the key matches.

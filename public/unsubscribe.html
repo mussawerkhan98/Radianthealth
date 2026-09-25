@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Email Preferences — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="unsubscribe">
+<header class="site-header" id="site-header"></header>
+<section class="section">
+  <div class="container">
+    <div class="card" style="max-width:520px; margin:0 auto; padding:2.2rem 2rem; text-align:center;">
+      <h2 id="usTitle" style="margin-top:0;">Email Preferences</h2>
+      <div id="usBody"><p style="color:var(--ink-soft);">One moment…</p></div>
+    </div>
+  </div>
+</section>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="js/app.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const p = q.get('p') || '', k = q.get('k') || '';
+  const body = document.getElementById('usBody'), title = document.getElementById('usTitle');
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  async function setPref(resubscribe) {
+    try {
+      const res = await fetch('/api/unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p, k, resubscribe }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+      if (data.subscribed) {
+        title.textContent = 'Welcome back';
+        body.innerHTML = '<p>You will receive our offers and health news again.</p><a class="btn btn-primary" href="index.html">Go to our website</a>';
+      } else {
+        title.textContent = "You're unsubscribed";
+        body.innerHTML = '<p>You won\'t receive offers or promotions from Radiant Health Alliance any more.</p>' +
+          '<p style="color:var(--ink-soft); font-size:0.9rem;">You will still get emails about your own appointments.</p>' +
+          '<button class="btn btn-outline" id="usUndo">Unsubscribed by mistake? Subscribe again</button>';
+        document.getElementById('usUndo').addEventListener('click', () => setPref(true));
+      }
+    } catch (err) {
+      body.innerHTML = `<p style="color:var(--danger);">${esc(err.message)}</p>`;
+    }
+  }
+  if (!p || !k) {
+    body.innerHTML = '<p>This link is incomplete. Please use the unsubscribe link at the bottom of our email, or contact the clinic.</p>';
+  } else {
+    setPref(false);
+  }
+</script>
+</body>
+</html>

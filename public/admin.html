@@ -25,6 +25,7 @@
         <a href="#" data-tab="team" data-perm="directory.manage">Team Page</a>
         <a href="#" data-tab="staffAccounts" data-perm="staff.manage">Staff Logins</a>
         <a href="#" data-tab="roles" data-perm="staff.manage">Roles &amp; Permissions</a>
+        <a href="#" data-tab="marketing" data-perm="marketing.send">Marketing</a>
         <a href="#" data-tab="settings" data-perm="settings.manage">Site Settings</a>
         <div id="noAccess" style="display:none; font-size:0.85rem; color:var(--ink-soft); margin:0.6rem 0;">Your role has no sections yet. Ask an admin to give it permissions.</div>
         <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
@@ -321,6 +322,7 @@
                     <div class="form-group"><label for="epDob">Date of birth</label><input type="date" id="epDob"></div>
                     <div class="form-group"><label for="epGender">Gender</label><select id="epGender"><option value="">Not set</option><option>Female</option><option>Male</option><option>Other</option></select></div>
                   </div>
+                  <label style="display:flex; gap:0.5rem; align-items:center; font-weight:500; margin:0 0 0.8rem;"><input type="checkbox" id="epOffers" style="width:auto; flex:0 0 auto; margin:0;"> Receives offers and promotion emails</label>
                   <p style="font-size:0.82rem; color:var(--ink-soft); margin:0 0 0.8rem;">Changing the mobile number changes the Patient ID.</p>
                   <div style="display:flex; gap:0.5rem;">
                     <button type="submit" class="btn btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;">Save changes</button>
@@ -367,6 +369,87 @@
               <h4 style="margin-top:1.6rem;">Medical History</h4>
               <div id="patientReportRecords"></div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-marketing" style="display:none;">
+          <h2>Marketing</h2>
+          <p>Send offers and news to your patients by email. Every email has an unsubscribe link; patients who unsubscribe are skipped automatically.</p>
+          <div id="mkStats" class="card" style="padding:1rem 1.3rem; margin-bottom:1.2rem; display:flex; flex-wrap:wrap; gap:1.4rem; align-items:center;"></div>
+          <div id="mkAlert" class="alert"></div>
+
+          <div id="mkListWrap">
+            <button class="btn btn-primary" id="mkNewBtn" style="margin-bottom:1rem;">+ New promotion</button>
+            <div id="mkList"><div class="empty-state">Loading…</div></div>
+          </div>
+
+          <div id="mkEditor" class="card" style="display:none; padding:1.6rem;">
+            <button class="btn btn-outline" id="mkBack" style="margin-bottom:1.2rem; padding:0.4rem 0.9rem; font-size:0.8rem;">&larr; Back to promotions</button>
+            <h3 id="mkEditorTitle" style="margin-top:0;">New promotion</h3>
+            <form id="mkForm">
+              <div class="form-group"><label for="mkSubject">Email subject *</label><input type="text" id="mkSubject" maxlength="150" required placeholder="e.g. 20% off full body check-up this month"></div>
+              <div class="form-group"><label for="mkHeadline">Headline</label><input type="text" id="mkHeadline" maxlength="200" placeholder="e.g. Your health, our priority — special offer inside"></div>
+              <div class="form-group"><label for="mkBody">Message</label><textarea id="mkBody" rows="6" maxlength="5000" placeholder="Describe the offer, dates, and any conditions. Leave an empty line between paragraphs."></textarea>
+                <small style="color:var(--ink-soft);">Each email starts with “Dear &lt;first name&gt;,” automatically.</small></div>
+              <div class="form-group">
+                <label for="mkImage">Offer image (optional)</label>
+                <input type="file" id="mkImage" accept="image/jpeg,image/png,image/webp,image/gif">
+                <small style="color:var(--ink-soft); display:block;">JPG, PNG or WEBP, up to 1.5 MB. Wide images (about 1200 × 600) look best.</small>
+                <div id="mkImagePreview" style="display:none; margin-top:0.6rem;">
+                  <img id="mkImageImg" alt="" style="max-width:100%; max-height:220px; border-radius:10px; display:block;">
+                  <button type="button" class="btn btn-danger" id="mkImageRemove" style="margin-top:0.5rem; padding:0.25rem 0.7rem; font-size:0.78rem;">Remove image</button>
+                </div>
+              </div>
+              <h4 style="margin:1.4rem 0 0.6rem;">Button</h4>
+              <div class="form-row">
+                <div class="form-group"><label for="mkBtnText">Button text</label><input type="text" id="mkBtnText" maxlength="40" placeholder="e.g. Book now"></div>
+                <div class="form-group"><label for="mkLinkType">When they click, go to</label>
+                  <select id="mkLinkType">
+                    <option value="none">No button</option>
+                    <option value="website">Our website</option>
+                    <option value="whatsapp">WhatsApp chat with the clinic</option>
+                    <option value="other">Another link</option>
+                  </select></div>
+              </div>
+              <div class="form-group" id="mkWebsiteWrap" style="display:none;"><label for="mkWebsitePage">Website page</label>
+                <select id="mkWebsitePage">
+                  <option value="/book.html">Book an Appointment</option>
+                  <option value="/">Home page</option>
+                  <option value="/departments.html">Departments</option>
+                  <option value="/doctors.html">Our Doctors</option>
+                  <option value="/contact.html">Contact</option>
+                  <option value="/about.html">About</option>
+                </select></div>
+              <div class="form-group" id="mkWhatsappWrap" style="display:none;"><label for="mkWhatsappText">Message the patient sends you on WhatsApp</label>
+                <input type="text" id="mkWhatsappText" maxlength="300" placeholder="e.g. Hi, I'd like the check-up offer">
+                <small style="color:var(--ink-soft);" id="mkWhatsappHint"></small></div>
+              <div class="form-group" id="mkOtherWrap" style="display:none;"><label for="mkOtherUrl">Link (full address)</label>
+                <input type="url" id="mkOtherUrl" maxlength="1000" placeholder="https://…"></div>
+
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1.4rem;">
+                <button type="submit" class="btn btn-outline" id="mkSaveBtn">Save draft</button>
+                <button type="button" class="btn btn-outline" id="mkPreviewBtn">Preview</button>
+              </div>
+              <div class="card" style="margin-top:1.4rem; padding:1.1rem 1.2rem; box-shadow:none; border:1px solid var(--line, #e3e8ea);">
+                <strong>1. Send yourself a test</strong>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.6rem;">
+                  <input type="email" id="mkTestEmail" placeholder="your@email.com" style="flex:1 1 220px;">
+                  <button type="button" class="btn btn-outline" id="mkTestBtn">Send test</button>
+                </div>
+                <strong style="display:block; margin-top:1.1rem;">2. Send to patients</strong>
+                <button type="button" class="btn btn-amber" id="mkSendBtn" style="margin-top:0.6rem;">Send to all patients</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="mkPreviewModal" style="display:none; position:fixed; inset:0; background:rgba(15,25,30,0.6); z-index:1000; padding:2vh 12px; overflow:auto;" role="dialog" aria-modal="true" aria-label="Email preview">
+            <div style="max-width:680px; margin:0 auto; background:#fff; border-radius:14px; overflow:hidden;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:0.7rem 1rem; border-bottom:1px solid #e3e8ea;">
+                <strong id="mkPreviewSubject" style="font-size:0.95rem;"></strong>
+                <button type="button" class="btn btn-outline" id="mkPreviewClose" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Close</button>
+              </div>
+              <iframe id="mkPreviewFrame" title="Email preview" sandbox="allow-popups allow-popups-to-escape-sandbox" style="width:100%; height:80vh; border:0; display:block; background:#f2f5f6;"></iframe>
             </div>
           </div>
         </div>
@@ -473,7 +556,7 @@
   });
 
   const tabs = document.querySelectorAll('[data-tab]');
-  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'roles', 'appointments', 'patients', 'settings'];
+  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'roles', 'appointments', 'patients', 'marketing', 'settings'];
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       e.preventDefault();
@@ -488,6 +571,7 @@
       if (tab.dataset.tab === 'staffAccounts') loadStaffAccounts();
       if (tab.dataset.tab === 'roles') loadRoles();
       if (tab.dataset.tab === 'settings') loadSettings();
+      if (tab.dataset.tab === 'marketing') loadMarketing();
     });
   });
   document.querySelectorAll('[data-goto-tab]').forEach(a => a.addEventListener('click', e => {
@@ -882,7 +966,7 @@
       const patients = await API.get('/api/admin/patients' + (q ? `?q=${encodeURIComponent(q)}` : ''));
       el.innerHTML = patients.length ? patients.map(p => `
         <div class="list-item" style="cursor:pointer; flex-wrap:wrap; gap:0.6rem;" data-patient="${p.id}" tabindex="0" role="button">
-          <div><strong>${escAttr(p.name)}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ' <span class="badge" style="color:var(--danger);">no ID — add phone</span>'}<br>
+          <div><strong>${escAttr(p.name)}</strong>${p.isGuest ? ' <span class="badge">guest</span>' : ''}${p.marketingOptOut ? ' <span class="badge" title="Does not receive promotion emails">no offers</span>' : ''}${p.patientId ? ` <span class="badge">ID ${escAttr(p.patientId)}</span>` : ' <span class="badge" style="color:var(--danger);">no ID — add phone</span>'}<br>
             <span style="color:var(--ink-soft); font-size:0.85rem;">${[p.phone, p.email].filter(Boolean).map(escAttr).join(' · ')}</span></div>
           <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
             <span class="badge">${p.appointmentCount} appt${p.appointmentCount === 1 ? '' : 's'}${can('records.view') ? ` · ${p.recordCount} record${p.recordCount === 1 ? '' : 's'}` : ''}</span>
@@ -980,6 +1064,7 @@
     const g = document.getElementById('epGender');
     if (p.gender && ![...g.options].some(o => o.value === p.gender)) g.add(new Option(p.gender, p.gender));
     g.value = p.gender || '';
+    document.getElementById('epOffers').checked = !p.marketingOptOut;
     f.style.display = 'block';
     f.scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('epName').focus({ preventScroll: true });
@@ -996,7 +1081,8 @@
     try {
       const upd = await API.patch(`/api/admin/patients/${currentReportPatientId}`, {
         name: document.getElementById('epName').value, phone: document.getElementById('epPhone').value, email: document.getElementById('epEmail').value,
-        dob: document.getElementById('epDob').value, gender: document.getElementById('epGender').value
+        dob: document.getElementById('epDob').value, gender: document.getElementById('epGender').value,
+        marketingOptOut: !document.getElementById('epOffers').checked
       });
       await openPatientReport(currentReportPatientId);
       showAlert(alertEl, `Saved. Patient ID is ${upd.patientId}.`, 'success');
@@ -1487,6 +1573,185 @@
     if (can('directory.manage')) await loadTeam();
     first.click();
   })();
+</script>
+<script>
+  // ---------- Marketing (promotion emails) ----------
+  const MK = { list: [], audience: 0, current: null, image: undefined, imageUrl: '', whatsapp: '' };
+  const mkAlert = document.getElementById('mkAlert');
+  const mkEl = id => document.getElementById(id);
+
+  async function loadMarketing() {
+    hideAlert(mkAlert);
+    mkEl('mkList').innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const [data, site] = await Promise.all([API.get('/api/admin/campaigns'), API.get('/api/settings')]);
+      MK.list = data.campaigns; MK.audience = data.audience; MK.whatsapp = String(site.whatsapp || '').replace(/\D/g, '');
+      mkEl('mkStats').innerHTML = `<div><div style="font-size:1.6rem; font-weight:800;">${data.audience}</div><div style="font-size:0.85rem; color:var(--ink-soft);">patients will receive offers</div></div>
+        <div><div style="font-size:1.6rem; font-weight:800;">${data.unsubscribed}</div><div style="font-size:0.85rem; color:var(--ink-soft);">unsubscribed</div></div>
+        <div style="flex:1 1 260px; font-size:0.85rem; color:var(--ink-soft);">${data.emailReady ? 'Sent from info@radianthealthalliance.com through Brevo. Brevo’s free plan sends up to 300 emails a day — upgrade in Brevo if you have more patients.' : '<span style="color:var(--danger);">Email sending (Brevo) is not set up, so promotions can’t be sent yet.</span>'}</div>`;
+      mkEl('mkSendBtn').textContent = mkSendLabel();
+      renderMkList();
+    } catch (err) { mkEl('mkList').innerHTML = `<div class="empty-state">${escAttr(err.message)}</div>`; }
+  }
+
+  function renderMkList() {
+    mkEl('mkList').innerHTML = MK.list.length ? MK.list.map(c => `
+      <div class="list-item" style="flex-wrap:wrap; gap:0.6rem;">
+        <div style="display:flex; gap:0.8rem; align-items:center; min-width:0;">
+          ${c.imageUrl ? `<img src="${escAttr(c.imageUrl)}" alt="" style="width:64px; height:40px; object-fit:cover; border-radius:6px; flex:0 0 auto;">` : ''}
+          <div style="min-width:0;"><strong>${escAttr(c.subject)}</strong><br>
+          <span style="color:var(--ink-soft); font-size:0.85rem;">${c.status === 'sent'
+            ? `Sent ${new Date(c.sentAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })} to ${c.sentCount} patient${c.sentCount === 1 ? '' : 's'}${c.failedCount ? ` · <span style="color:var(--danger);">${c.failedCount} failed</span>` : ''}`
+            : c.status === 'sending' ? 'Sending…' : 'Draft — not sent yet'}</span></div>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
+          <span class="badge ${c.status === 'sent' ? 'confirmed' : ''}">${c.status}</span>
+          ${c.status === 'draft' ? `<button type="button" class="btn btn-outline" data-mk-edit="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Edit</button>` : ''}
+          <button type="button" class="btn btn-outline" data-mk-preview="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Preview</button>
+          <button type="button" class="btn btn-outline" data-mk-copy="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Copy</button>
+          ${c.status !== 'sending' ? `<button type="button" class="btn btn-danger" data-mk-del="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Delete</button>` : ''}
+        </div>
+      </div>`).join('') : '<div class="empty-state">No promotions yet. Click “New promotion” to write your first offer.</div>';
+    mkEl('mkList').querySelectorAll('[data-mk-edit]').forEach(b => b.addEventListener('click', () => openMkEditor(MK.list.find(c => c.id === b.dataset.mkEdit))));
+    mkEl('mkList').querySelectorAll('[data-mk-preview]').forEach(b => b.addEventListener('click', () => previewCampaign(b.dataset.mkPreview)));
+    mkEl('mkList').querySelectorAll('[data-mk-copy]').forEach(b => b.addEventListener('click', async () => {
+      try { const c = await API.post(`/api/admin/campaigns/${b.dataset.mkCopy}/copy`, {}); await loadMarketing(); openMkEditor(c); showAlert(mkAlert, 'Copied — edit it and send when ready.', 'success'); }
+      catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    }));
+    mkEl('mkList').querySelectorAll('[data-mk-del]').forEach(b => b.addEventListener('click', async () => {
+      const c = MK.list.find(x => x.id === b.dataset.mkDel);
+      if (!confirm(`Delete “${c.subject}”?${c.status === 'sent' ? ' (Emails already sent stay in people’s inboxes, but the image in them will stop showing.)' : ''}`)) return;
+      try { await API.del(`/api/admin/campaigns/${c.id}`); loadMarketing(); } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    }));
+  }
+
+  const mkSendLabel = () => MK.audience === 1 ? 'Send to 1 patient' : `Send to all ${MK.audience} patients`;
+  function waLink(text) { return `https://wa.me/${MK.whatsapp}${text ? '?text=' + encodeURIComponent(text) : ''}`; }
+  function mkShowLinkFields() {
+    const t = mkEl('mkLinkType').value;
+    mkEl('mkWebsiteWrap').style.display = t === 'website' ? '' : 'none';
+    mkEl('mkWhatsappWrap').style.display = t === 'whatsapp' ? '' : 'none';
+    mkEl('mkOtherWrap').style.display = t === 'other' ? '' : 'none';
+    mkEl('mkWhatsappHint').textContent = MK.whatsapp ? `Opens a WhatsApp chat with +${MK.whatsapp} (from Site Settings).` : 'Set the clinic WhatsApp number in Site Settings first.';
+    if (t !== 'none' && !mkEl('mkBtnText').value) mkEl('mkBtnText').value = t === 'whatsapp' ? 'Chat on WhatsApp' : 'Book now';
+  }
+  mkEl('mkLinkType').addEventListener('change', mkShowLinkFields);
+
+  function openMkEditor(c) {
+    MK.current = c || null; MK.image = undefined; MK.imageUrl = c ? c.imageUrl : '';
+    hideAlert(mkAlert);
+    mkEl('mkEditorTitle').textContent = c ? 'Edit promotion' : 'New promotion';
+    mkEl('mkSubject').value = c ? c.subject : '';
+    mkEl('mkHeadline').value = c ? c.headline : '';
+    mkEl('mkBody').value = c ? c.body : '';
+    mkEl('mkBtnText').value = c ? c.buttonText : '';
+    mkEl('mkImage').value = '';
+    mkEl('mkTestEmail').value = mkEl('mkTestEmail').value || (ME && ME.email) || '';
+    // Work out what the saved link points to.
+    const url = c ? c.buttonUrl : '';
+    let type = 'none';
+    mkEl('mkWhatsappText').value = ''; mkEl('mkOtherUrl').value = ''; mkEl('mkWebsitePage').value = '/book.html';
+    if (url) {
+      if (/^https:\/\/wa\.me\//.test(url)) { type = 'whatsapp'; try { mkEl('mkWhatsappText').value = new URL(url).searchParams.get('text') || ''; } catch (e) {} }
+      else {
+        let path = null;
+        try { const u = new URL(url); if (u.origin === location.origin) path = u.pathname + u.search; } catch (e) {}
+        if (path !== null && [...mkEl('mkWebsitePage').options].some(o => o.value === path)) { type = 'website'; mkEl('mkWebsitePage').value = path; }
+        else { type = 'other'; mkEl('mkOtherUrl').value = url; }
+      }
+    }
+    mkEl('mkLinkType').value = type;
+    mkShowLinkFields();
+    mkShowImage();
+    mkEl('mkListWrap').style.display = 'none';
+    mkEl('mkEditor').style.display = 'block';
+    mkEl('mkSubject').focus();
+  }
+  function closeMkEditor() { mkEl('mkEditor').style.display = 'none'; mkEl('mkListWrap').style.display = ''; loadMarketing(); }
+  mkEl('mkNewBtn').addEventListener('click', () => openMkEditor(null));
+  mkEl('mkBack').addEventListener('click', closeMkEditor);
+
+  function mkShowImage() {
+    const src = typeof MK.image === 'string' && MK.image ? MK.image : (MK.image === undefined ? MK.imageUrl : '');
+    mkEl('mkImagePreview').style.display = src ? 'block' : 'none';
+    if (src) mkEl('mkImageImg').src = src;
+  }
+  mkEl('mkImage').addEventListener('change', async () => {
+    const f = mkEl('mkImage').files[0];
+    if (!f) return;
+    if (f.size > 1.5 * 1024 * 1024) { mkEl('mkImage').value = ''; return showAlert(mkAlert, 'That image is larger than 1.5 MB. Please use a smaller one.', 'error'); }
+    try { MK.image = await readFileAsDataUrl(f); mkShowImage(); } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  });
+  mkEl('mkImageRemove').addEventListener('click', () => { MK.image = null; mkEl('mkImage').value = ''; mkShowImage(); });
+
+  function mkButtonUrl() {
+    const t = mkEl('mkLinkType').value;
+    if (t === 'website') return location.origin + mkEl('mkWebsitePage').value;
+    if (t === 'whatsapp') { if (!MK.whatsapp) throw new Error('Add the clinic WhatsApp number in Site Settings first.'); return waLink(mkEl('mkWhatsappText').value.trim()); }
+    if (t === 'other') { const u = mkEl('mkOtherUrl').value.trim(); if (!/^https?:\/\//i.test(u)) throw new Error('Please enter the full link, starting with https://'); return u; }
+    return '';
+  }
+  // Save (create or update). Returns the saved campaign.
+  async function saveMk() {
+    const url = mkButtonUrl();
+    const body = {
+      subject: mkEl('mkSubject').value, headline: mkEl('mkHeadline').value, body: mkEl('mkBody').value,
+      buttonText: url ? (mkEl('mkBtnText').value.trim() || 'Learn more') : '', buttonUrl: url
+    };
+    if (!body.subject.trim()) throw new Error('Please enter an email subject.');
+    if (MK.image !== undefined) body.image = MK.image;
+    const c = MK.current ? await API.patch(`/api/admin/campaigns/${MK.current.id}`, body) : await API.post('/api/admin/campaigns', body);
+    MK.current = c; MK.image = undefined; MK.imageUrl = c.imageUrl;
+    mkEl('mkEditorTitle').textContent = 'Edit promotion';
+    return c;
+  }
+  mkEl('mkForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try { await saveMk(); showAlert(mkAlert, 'Draft saved.', 'success'); } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  });
+
+  async function previewCampaign(id) {
+    try {
+      const { html } = await API.get(`/api/admin/campaigns/${id}/preview`);
+      const c = MK.current && MK.current.id === id ? MK.current : MK.list.find(x => x.id === id);
+      mkEl('mkPreviewSubject').textContent = 'Subject: ' + (c ? c.subject : '');
+      mkEl('mkPreviewFrame').srcdoc = html;
+      mkEl('mkPreviewModal').style.display = 'block';
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  }
+  mkEl('mkPreviewBtn').addEventListener('click', async () => {
+    try { const c = await saveMk(); previewCampaign(c.id); } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+  });
+  mkEl('mkPreviewClose').addEventListener('click', () => { mkEl('mkPreviewModal').style.display = 'none'; });
+  mkEl('mkPreviewModal').addEventListener('click', e => { if (e.target.id === 'mkPreviewModal') mkEl('mkPreviewModal').style.display = 'none'; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') mkEl('mkPreviewModal').style.display = 'none'; });
+
+  mkEl('mkTestBtn').addEventListener('click', async () => {
+    const btn = mkEl('mkTestBtn');
+    hideAlert(mkAlert);
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const c = await saveMk();
+      const r = await API.post(`/api/admin/campaigns/${c.id}/test`, { email: mkEl('mkTestEmail').value });
+      showAlert(mkAlert, `Test sent to ${r.email}. Check the inbox (and spam folder) and click the button to check the link.`, 'success');
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    btn.disabled = false; btn.textContent = 'Send test';
+  });
+
+  mkEl('mkSendBtn').addEventListener('click', async () => {
+    const btn = mkEl('mkSendBtn');
+    hideAlert(mkAlert);
+    try {
+      const c = await saveMk();
+      if (!MK.audience) return showAlert(mkAlert, 'There are no patients with an email address to send to yet.', 'error');
+      if (!confirm(`Send “${c.subject}” to ${MK.audience} patient${MK.audience === 1 ? '' : 's'} now?\n\nThis can't be undone. Tip: send yourself a test first.`)) return;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sending…';
+      const r = await API.post(`/api/admin/campaigns/${c.id}/send`, {});
+      closeMkEditor();
+      showAlert(mkAlert, `Sent to ${r.sentCount} patient${r.sentCount === 1 ? '' : 's'}.` + (r.failedCount ? ` ${r.failedCount} could not be sent: ${r.error}` : ''), r.failedCount ? 'error' : 'success');
+    } catch (err) { showAlert(mkAlert, err.message, 'error'); }
+    btn.disabled = false; btn.textContent = mkSendLabel();
+  });
 </script>
 </body>
 </html>

@@ -444,3 +444,14 @@ a.profile-link:hover h3, a.profile-link:focus-visible h3 { color: var(--blue); }
   .dept-side { position: static; }
   .dept-hero, .dept-hero.has-banner { padding: 3rem 0 2.4rem; }
 }
+
+/* Admin: promotion results */
+.mr-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; }
+.mr-stat { background: var(--paper); border-radius: 12px; padding: 0.8rem 0.9rem; }
+.mr-num { font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
+.mr-label { font-size: 0.8rem; color: var(--ink-soft); }
+@media (max-width: 560px) { .mr-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Doctor location line on public cards */
+.doctor-location { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; color: var(--ink-soft); margin-top: 0.35rem; }
+.doctor-location svg { flex: 0 0 auto; color: var(--teal-deep); }

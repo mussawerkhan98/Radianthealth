@@ -34,6 +34,7 @@
       <div>
         <div id="tab-depts">
           <h2>Departments</h2>
+          <p>Click <strong>Edit page</strong> to fill in a department’s public page — banner, about, services, conditions, opening hours and FAQs.</p>
           <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;">
             <h4>Add a Department</h4>
             <div id="deptAlert" class="alert"></div>
@@ -717,6 +718,45 @@
     </form>
   </div>
 </div>
+
+<!-- Department page editor -->
+<div id="dpModal" class="pf-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="dpTitle">
+  <div class="pf-panel card">
+    <div class="pf-head">
+      <div><h3 id="dpTitle" style="margin:0;">Department page</h3><p style="margin:0; font-size:0.85rem; color:var(--ink-soft);">Everything here shows on the public department page. Empty sections are hidden.</p></div>
+      <div style="display:flex; gap:0.5rem;">
+        <a id="dpView" class="btn btn-outline" target="_blank" rel="noopener" style="padding:0.35rem 0.8rem; font-size:0.8rem;">View page</a>
+        <button type="button" class="btn btn-outline" id="dpClose" style="padding:0.35rem 0.8rem; font-size:0.8rem;">Close</button>
+      </div>
+    </div>
+    <div id="dpAlert" class="alert"></div>
+    <form id="dpForm">
+      <div class="form-row">
+        <div class="form-group"><label for="dpName">Department name</label><input type="text" id="dpName" required maxlength="120"></div>
+        <div class="form-group"><label for="dpDesc">Short description <span style="font-weight:400; color:var(--ink-soft);">(on the departments list)</span></label><input type="text" id="dpDesc" maxlength="300"></div>
+      </div>
+      <div class="form-group"><label for="dpTagline">Headline <span style="font-weight:400; color:var(--ink-soft);">(under the name at the top of the page)</span></label><input type="text" id="dpTagline" maxlength="200" placeholder="e.g. Expert heart care, from prevention to treatment"></div>
+      <div class="form-group">
+        <label for="dpBanner">Banner image <span style="font-weight:400; color:var(--ink-soft);">(wide photo, about 1600 × 600 — JPG, PNG or WEBP, up to 1.5 MB)</span></label>
+        <input type="file" id="dpBanner" accept="image/jpeg,image/png,image/webp">
+        <div id="dpBannerPreview" style="display:none; margin-top:0.6rem;">
+          <img id="dpBannerImg" alt="" style="width:100%; max-height:180px; object-fit:cover; border-radius:10px; display:block;">
+          <button type="button" class="btn btn-danger" id="dpBannerRemove" style="margin-top:0.5rem; padding:0.25rem 0.7rem; font-size:0.78rem;">Remove banner</button>
+        </div>
+      </div>
+      <div class="form-group"><label for="dpAbout">About the department <span style="font-weight:400; color:var(--ink-soft);">(leave an empty line between paragraphs)</span></label><textarea id="dpAbout" rows="5" maxlength="6000"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label for="dpServices">Services &amp; treatments <span style="font-weight:400; color:var(--ink-soft);">(one per line)</span></label><textarea id="dpServices" rows="6" maxlength="4000" placeholder="ECG &amp; stress testing&#10;Echocardiography&#10;Blood pressure management"></textarea></div>
+        <div class="form-group"><label for="dpConditions">Conditions we treat <span style="font-weight:400; color:var(--ink-soft);">(one per line)</span></label><textarea id="dpConditions" rows="6" maxlength="4000" placeholder="Hypertension&#10;Chest pain&#10;Palpitations"></textarea></div>
+      </div>
+      <div class="form-group"><label for="dpHours">Opening hours <span style="font-weight:400; color:var(--ink-soft);">(one line each)</span></label><textarea id="dpHours" rows="3" maxlength="1000" placeholder="Mon–Fri: 9:00 AM – 5:00 PM&#10;Saturday: 10:00 AM – 2:00 PM&#10;Sunday: Closed"></textarea></div>
+      <h4 style="margin:1.4rem 0 0.5rem;">FAQs</h4>
+      <div id="dpFaqs"></div>
+      <button type="button" class="btn btn-outline" id="dpAddFaq" style="padding:0.35rem 0.8rem; font-size:0.8rem; margin-bottom:1.2rem;">+ Add a question</button>
+      <div><button type="submit" class="btn btn-primary">Save page</button></div>
+    </form>
+  </div>
+</div>
 <footer class="site-footer" id="site-footer"></footer>
 
 <script src="js/app.js"></script>
@@ -770,9 +810,11 @@
     departments = await API.get('/api/departments');
     document.getElementById('deptList').innerHTML = departments.map(d => `
       <div class="list-item">
-        <div><strong>${d.name}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${d.description}</span></div>
-        <div style="display:flex; align-items:center; gap:0.7rem;">
+        <div><strong>${escAttr(d.name)}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${escAttr(d.tagline || d.description)}</span></div>
+        <div style="display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap;">
           <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
+          <button class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-edit-dept="${d.id}">Edit page</button>
+          <a class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;" href="department.html?id=${encodeURIComponent(d.id)}" target="_blank" rel="noopener">View</a>
           <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-delete-dept="${d.id}">Delete</button>
         </div>
       </div>
@@ -780,6 +822,7 @@
     const select = document.getElementById('docDept');
     select.innerHTML = departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
 
+    document.querySelectorAll('[data-edit-dept]').forEach(btn => btn.addEventListener('click', () => openDeptEditor(btn.dataset.editDept)));
     document.querySelectorAll('[data-delete-dept]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this department? This cannot be undone.')) return;
@@ -2396,6 +2439,71 @@
       const r = await API.patch('/api/admin/doctor-rules', { searchAllPatients: e.target.checked });
       showAlert(alertEl, r.searchAllPatients ? 'Saved — doctors can now search all patients.' : 'Saved — doctors can only search their own patients.', 'success');
     } catch (err) { e.target.checked = !e.target.checked; showAlert(alertEl, err.message, 'error'); }
+  });
+</script>
+<script>
+  // ---------- Department page editor ----------
+  const DP = { id: '', banner: undefined, bannerUrl: '' };
+  const dpEl = id => document.getElementById(id);
+  function faqRow(f) {
+    const row = document.createElement('div');
+    row.className = 'card dp-faq';
+    row.style.cssText = 'padding:0.8rem 0.9rem; box-shadow:none; border:1px solid var(--line, #e3e8ea); margin-bottom:0.6rem;';
+    row.innerHTML = `<div class="form-group" style="margin-bottom:0.5rem;"><label>Question</label><input type="text" class="dp-q" maxlength="300"></div>
+      <div class="form-group" style="margin-bottom:0.5rem;"><label>Answer</label><textarea class="dp-a" rows="2" maxlength="2000"></textarea></div>
+      <button type="button" class="btn btn-danger dp-del" style="padding:0.2rem 0.6rem; font-size:0.75rem;">Remove</button>`;
+    row.querySelector('.dp-q').value = (f && f.q) || '';
+    row.querySelector('.dp-a').value = (f && f.a) || '';
+    row.querySelector('.dp-del').addEventListener('click', () => row.remove());
+    dpEl('dpFaqs').appendChild(row);
+    return row;
+  }
+  dpEl('dpAddFaq').addEventListener('click', () => faqRow().querySelector('.dp-q').focus());
+  function dpShowBanner() {
+    const src = DP.banner ? DP.banner : (DP.banner === null ? '' : DP.bannerUrl);
+    dpEl('dpBannerPreview').style.display = src ? 'block' : 'none';
+    if (src) dpEl('dpBannerImg').src = src;
+  }
+  async function openDeptEditor(id) {
+    DP.id = id; DP.banner = undefined;
+    hideAlert(dpEl('dpAlert'));
+    dpEl('dpModal').style.display = 'block'; document.body.style.overflow = 'hidden';
+    try {
+      const d = await API.get('/api/admin/departments/' + encodeURIComponent(id));
+      DP.bannerUrl = d.bannerUrl;
+      dpEl('dpTitle').textContent = d.name + ' — page';
+      dpEl('dpView').href = 'department.html?id=' + encodeURIComponent(id);
+      dpEl('dpName').value = d.name; dpEl('dpDesc').value = d.description; dpEl('dpTagline').value = d.tagline;
+      dpEl('dpAbout').value = d.about; dpEl('dpServices').value = d.services; dpEl('dpConditions').value = d.conditions; dpEl('dpHours').value = d.hours;
+      dpEl('dpBanner').value = '';
+      dpEl('dpFaqs').innerHTML = ''; d.faqs.forEach(faqRow);
+      dpShowBanner();
+      dpEl('dpModal').querySelector('.pf-panel').scrollTop = 0;
+    } catch (err) { showAlert(dpEl('dpAlert'), err.message, 'error'); }
+  }
+  function closeDeptEditor() { dpEl('dpModal').style.display = 'none'; document.body.style.overflow = ''; loadDepartments(); }
+  dpEl('dpClose').addEventListener('click', closeDeptEditor);
+  dpEl('dpModal').addEventListener('click', e => { if (e.target.id === 'dpModal') closeDeptEditor(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && dpEl('dpModal').style.display === 'block') closeDeptEditor(); });
+  dpEl('dpBanner').addEventListener('change', async () => {
+    const f = dpEl('dpBanner').files[0]; if (!f) return;
+    if (f.size > 1.5 * 1024 * 1024) { dpEl('dpBanner').value = ''; return showAlert(dpEl('dpAlert'), 'That image is larger than 1.5 MB. Please use a smaller one.', 'error'); }
+    DP.banner = await readFileAsDataUrl(f); dpShowBanner();
+  });
+  dpEl('dpBannerRemove').addEventListener('click', () => { DP.banner = null; dpEl('dpBanner').value = ''; dpShowBanner(); });
+  dpEl('dpForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); hideAlert(dpEl('dpAlert'));
+    const faqs = [...dpEl('dpFaqs').querySelectorAll('.dp-faq')].map(r => ({ q: r.querySelector('.dp-q').value.trim(), a: r.querySelector('.dp-a').value.trim() })).filter(f => f.q || f.a);
+    const body = { name: dpEl('dpName').value, description: dpEl('dpDesc').value, tagline: dpEl('dpTagline').value, about: dpEl('dpAbout').value,
+      services: dpEl('dpServices').value, conditions: dpEl('dpConditions').value, hours: dpEl('dpHours').value, faqs };
+    if (DP.banner !== undefined) body.banner = DP.banner;
+    try {
+      const d = await API.patch('/api/admin/departments/' + encodeURIComponent(DP.id), body);
+      DP.banner = undefined; DP.bannerUrl = d.bannerUrl; dpEl('dpBanner').value = '';
+      dpEl('dpTitle').textContent = d.name + ' — page';
+      showAlert(dpEl('dpAlert'), 'Saved — the department page is updated.', 'success');
+    } catch (err) { showAlert(dpEl('dpAlert'), err.message, 'error'); }
+    dpEl('dpModal').querySelector('.pf-panel').scrollTop = 0;
   });
 </script>
 </body>

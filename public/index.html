@@ -79,7 +79,7 @@
       const depts = await API.get('/api/departments');
       const grid = document.getElementById('deptGrid');
       grid.innerHTML = depts.slice(0, 8).map(d => `
-        <a class="card dept-card" href="doctors.html?department=${d.id}" style="text-decoration:none; color:inherit;">
+        <a class="card dept-card" href="department.html?id=${d.id}" style="text-decoration:none; color:inherit;">
           <div class="icon-badge">+</div>
           <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">${d.name}</h3>
           <p style="font-size:0.88rem; margin:0;">${d.description}</p>

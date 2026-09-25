@@ -296,6 +296,12 @@
         return;
       }
     }
+    const preselectDept = params.get('department') || '';
+    if (preselectDept && departments.some(d => d.id === preselectDept)) {
+      deptSelect.value = preselectDept;
+      await loadDoctorsForDept(preselectDept, false);
+      return;
+    }
     await loadDoctorsForDept('', false);
   })();
 </script>

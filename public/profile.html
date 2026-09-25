@@ -76,7 +76,7 @@
         ${avatarHtml(p, 'profile-avatar')}
         <div class="profile-head-text">
           <h1>${esc(p.name)}</h1>
-          <p class="profile-title">${esc(p.title)}${p.department ? ` · <a href="doctors.html?department=${encodeURIComponent(p.department.id)}">${esc(p.department.name)}</a>` : ''}</p>
+          <p class="profile-title">${esc(p.title)}${p.department ? ` · <a href="department.html?id=${encodeURIComponent(p.department.id)}">${esc(p.department.name)}</a>` : ''}</p>
           ${p.bio ? `<p class="profile-bio">${esc(p.bio)}</p>` : ''}
           ${facts ? `<div class="profile-facts">${facts}</div>` : ''}
           ${hours}

@@ -32,6 +32,7 @@
 
 <script src="js/app.js"></script>
 <script>
+  const escD = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   (async function () {
     try {
       const depts = await API.get('/api/departments');
@@ -41,11 +42,12 @@
         return;
       }
       grid.innerHTML = depts.map(d => `
-        <a class="card dept-card" href="doctors.html?department=${d.id}" style="text-decoration:none; color:inherit;">
+        <a class="card dept-card" href="department.html?id=${encodeURIComponent(d.id)}" style="text-decoration:none; color:inherit;">
           <div class="icon-badge">+</div>
-          <h3 style="margin-bottom:0.3rem;">${d.name}</h3>
-          <p style="margin-bottom:0.8rem;">${d.description}</p>
+          <h3 style="margin-bottom:0.3rem;">${escD(d.name)}</h3>
+          <p style="margin-bottom:0.8rem;">${escD(d.tagline || d.description)}</p>
           <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
+          <span class="profile-link-cta" style="display:block;">Learn more &rarr;</span>
         </a>
       `).join('');
     } catch (e) {

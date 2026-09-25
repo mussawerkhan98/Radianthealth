@@ -78,6 +78,9 @@ model Patient {
   gender       String          @default("")
   passwordHash String
   isGuest      Boolean         @default(false) // booked without creating an account
+  // Promotion emails: sent to everyone with a real email unless they unsubscribe.
+  marketingOptOut Boolean      @default(false)
+  marketingKey    String       @default("") // secret for the unsubscribe link (made on first send)
   createdAt    DateTime        @default(now())
   appointments Appointment[]
   records      MedicalRecord[]
@@ -179,4 +182,24 @@ model Role {
   permissions String   @default("") // comma-separated permission keys
   builtIn     Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+// Promotion emails (Admin → Marketing). Sent to every patient with a real
+// email who hasn't unsubscribed. The image is public (emails load it).
+model Campaign {
+  id          String    @id
+  subject     String
+  headline    String    @default("")
+  body        String    @default("")
+  buttonText  String    @default("")
+  buttonUrl   String    @default("")
+  imageData   Bytes?
+  imageMime   String    @default("")
+  status      String    @default("draft") // draft | sending | sent
+  sentAt      DateTime?
+  sentCount   Int       @default(0)
+  failedCount Int       @default(0)
+  createdById String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

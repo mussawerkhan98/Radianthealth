@@ -4,9 +4,20 @@
   "buildCommand": "npm run build",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    }
   ],
   "functions": {
-    "api/index.js": { "maxDuration": 30 }
-  }
+    "api/index.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/marketing",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }

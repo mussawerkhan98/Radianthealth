@@ -34,6 +34,7 @@
         <li>Works in Chrome, Safari, Edge or Firefox, on phone or computer — no app needed.</li>
         <li>Allow <strong>camera</strong> and <strong>microphone</strong> when your browser asks.</li>
         <li>Find a quiet, private place with good internet (Wi-Fi if possible).</li>
+        <li id="vcHostTip" style="display:none;"></li>
         <li>This link is personal — please don't share it.</li>
       </ul>
     </div>
@@ -81,6 +82,13 @@
     const who = info.role === 'doctor' ? `with ${esc(info.patientFirstName)}` : `with ${esc(info.doctorName)}`;
     document.getElementById('vcTitle').textContent = info.role === 'doctor' ? 'Video Appointment (Doctor)' : 'Your Video Appointment';
     document.getElementById('vcTips').style.display = info.status === 'early' || info.status === 'open' ? 'block' : 'none';
+    const hostTip = document.getElementById('vcHostTip');
+    if (info.provider === 'jitsi') {
+      hostTip.style.display = '';
+      hostTip.innerHTML = info.role === 'doctor'
+        ? 'You start the call: if it says <strong>“waiting for the host”</strong>, click <strong>“I am the host”</strong> and sign in with Google (first time only). The patient joins automatically.'
+        : 'If you see <strong>“waiting for the host”</strong>, just keep the page open — your doctor will start the call and you will be let in automatically.';
+    }
     const when = `<p class="vc-when">${whenText(info.startsAt)} · ${who}</p>`;
     if (info.status === 'cancelled') {
       body.innerHTML = when + '<p>This appointment was <strong>cancelled</strong>. Please book a new time or contact the clinic.</p><a class="btn btn-amber" href="book.html">Book again</a>';

@@ -1068,7 +1068,7 @@
     document.getElementById('dmVideo').checked = !!d.offersVideo;
     document.getElementById('dmVideoHint').textContent = SITE.videoEnabled
       ? 'Patients can choose "Video call" when booking with this doctor.'
-      : 'Video calls are not switched on yet (the DAILY_API_KEY setting is missing in Vercel), so patients won\'t see this option until it is.';
+      : 'Video calls are switched off for the whole site (VIDEO_ENABLED=false in Vercel), so patients won\'t see this option.';
     document.getElementById('dmEnd').value = d.workingHours.end;
     const slotSel = document.getElementById('dmSlot');
     if (![...slotSel.options].some(o => Number(o.value) === d.workingHours.slotMinutes)) {

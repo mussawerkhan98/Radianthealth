@@ -8,7 +8,7 @@
 // original ids (e.g. "dept_yau0aaot"). New records get prefixed random ids.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
   // "native" = your machine / VPS, "rhel-openssl-3.0.x" = Vercel.
   binaryTargets   = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
@@ -39,7 +39,7 @@ model Doctor {
   department         Department      @relation(fields: [departmentId], references: [id])
   specialty          String          @default("")
   bio                String          @default("")
-  photo              String?         // base64 data URL (kept for compatibility with the current frontend)
+  photo              String? // base64 data URL (kept for compatibility with the current frontend)
   email              String          @unique
   passwordHash       String
   mustChangePassword Boolean         @default(true)
@@ -47,8 +47,15 @@ model Doctor {
   workEnd            String          @default("17:00")
   slotMinutes        Int             @default(30)
   workingDays        String          @default("1,2,3,4,5") // comma-separated, 0 = Sunday
-  active             Boolean         @default(true)           // "deleted" doctors are deactivated so history is kept
-  offersVideo        Boolean         @default(false)          // can be booked for video appointments
+  active             Boolean         @default(true) // "deleted" doctors are deactivated so history is kept
+  offersVideo        Boolean         @default(false) // can be booked for video appointments
+  // Public profile (Admin → profile editor; shown on profile.html)
+  about              String          @default("") // longer "about me"
+  qualifications     String          @default("") // one per line, e.g. "MBBS — University of X (2010)"
+  education          String          @default("") // training / fellowships, one per line
+  expertise          String          @default("") // comma-separated areas of focus
+  languages          String          @default("") // comma-separated
+  experienceYears    Int             @default(0)
   createdAt          DateTime        @default(now())
   appointments       Appointment[]
   records            MedicalRecord[]
@@ -67,45 +74,45 @@ model Staff {
 }
 
 model Patient {
-  id           String          @id
-  name         String
-  email        String          @unique
-  phone        String          @default("")
+  id              String          @id
+  name            String
+  email           String          @unique
+  phone           String          @default("")
   // Patient ID: the phone number in one standard form (digits incl. country
   // code, e.g. 971501234567). Unique, so one phone = one patient.
-  phoneKey     String?         @unique
-  dob          String          @default("")
-  gender       String          @default("")
-  passwordHash String
-  isGuest      Boolean         @default(false) // booked without creating an account
+  phoneKey        String?         @unique
+  dob             String          @default("")
+  gender          String          @default("")
+  passwordHash    String
+  isGuest         Boolean         @default(false) // booked without creating an account
   // Promotion emails: sent to everyone with a real email unless they unsubscribe.
-  marketingOptOut Boolean      @default(false)
-  marketingKey    String       @default("") // secret for the unsubscribe link (made on first send)
-  country         String       @default("") // for marketing groups; blank = guessed from phone
-  region          String       @default("") // e.g. emirate / city
-  createdAt    DateTime        @default(now())
-  appointments Appointment[]
-  records      MedicalRecord[]
+  marketingOptOut Boolean         @default(false)
+  marketingKey    String          @default("") // secret for the unsubscribe link (made on first send)
+  country         String          @default("") // for marketing groups; blank = guessed from phone
+  region          String          @default("") // e.g. emirate / city
+  createdAt       DateTime        @default(now())
+  appointments    Appointment[]
+  records         MedicalRecord[]
 }
 
 model Appointment {
-  id        String   @id
-  patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
-  doctorId  String
-  doctor    Doctor   @relation(fields: [doctorId], references: [id])
-  date      String   // YYYY-MM-DD (clinic local date)
-  time      String   // HH:MM
-  reason    String   @default("")
-  status    String   @default("confirmed") // "confirmed" | "cancelled"
-  visitType String   @default("in_person") // "in_person" | "video"
+  id              String   @id
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  doctorId        String
+  doctor          Doctor   @relation(fields: [doctorId], references: [id])
+  date            String // YYYY-MM-DD (clinic local date)
+  time            String // HH:MM
+  reason          String   @default("")
+  status          String   @default("confirmed") // "confirmed" | "cancelled"
+  visitType       String   @default("in_person") // "in_person" | "video"
   // Video visits: secret keys in the patient's and doctor's join links, and
   // the Daily.co room (created the first time someone joins).
-  videoPatientKey String @default("")
-  videoDoctorKey  String @default("")
-  videoRoom       String @default("")
-  videoRoomUrl    String @default("")
-  createdAt DateTime @default(now())
+  videoPatientKey String   @default("")
+  videoDoctorKey  String   @default("")
+  videoRoom       String   @default("")
+  videoRoomUrl    String   @default("")
+  createdAt       DateTime @default(now())
 
   // A partial unique index (one active booking per doctor/date/time) is
   // added in the SQL migration — Prisma can't express partial indexes.
@@ -114,20 +121,20 @@ model Appointment {
 }
 
 model MedicalRecord {
-  id           String   @id
-  patientId    String
-  patient      Patient  @relation(fields: [patientId], references: [id])
-  doctorId     String
-  doctor       Doctor   @relation(fields: [doctorId], references: [id])
-  date         String   // YYYY-MM-DD
-  diagnosis    String   @default("")
-  notes        String
-  prescription String   @default("")
+  id            String       @id
+  patientId     String
+  patient       Patient      @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Doctor       @relation(fields: [doctorId], references: [id])
+  date          String // YYYY-MM-DD
+  diagnosis     String       @default("")
+  notes         String
+  prescription  String       @default("")
   // Who typed it in, when that isn't the doctor (e.g. admin entering a report).
-  enteredById   String  @default("")
-  enteredByName String  @default("")
-  createdAt    DateTime @default(now())
-  files        RecordFile[]
+  enteredById   String       @default("")
+  enteredByName String       @default("")
+  createdAt     DateTime     @default(now())
+  files         RecordFile[]
 
   @@index([patientId])
 }
@@ -140,7 +147,7 @@ model RecordFile {
   recordId     String
   record       MedicalRecord @relation(fields: [recordId], references: [id])
   patientId    String
-  uploadedById String        // doctor id
+  uploadedById String // doctor id
   filename     String
   mimeType     String
   size         Int
@@ -160,13 +167,20 @@ model ContactMessage {
 }
 
 model TeamMember {
-  id        String   @id
-  name      String
-  role      String
-  bio       String   @default("")
-  photo     String?
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
+  id              String   @id
+  name            String
+  role            String
+  bio             String   @default("")
+  photo           String?
+  sortOrder       Int      @default(0)
+  // Public profile (Admin → profile editor; shown on profile.html)
+  about           String   @default("") // longer "about me"
+  qualifications  String   @default("") // one per line, e.g. "MBBS — University of X (2010)"
+  education       String   @default("") // training / fellowships, one per line
+  expertise       String   @default("") // comma-separated areas of focus
+  languages       String   @default("") // comma-separated
+  experienceYears Int      @default(0)
+  createdAt       DateTime @default(now())
 }
 
 // Key/value site settings (contact info, notification emails, SMTP).
@@ -222,4 +236,23 @@ model MarketingContact {
   source    String   @default("manual") // manual | import
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Certificates / licences shown on a doctor's or team member's public profile.
+// Public files (anyone viewing the profile can open them).
+model ProfileCertificate {
+  id        String   @id
+  ownerType String // "doctor" | "team"
+  ownerId   String
+  title     String
+  issuer    String   @default("")
+  year      String   @default("")
+  filename  String   @default("")
+  mimeType  String   @default("")
+  size      Int      @default(0)
+  data      Bytes?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([ownerType, ownerId])
 }

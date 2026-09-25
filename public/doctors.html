@@ -68,8 +68,10 @@
             <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
             <div class="doctor-specialty">${d.specialty}</div>
             <p style="font-size:0.85rem; margin:0.6rem 0 0.9rem;">${dept ? dept.name : ''}</p>
-            <span class="badge" style="margin-bottom:0.8rem; display:inline-block;">${d.consultationFee > 0 ? 'AED ' + d.consultationFee : 'Free consultation'}</span><br>
-            <a href="book.html?doctor=${d.id}" class="btn btn-primary" style="padding:0.55rem 1.1rem; font-size:0.85rem;">Book Appointment</a>
+            <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
+              <a href="profile.html?doctor=${d.id}" class="btn btn-outline" style="padding:0.55rem 1.1rem; font-size:0.85rem;">View Profile</a>
+              <a href="book.html?doctor=${d.id}" class="btn btn-primary" style="padding:0.55rem 1.1rem; font-size:0.85rem;">Book Appointment</a>
+            </div>
           </div>
         `;
       }).join('');

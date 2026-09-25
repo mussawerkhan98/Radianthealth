@@ -31,6 +31,11 @@
 
         <div id="tab-patients" style="display:none;">
           <h2>My Patients</h2>
+          <div class="form-group" style="max-width:460px; margin-bottom:0.4rem;">
+            <label for="patientSearch" id="patientSearchLabel">Search your patients</label>
+            <input type="search" id="patientSearch" placeholder="Name, mobile / Patient ID or email" autocomplete="off">
+          </div>
+          <p id="patientSearchHint" style="font-size:0.82rem; color:var(--ink-soft); margin:0 0 0.9rem;"></p>
           <div id="patientsList"><div class="empty-state">Loading…</div></div>
 
           <div id="patientDetail" style="display:none; margin-top:2rem;">
@@ -122,25 +127,54 @@
     }
   }
 
+  // Search: filters my patients here; if the clinic lets doctors search all
+  // patients, the server searches everyone instead.
+  let myPatients = [], searchAll = false, searchTimer = null;
   async function loadPatients() {
     try {
-      const patients = await API.get('/api/doctors/me/patients');
+      const res = await fetch('/api/doctors/me/patients', { headers: { Authorization: 'Bearer ' + API.token() } });
+      if (!res.ok) throw new Error();
+      searchAll = res.headers.get('X-Search-All') === '1';
+      myPatients = await res.json();
+      document.getElementById('patientSearchLabel').textContent = searchAll ? 'Search all clinic patients' : 'Search your patients';
+      document.getElementById('patientSearchHint').textContent = searchAll
+        ? 'Your own patients are listed below. Type to search every patient in the clinic.'
+        : 'Patients who have booked with you.';
+      renderPatients(filterMine(document.getElementById('patientSearch').value));
+    } catch (e) {
+      document.getElementById('patientsList').innerHTML = '<div class="empty-state">Could not load patients.</div>';
+    }
+  }
+  function filterMine(q) {
+    q = String(q || '').trim().toLowerCase();
+    if (!q) return myPatients;
+    const digits = q.replace(/\D/g, '').replace(/^0+/, '');
+    return myPatients.filter(p => [p.name, p.email].some(v => String(v || '').toLowerCase().includes(q)) ||
+      (digits.length >= 3 && String(p.patientId || '').replace(/\D/g, '').includes(digits)));
+  }
+  document.getElementById('patientSearch').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = document.getElementById('patientSearch').value.trim();
+    if (!searchAll || q.length < 2) { renderPatients(filterMine(q), q); return; }
+    searchTimer = setTimeout(async () => {
+      try { renderPatients(await API.get('/api/doctors/me/patients?q=' + encodeURIComponent(q)), q); }
+      catch (err) { document.getElementById('patientsList').innerHTML = `<div class="empty-state">${escHtml(err.message)}</div>`; }
+    }, 300);
+  });
+  function renderPatients(patients, q) {
       const el = document.getElementById('patientsList');
       el.innerHTML = patients.length
         ? patients.map(p => `
             <div class="list-item" style="cursor:pointer;" data-patient="${p.id}" data-name="${escHtml(p.name)}" data-meta="${escHtml([p.patientId ? 'Patient ID ' + p.patientId : '', p.email].filter(Boolean).join(' · '))}">
-              <div><strong>${escHtml(p.name)}</strong>${p.patientId ? ` <span class="badge">ID ${escHtml(p.patientId)}</span>` : ''}<br><span style="color:var(--ink-soft); font-size:0.85rem;">${escHtml([p.phone, p.email].filter(Boolean).join(' · '))}</span></div>
+              <div><strong>${escHtml(p.name)}</strong>${p.patientId ? ` <span class="badge">ID ${escHtml(p.patientId)}</span>` : ''}${p.mine === false ? ' <span class="badge" title="Has not booked with you">other doctor</span>' : ''}<br><span style="color:var(--ink-soft); font-size:0.85rem;">${escHtml([p.phone, p.email].filter(Boolean).join(' · '))}</span></div>
               <span class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;">View History</span>
             </div>
           `).join('')
-        : '<div class="empty-state">No patients yet — once someone books with you, they will appear here.</div>';
+        : (q ? '<div class="empty-state">No patients match your search.</div>' : '<div class="empty-state">No patients yet — once someone books with you, they will appear here.</div>');
 
       el.querySelectorAll('[data-patient]').forEach(row => {
         row.addEventListener('click', () => openPatient(row.dataset.patient, row.dataset.name, row.dataset.meta));
       });
-    } catch (e) {
-      document.getElementById('patientsList').innerHTML = '<div class="empty-state">Could not load patients.</div>';
-    }
   }
 
   async function openPatient(id, name, meta) {

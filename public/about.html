@@ -65,27 +65,30 @@
 
 <script src="js/app.js"></script>
 <script>
+  const escP = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   (async function () {
     try {
       const team = await API.get('/api/team');
       const grid = document.getElementById('teamGrid');
       grid.innerHTML = team.doctors.length ? team.doctors.map(d => `
-        <div class="card doctor-card">
+        <a class="card doctor-card profile-link" href="profile.html?doctor=${encodeURIComponent(d.id)}" aria-label="View profile of ${escP(d.name)}">
           ${avatarHtml(d)}
-          <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${d.name}</h3>
-          <div class="doctor-specialty">${d.specialty}</div>
-        </div>
+          <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${escP(d.name)}</h3>
+          <div class="doctor-specialty">${escP(d.specialty)}</div>
+          <span class="profile-link-cta">View profile &rarr;</span>
+        </a>
       `).join('') : '<div class="empty-state">No doctors added yet.</div>';
 
       if (team.staffMembers && team.staffMembers.length) {
         document.getElementById('staffSection').style.display = 'block';
         document.getElementById('staffGrid').innerHTML = team.staffMembers.map(m => `
-          <div class="card doctor-card">
+          <a class="card doctor-card profile-link" href="profile.html?team=${encodeURIComponent(m.id)}" aria-label="View profile of ${escP(m.name)}">
             ${avatarHtml(m)}
-            <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${m.name}</h3>
-            <div class="doctor-specialty">${m.role}</div>
-            ${m.bio ? `<p style="font-size:0.85rem; margin-top:0.6rem;">${m.bio}</p>` : ''}
-          </div>
+            <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${escP(m.name)}</h3>
+            <div class="doctor-specialty">${escP(m.role)}</div>
+            ${m.bio ? `<p style="font-size:0.85rem; margin-top:0.6rem;">${escP(m.bio)}</p>` : ''}
+            <span class="profile-link-cta">View profile &rarr;</span>
+          </a>
         `).join('');
       }
     } catch (e) {

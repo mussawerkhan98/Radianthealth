@@ -56,6 +56,12 @@
          <div id="docsMain">
           <h2>Doctors</h2>
           <p>Click <strong>Manage</strong> on a doctor to see their calendar<span data-perm="doctors.manage">, set working hours, and edit their login</span>.</p>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:0.8rem;">
+            <input type="search" id="docSearch" placeholder="Search doctors by name, specialty, department or email…" style="flex:1 1 280px;" aria-label="Search doctors">
+            <select id="docDeptFilter" style="flex:0 1 220px;" aria-label="Filter by department"><option value="">All departments</option></select>
+          </div>
+          <p id="docCount" style="font-size:0.85rem; color:var(--ink-soft); margin:0 0 0.5rem;"></p>
+          <div id="docList" style="margin-bottom:1.8rem;"><div class="empty-state">Loading…</div></div>
           <div class="card" style="padding:1.6rem; margin-bottom:1.6rem;" data-perm="doctors.manage">
             <h4>Add a Doctor</h4>
             <p style="font-size:0.88rem; color:var(--ink-soft);">This creates the doctor's own login to the Doctor Portal (their schedule, patients, and notes). Use their clinic email — booking invites are sent there.</p>
@@ -92,7 +98,7 @@
               <button type="submit" class="btn btn-primary">Add Doctor</button>
             </form>
           </div>
-          <div id="docList"><div class="empty-state">Loading…</div></div>
+
          </div>
 
          <!-- Manage one doctor: calendar, hours, profile & login -->
@@ -104,6 +110,10 @@
               <div style="flex:1; min-width:200px;">
                 <h3 id="dmName" style="margin:0;"></h3>
                 <p id="dmMeta" style="margin:0.2rem 0 0; color:var(--ink-soft); font-size:0.9rem;"></p>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.6rem;">
+                  <button type="button" class="btn btn-outline" id="dmProfileBtn" data-perm="profiles.manage" style="padding:0.3rem 0.8rem; font-size:0.78rem;">Profile &amp; certificates</button>
+                  <a class="btn btn-outline" id="dmPublicLink" target="_blank" rel="noopener" style="padding:0.3rem 0.8rem; font-size:0.78rem;">View public profile</a>
+                </div>
               </div>
             </div>
             <div class="doc-stats" id="dmStats"></div>
@@ -247,6 +257,16 @@
             </form>
           </div>
           <div id="rolesList"><div class="empty-state">Loading…</div></div>
+          <div class="card" style="padding:1.4rem 1.6rem; margin-top:1.4rem;">
+            <h4 style="margin-top:0;">Doctor Portal rules</h4>
+            <p style="font-size:0.88rem; color:var(--ink-soft);">Doctors log in to their own portal (not a staff role). These rules apply to every doctor.</p>
+            <div id="drAlert" class="alert"></div>
+            <label style="display:flex; gap:0.6rem; align-items:flex-start; font-weight:600;">
+              <input type="checkbox" id="drSearchAll" style="width:auto; flex:0 0 auto; margin:0.2rem 0 0;">
+              <span>Doctors can search and open <u>all</u> clinic patients
+                <small style="display:block; font-weight:400; color:var(--ink-soft);">Off (default): doctors search only their own patients — people who have booked with them. On: they can search every patient by name, phone, Patient ID or email, see their history and add notes (useful for walk-ins and referrals).</small></span>
+            </label>
+          </div>
         </div>
 
         <div id="tab-appointments" style="display:none;">
@@ -649,6 +669,54 @@
   </div>
 </section>
 
+
+<!-- Profile & certificates editor (doctors + team members) -->
+<div id="pfModal" class="pf-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="pfTitle">
+  <div class="pf-panel card">
+    <div class="pf-head">
+      <div style="display:flex; align-items:center; gap:0.8rem; min-width:0;">
+        <div id="pfAvatar"></div>
+        <div style="min-width:0;"><h3 id="pfTitle" style="margin:0;">Profile</h3><p id="pfSub" style="margin:0; font-size:0.85rem; color:var(--ink-soft);"></p></div>
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <a id="pfPublic" class="btn btn-outline" target="_blank" rel="noopener" style="padding:0.35rem 0.8rem; font-size:0.8rem;">View public page</a>
+        <button type="button" class="btn btn-outline" id="pfClose" style="padding:0.35rem 0.8rem; font-size:0.8rem;">Close</button>
+      </div>
+    </div>
+    <div id="pfAlert" class="alert"></div>
+    <form id="pfForm">
+      <div class="form-row" id="pfTeamBasics">
+        <div class="form-group"><label for="pfName">Full name</label><input type="text" id="pfName" maxlength="120"></div>
+        <div class="form-group"><label for="pfRole">Role / title</label><input type="text" id="pfRole" maxlength="120"></div>
+      </div>
+      <div class="form-group" id="pfSpecWrap"><label for="pfSpecialty">Specialty / title</label><input type="text" id="pfSpecialty" maxlength="120" placeholder="e.g. Consultant Cardiologist"></div>
+      <div class="form-group"><label for="pfPhoto">Photo</label><input type="file" id="pfPhoto" accept="image/png,image/jpeg,image/webp,image/gif"></div>
+      <div class="form-group"><label for="pfBio">Short intro <span style="font-weight:400; color:var(--ink-soft);">(shown under the name)</span></label><textarea id="pfBio" rows="2" maxlength="1000"></textarea></div>
+      <div class="form-group"><label for="pfAbout">About <span style="font-weight:400; color:var(--ink-soft);">(longer story — leave an empty line between paragraphs)</span></label><textarea id="pfAbout" rows="5" maxlength="5000"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label for="pfExp">Years of experience</label><input type="number" id="pfExp" min="0" max="70" step="1"></div>
+        <div class="form-group"><label for="pfLang">Languages <span style="font-weight:400; color:var(--ink-soft);">(comma-separated)</span></label><input type="text" id="pfLang" maxlength="300" placeholder="English, Arabic, Urdu"></div>
+      </div>
+      <div class="form-group"><label for="pfQual">Qualifications <span style="font-weight:400; color:var(--ink-soft);">(one per line)</span></label><textarea id="pfQual" rows="3" maxlength="3000" placeholder="MBBS — King Edward Medical University (2009)&#10;MRCP (UK)"></textarea></div>
+      <div class="form-group"><label for="pfEdu">Education &amp; training <span style="font-weight:400; color:var(--ink-soft);">(one per line)</span></label><textarea id="pfEdu" rows="3" maxlength="3000" placeholder="Fellowship in Interventional Cardiology — Cleveland Clinic Abu Dhabi"></textarea></div>
+      <div class="form-group"><label for="pfExpertise">Areas of expertise <span style="font-weight:400; color:var(--ink-soft);">(comma-separated)</span></label><input type="text" id="pfExpertise" maxlength="1000" placeholder="Heart failure, Hypertension, Preventive cardiology"></div>
+      <button type="submit" class="btn btn-primary">Save profile</button>
+    </form>
+
+    <h4 style="margin:1.8rem 0 0.6rem;">Certificates &amp; licences</h4>
+    <p style="font-size:0.85rem; color:var(--ink-soft); margin:0 0 0.8rem;">Shown on the public profile — anyone can open these files, so upload only what you're happy to publish (e.g. licences, board certificates). PDF, JPG, PNG or WEBP, up to 3 MB.</p>
+    <div id="pfCerts"></div>
+    <form id="pfCertForm" class="card" style="padding:1rem 1.1rem; box-shadow:none; border:1px solid var(--line, #e3e8ea); margin-top:0.8rem;">
+      <div class="form-row">
+        <div class="form-group"><label for="pfCertTitle">Name *</label><input type="text" id="pfCertTitle" maxlength="200" required placeholder="e.g. DHA Licence"></div>
+        <div class="form-group"><label for="pfCertIssuer">Issued by</label><input type="text" id="pfCertIssuer" maxlength="200" placeholder="e.g. Dubai Health Authority"></div>
+        <div class="form-group" style="max-width:130px;"><label for="pfCertYear">Year</label><input type="text" id="pfCertYear" maxlength="20" placeholder="2021"></div>
+      </div>
+      <div class="form-group"><label for="pfCertFile">File (optional)</label><input type="file" id="pfCertFile" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"></div>
+      <button type="submit" class="btn btn-outline" id="pfCertBtn">Add certificate</button>
+    </form>
+  </div>
+</div>
 <footer class="site-footer" id="site-footer"></footer>
 
 <script src="js/app.js"></script>
@@ -685,7 +753,7 @@
       if (tab.dataset.tab === 'appointments') loadAppointments();
       if (tab.dataset.tab === 'patients') loadPatients();
       if (tab.dataset.tab === 'staffAccounts') loadStaffAccounts();
-      if (tab.dataset.tab === 'roles') loadRoles();
+      if (tab.dataset.tab === 'roles') { loadRoles(); loadDoctorRules(); }
       if (tab.dataset.tab === 'settings') loadSettings();
       if (tab.dataset.tab === 'marketing') loadMarketing();
     });
@@ -723,8 +791,25 @@
     });
   }
 
+  let allDoctors = [];
   async function loadDoctors() {
-    const doctors = await API.get('/api/doctors');
+    allDoctors = await API.get('/api/doctors');
+    const df = document.getElementById('docDeptFilter'), keep = df.value;
+    df.innerHTML = '<option value="">All departments</option>' + departments.map(x => `<option value="${x.id}">${escAttr(x.name)}</option>`).join('');
+    df.value = keep;
+    renderDoctors();
+  }
+  function renderDoctors() {
+    const q = document.getElementById('docSearch').value.trim().toLowerCase();
+    const dept = document.getElementById('docDeptFilter').value;
+    const doctors = allDoctors.filter(d => {
+      if (dept && d.departmentId !== dept) return false;
+      if (!q) return true;
+      const dn = (departments.find(x => x.id === d.departmentId) || {}).name || '';
+      return [d.name, d.specialty, d.email, dn].some(v => String(v || '').toLowerCase().includes(q));
+    });
+    document.getElementById('docCount').textContent = (q || dept) ? `${doctors.length} of ${allDoctors.length} doctors` : `${allDoctors.length} doctors`;
+    if (!doctors.length) { document.getElementById('docList').innerHTML = '<div class="empty-state">No doctors match your search.</div>'; return; }
     document.getElementById('docList').innerHTML = doctors.map(d => {
       const dept = departments.find(x => x.id === d.departmentId);
       return `
@@ -738,6 +823,7 @@
           </div>
           <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
             <button class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-manage-doctor="${d.id}">${can('doctors.manage') ? 'Manage' : 'Calendar'}</button>
+            ${can('profiles.manage') ? `<button class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-profile-doctor="${d.id}">Profile &amp; certificates</button>` : ''}
             ${can('doctors.manage') ? `<label class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem; cursor:pointer;">
               Photo
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" data-doctor-photo="${d.id}">
@@ -761,6 +847,9 @@
 
     document.querySelectorAll('[data-manage-doctor]').forEach(btn => {
       btn.addEventListener('click', () => openDoctorManage(btn.dataset.manageDoctor));
+    });
+    document.querySelectorAll('[data-profile-doctor]').forEach(btn => {
+      btn.addEventListener('click', () => openProfileEditor('doctor', btn.dataset.profileDoctor));
     });
 
     document.querySelectorAll('[data-delete-doctor]').forEach(btn => {
@@ -786,10 +875,14 @@
             ${m.bio ? `<span style="color:var(--ink-soft); font-size:0.85rem;">${m.bio}</span>` : ''}
           </div>
         </div>
-        <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-remove-team="${m.id}">Remove</button>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          ${can('profiles.manage') ? `<button class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-profile-team="${m.id}">Edit profile &amp; certificates</button>` : ''}
+          <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-remove-team="${m.id}">Remove</button>
+        </div>
       </div>
     `).join('') : '<div class="empty-state">No team members added yet.</div>';
 
+    document.querySelectorAll('[data-profile-team]').forEach(btn => btn.addEventListener('click', () => openProfileEditor('team', btn.dataset.profileTeam)));
     document.querySelectorAll('[data-remove-team]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Remove this team member from the About page?')) return;
@@ -1326,6 +1419,7 @@
 
   async function openDoctorManage(id) {
     dm = { id, weekStart: null, doctor: null, calendar: null };
+    document.getElementById('dmPublicLink').href = `profile.html?doctor=${encodeURIComponent(id)}`;
     document.getElementById('docsMain').style.display = 'none';
     document.getElementById('docManage').style.display = 'block';
     ['hoursAlert', 'profileAlert', 'pwAlert'].forEach(a => hideAlert(document.getElementById(a)));
@@ -2185,6 +2279,123 @@
       loadContacts(); loadMarketing(true);
     } catch (err) { showAlert(mkAlert, err.message, 'error'); }
     btn.disabled = false; btn.textContent = 'Import';
+  });
+</script>
+<script>
+  // ---------- Profile & certificates editor ----------
+  const PF = { type: '', id: '', data: null, photo: undefined };
+  const pfEl = id => document.getElementById(id);
+  async function openProfileEditor(type, id) {
+    PF.type = type; PF.id = id; PF.photo = undefined;
+    hideAlert(pfEl('pfAlert'));
+    pfEl('pfModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    try {
+      const p = await API.get(`/api/admin/profiles/${type}/${encodeURIComponent(id)}`);
+      PF.data = p;
+      pfEl('pfTitle').textContent = p.name;
+      pfEl('pfSub').textContent = type === 'doctor' ? `Doctor · ${p.specialty || ''}${p.department ? ' · ' + p.department.name : ''}` : `Team · ${p.role}`;
+      pfEl('pfAvatar').innerHTML = avatarHtml(p, 'doctor-avatar-sm');
+      pfEl('pfPublic').href = `profile.html?${type}=${encodeURIComponent(id)}`;
+      pfEl('pfTeamBasics').style.display = type === 'team' ? '' : 'none';
+      pfEl('pfSpecWrap').style.display = type === 'doctor' ? '' : 'none';
+      pfEl('pfName').value = p.name; pfEl('pfRole').value = p.role || ''; pfEl('pfSpecialty').value = p.specialty || '';
+      pfEl('pfPhoto').value = '';
+      pfEl('pfBio').value = p.bio || ''; pfEl('pfAbout').value = p.about || '';
+      pfEl('pfExp').value = p.experienceYears || '';
+      pfEl('pfLang').value = p.raw.languages || ''; pfEl('pfQual').value = p.raw.qualifications || '';
+      pfEl('pfEdu').value = p.raw.education || ''; pfEl('pfExpertise').value = p.raw.expertise || '';
+      renderCerts(p.certificates);
+      pfEl('pfName').focus();
+    } catch (err) { showAlert(pfEl('pfAlert'), err.message, 'error'); }
+  }
+  function closeProfileEditor() {
+    pfEl('pfModal').style.display = 'none';
+    document.body.style.overflow = '';
+    if (PF.type === 'team') loadTeam(); else if (document.getElementById('docList')) loadDoctors();
+  }
+  pfEl('pfClose').addEventListener('click', closeProfileEditor);
+  pfEl('pfModal').addEventListener('click', e => { if (e.target.id === 'pfModal') closeProfileEditor(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && pfEl('pfModal').style.display === 'block') closeProfileEditor(); });
+  pfEl('pfPhoto').addEventListener('change', async () => {
+    try { PF.photo = await fileToDataUrl(pfEl('pfPhoto')); } catch (err) { showAlert(pfEl('pfAlert'), err.message, 'error'); }
+  });
+
+  function renderCerts(certs) {
+    pfEl('pfCerts').innerHTML = certs.length ? certs.map(c => `
+      <div class="list-item" style="gap:0.8rem;">
+        <div style="display:flex; gap:0.8rem; align-items:center; min-width:0;">
+          ${c.isImage && c.fileUrl ? `<img src="${escAttr(c.fileUrl)}" alt="" style="width:56px; height:42px; object-fit:cover; border-radius:6px; flex:0 0 auto;">` : `<span class="badge" style="flex:0 0 auto;">${c.fileUrl ? 'PDF' : 'No file'}</span>`}
+          <div style="min-width:0;"><strong>${escAttr(c.title)}</strong><br><span style="color:var(--ink-soft); font-size:0.85rem;">${[c.issuer, c.year].filter(Boolean).map(escAttr).join(' · ') || '—'}</span></div>
+        </div>
+        <div style="display:flex; gap:0.4rem;">
+          ${c.fileUrl ? `<a class="btn btn-outline" href="${escAttr(c.fileUrl)}" target="_blank" rel="noopener" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Open</a>` : ''}
+          <button type="button" class="btn btn-danger" data-del-cert="${c.id}" style="padding:0.25rem 0.7rem; font-size:0.78rem;">Remove</button>
+        </div>
+      </div>`).join('') : '<div class="empty-state" style="padding:1rem;">No certificates yet.</div>';
+    pfEl('pfCerts').querySelectorAll('[data-del-cert]').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Remove this certificate from the profile?')) return;
+      try { await API.del(`/api/admin/certificates/${b.dataset.delCert}`); await reloadCerts(); } catch (err) { showAlert(pfEl('pfAlert'), err.message, 'error'); }
+    }));
+  }
+  async function reloadCerts() {
+    const p = await API.get(`/api/admin/profiles/${PF.type}/${encodeURIComponent(PF.id)}`);
+    PF.data = p; renderCerts(p.certificates);
+  }
+
+  pfEl('pfForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert(pfEl('pfAlert'));
+    const body = {
+      bio: pfEl('pfBio').value, about: pfEl('pfAbout').value, experienceYears: pfEl('pfExp').value === '' ? 0 : Number(pfEl('pfExp').value),
+      languages: pfEl('pfLang').value, qualifications: pfEl('pfQual').value, education: pfEl('pfEdu').value, expertise: pfEl('pfExpertise').value
+    };
+    if (PF.type === 'team') { body.name = pfEl('pfName').value; body.role = pfEl('pfRole').value; }
+    else body.specialty = pfEl('pfSpecialty').value;
+    if (PF.photo) body.photo = PF.photo;
+    try {
+      const p = await API.patch(`/api/admin/profiles/${PF.type}/${encodeURIComponent(PF.id)}`, body);
+      PF.photo = undefined; pfEl('pfPhoto').value = '';
+      pfEl('pfTitle').textContent = p.name; pfEl('pfAvatar').innerHTML = avatarHtml(p, 'doctor-avatar-sm');
+      showAlert(pfEl('pfAlert'), 'Profile saved — it’s live on the public page.', 'success');
+      pfEl('pfModal').querySelector('.pf-panel').scrollTop = 0;
+    } catch (err) { showAlert(pfEl('pfAlert'), err.message, 'error'); pfEl('pfModal').querySelector('.pf-panel').scrollTop = 0; }
+  });
+
+  pfEl('pfCertForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert(pfEl('pfAlert'));
+    const f = pfEl('pfCertFile').files[0];
+    if (f && f.size > 3 * 1024 * 1024) return showAlert(pfEl('pfAlert'), `"${f.name}" is larger than 3 MB.`, 'error');
+    const btn = pfEl('pfCertBtn'); btn.disabled = true; btn.textContent = 'Uploading…';
+    try {
+      await API.post(`/api/admin/profiles/${PF.type}/${encodeURIComponent(PF.id)}/certificates`, {
+        title: pfEl('pfCertTitle').value, issuer: pfEl('pfCertIssuer').value, year: pfEl('pfCertYear').value,
+        ...(f ? { filename: f.name, data: await readFileAsDataUrl(f) } : {})
+      });
+      pfEl('pfCertForm').reset();
+      await reloadCerts();
+    } catch (err) { showAlert(pfEl('pfAlert'), err.message, 'error'); }
+    btn.disabled = false; btn.textContent = 'Add certificate';
+  });
+
+  // Doctor list search
+  document.getElementById('docSearch').addEventListener('input', () => renderDoctors());
+  document.getElementById('docDeptFilter').addEventListener('change', () => renderDoctors());
+
+  // Manage-doctor page buttons
+  document.getElementById('dmProfileBtn').addEventListener('click', () => { if (typeof dm !== 'undefined' && dm && dm.id) openProfileEditor('doctor', dm.id); });
+
+  // Doctor Portal rules
+  async function loadDoctorRules() {
+    try { const r = await API.get('/api/admin/doctor-rules'); document.getElementById('drSearchAll').checked = !!r.searchAllPatients; } catch (e) { /* no permission */ }
+  }
+  document.getElementById('drSearchAll').addEventListener('change', async (e) => {
+    const alertEl = document.getElementById('drAlert'); hideAlert(alertEl);
+    try {
+      const r = await API.patch('/api/admin/doctor-rules', { searchAllPatients: e.target.checked });
+      showAlert(alertEl, r.searchAllPatients ? 'Saved — doctors can now search all patients.' : 'Saved — doctors can only search their own patients.', 'success');
+    } catch (err) { e.target.checked = !e.target.checked; showAlert(alertEl, err.message, 'error'); }
   });
 </script>
 </body>

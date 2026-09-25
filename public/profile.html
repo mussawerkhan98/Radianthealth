@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Team — Radiant Health Alliance</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="about">
+
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+  <div class="container">
+    <a href="about.html" class="profile-back">&larr; Our team</a>
+    <div id="profile"><div class="empty-state">Loading profile…</div></div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const type = q.get('doctor') ? 'doctor' : q.get('team') ? 'team' : '';
+  const id = q.get('doctor') || q.get('team') || '';
+  const el = document.getElementById('profile');
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const t12 = t => { const [h, m] = String(t).split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+
+  function daysText(days) {
+    const order = [1, 2, 3, 4, 5, 6, 0].filter(d => days.includes(d));
+    if (!order.length) return '';
+    // collapse runs: Mon–Fri, Sat
+    const runs = []; let start = order[0], prev = order[0];
+    const idx = d => [1, 2, 3, 4, 5, 6, 0].indexOf(d);
+    for (const d of order.slice(1).concat([null])) {
+      if (d !== null && idx(d) === idx(prev) + 1) { prev = d; continue; }
+      runs.push(start === prev ? DAYS[start].slice(0, 3) : `${DAYS[start].slice(0, 3)}–${DAYS[prev].slice(0, 3)}`);
+      start = prev = d;
+    }
+    return runs.join(', ');
+  }
+
+  function section(title, body) { return body ? `<div class="profile-section"><h2>${title}</h2>${body}</div>` : ''; }
+  const ul = arr => arr.length ? `<ul class="profile-list">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  const paras = t => String(t || '').trim() ? String(t).trim().split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+
+  function certCard(c) {
+    const inner = c.isImage && c.fileUrl
+      ? `<img src="${esc(c.fileUrl)}" alt="${esc(c.title)}" loading="lazy">`
+      : `<div class="cert-icon" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.2 7 21l5-2.6L17 21l-1.5-7.8"/></svg></div>`;
+    const meta = [c.issuer, c.year].filter(Boolean).map(esc).join(' · ');
+    const body = `<div class="cert-thumb">${inner}</div><div class="cert-body"><strong>${esc(c.title)}</strong>${meta ? `<span>${meta}</span>` : ''}${c.fileUrl ? `<span class="cert-open">${c.isImage ? 'View' : 'Open PDF'}</span>` : ''}</div>`;
+    return c.fileUrl ? `<a class="cert-card" href="${esc(c.fileUrl)}" target="_blank" rel="noopener">${body}</a>` : `<div class="cert-card">${body}</div>`;
+  }
+
+  async function load() {
+    if (!type || !id) { el.innerHTML = '<div class="empty-state">Profile not found. <a href="about.html">See our team</a>.</div>'; return; }
+    let p;
+    try { p = await API.get(`/api/profiles/${type}/${encodeURIComponent(id)}`); }
+    catch (e) { el.innerHTML = '<div class="empty-state">This profile is not available. <a href="about.html">See our team</a>.</div>'; return; }
+    document.title = `${p.name} — Radiant Health Alliance`;
+    const facts = [
+      p.experienceYears ? `<span class="profile-fact"><strong>${p.experienceYears}+</strong> years experience</span>` : '',
+      p.languages.length ? `<span class="profile-fact">Speaks <strong>${p.languages.map(esc).join(', ')}</strong></span>` : '',
+      p.offersVideo ? '<span class="profile-fact"><strong>Video</strong> consultations</span>' : ''
+    ].filter(Boolean).join('');
+    const hours = type === 'doctor' && p.workingDays && p.workingDays.length
+      ? `<p class="profile-hours">Available ${daysText(p.workingDays)}, ${t12(p.workingHours.start)} – ${t12(p.workingHours.end)}</p>` : '';
+    el.innerHTML = `
+      <div class="card profile-head">
+        ${avatarHtml(p, 'profile-avatar')}
+        <div class="profile-head-text">
+          <h1>${esc(p.name)}</h1>
+          <p class="profile-title">${esc(p.title)}${p.department ? ` · <a href="doctors.html?department=${encodeURIComponent(p.department.id)}">${esc(p.department.name)}</a>` : ''}</p>
+          ${p.bio ? `<p class="profile-bio">${esc(p.bio)}</p>` : ''}
+          ${facts ? `<div class="profile-facts">${facts}</div>` : ''}
+          ${hours}
+          ${type === 'doctor' ? `<div class="profile-actions"><a class="btn btn-amber" href="book.html?doctor=${encodeURIComponent(p.id)}">Book an appointment</a>${p.offersVideo ? `<a class="btn btn-outline" href="book.html?doctor=${encodeURIComponent(p.id)}&visit=video">Book a video call</a>` : ''}</div>` : ''}
+        </div>
+      </div>
+      <div class="profile-grid">
+        <div>
+          ${section('About', paras(p.about))}
+          ${section('Qualifications', ul(p.qualifications))}
+          ${section('Education &amp; training', ul(p.education))}
+          ${section('Certificates &amp; licences', p.certificates.length ? `<div class="cert-grid">${p.certificates.map(certCard).join('')}</div>` : '')}
+        </div>
+        <aside>
+          ${p.expertise.length ? `<div class="card profile-side"><h2>Areas of expertise</h2><div class="profile-chips">${p.expertise.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div></div>` : ''}
+          ${type === 'doctor' ? `<div class="card profile-side"><h2>Visit us</h2><p>Book online in a minute — no account needed.</p><a class="btn btn-primary" href="book.html?doctor=${encodeURIComponent(p.id)}">Choose a time</a></div>` : ''}
+        </aside>
+      </div>`;
+    if (!el.querySelector('.profile-section') && !p.expertise.length) {
+      el.querySelector('.profile-grid').insertAdjacentHTML('afterbegin', '<p style="color:var(--ink-soft);">More details coming soon.</p>');
+    }
+  }
+  load();
+</script>
+</body>
+</html>

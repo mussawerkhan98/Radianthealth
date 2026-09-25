@@ -1,12 +1,11 @@
 // src/marketing.js — promotion emails (Admin → Marketing) through Brevo.
-// One HTML email per campaign; Brevo personalises it per patient
-// (name + their own unsubscribe link) using messageVersions, so a whole
-// batch goes out in one API call.
+// Each patient gets their own copy (their name, their unsubscribe link and a
+// one-click unsubscribe header, which inbox providers look for).
 const { esc } = require('./brevo');
 
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 const SENDER = { email: 'info@radianthealthalliance.com', name: 'Radiant Health Alliance' };
-const BATCH = 100; // recipients per Brevo request
+const CONCURRENCY = 5; // emails sent in parallel
 
 // Brevo treats {{ }} and {% %} as template code — keep them out of staff text.
 const plain = v => String(v == null ? '' : v).replace(/\{\{|\}\}|\{%|%\}/g, '');
@@ -72,32 +71,51 @@ async function post(payload) {
   }
 }
 
-// recipients: [{ email, name, unsubUrl }]. Returns { sent, failed, error }.
+// Gmail/Yahoo/Outlook expect a one-click unsubscribe header on promotions
+// (RFC 8058); without it, mail is more likely to land in spam.
+function unsubHeaders(oneClickUrl) {
+  if (!oneClickUrl) return undefined;
+  return {
+    'List-Unsubscribe': `<${oneClickUrl}>, <mailto:${SENDER.email}?subject=unsubscribe>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+  };
+}
+
+// recipients: [{ email, name, unsubUrl, oneClickUrl }]. Returns { sent, failed, error }.
+// One personal email per patient (so each gets their own unsubscribe header),
+// a few at a time.
 async function sendCampaign(c, recipients, opts) {
-  const { html, text } = buildEmail(c, opts);
-  let sent = 0, failed = 0, error = '';
-  for (let i = 0; i < recipients.length; i += BATCH) {
-    const chunk = recipients.slice(i, i + BATCH);
-    try {
-      await post({
-        sender: SENDER, replyTo: SENDER, subject: plain(c.subject), htmlContent: html, textContent: text,
-        tags: ['promotion'],
-        messageVersions: chunk.map(r => ({ to: [{ email: r.email, name: plain(r.name).slice(0, 70) }], params: { NAME: esc(plain(r.name).split(' ')[0] || 'Patient'), UNSUB: r.unsubUrl } }))
-      });
-      sent += chunk.length;
-    } catch (e) {
-      failed += chunk.length;
-      error = error || e.message;
-      if (e.status === 401 || e.status === 403) { failed += recipients.length - i - chunk.length; break; } // key/account problem: stop
+  let sent = 0, failed = 0, error = '', stop = false, next = 0;
+  const one = async (r) => {
+    const first = plain(r.name).split(' ')[0] || 'Patient';
+    const { html, text } = buildEmail(c, { ...opts, values: { NAME: first, UNSUB: r.unsubUrl } });
+    const payload = {
+      sender: SENDER, replyTo: SENDER, to: [{ email: r.email, name: plain(r.name).slice(0, 70) }],
+      subject: plain(c.subject), htmlContent: html, textContent: text, tags: ['promotion'], headers: unsubHeaders(r.oneClickUrl)
+    };
+    for (let attempt = 0; ; attempt++) {
+      try { await post(payload); sent++; return; }
+      catch (e) {
+        if (e.status === 429 && attempt < 2) { await new Promise(res => setTimeout(res, 1500 * (attempt + 1))); continue; }
+        failed++; error = error || e.message;
+        if (e.status === 401 || e.status === 403) stop = true; // key/account problem
+        return;
+      }
     }
-  }
+  };
+  const worker = async () => {
+    while (!stop && next < recipients.length) await one(recipients[next++]);
+  };
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  failed += recipients.length - sent - failed; // not attempted after a stop
   return { sent, failed, error };
 }
 
-// One test email to a staff member.
+// One test email to a staff member (same headers as the real thing).
 async function sendTest(c, to, opts) {
-  const { html, text } = buildEmail(c, { ...opts, values: { NAME: to.name || 'there', UNSUB: opts.siteUrl + '/unsubscribe.html' } });
-  await post({ sender: SENDER, replyTo: SENDER, to: [{ email: to.email, name: plain(to.name).slice(0, 70) }], subject: '[TEST] ' + plain(c.subject), htmlContent: html, textContent: text, tags: ['promotion-test'] });
+  const unsub = opts.siteUrl + '/unsubscribe.html';
+  const { html, text } = buildEmail(c, { ...opts, values: { NAME: to.name || 'there', UNSUB: unsub } });
+  await post({ sender: SENDER, replyTo: SENDER, to: [{ email: to.email, name: plain(to.name).slice(0, 70) }], subject: plain(c.subject), htmlContent: html, textContent: text, tags: ['promotion-test'], headers: unsubHeaders(opts.siteUrl + '/api/unsubscribe/one-click?test=1') });
 }
 
 module.exports = { buildEmail, sendCampaign, sendTest, plain };

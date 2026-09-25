@@ -1117,7 +1117,8 @@ app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (re
     }
     const recipients = patients.map(p => ({
       email: p.email, name: p.name,
-      unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.marketingKey)}`
+      unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.marketingKey)}`,
+      oneClickUrl: `${SITE_URL()}/api/unsubscribe/one-click?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.marketingKey)}`
     }));
     result = await marketing.sendCampaign(c, recipients, await campaignEmailOpts(c));
   } catch (e) {
@@ -1130,6 +1131,16 @@ app.post('/api/admin/campaigns/:id/send', perm('marketing.send'), wrap(async (re
   }
   const u = await prisma.campaign.update({ where: { id: c.id }, data: { status: 'sent', sentAt: new Date(), sentCount: result.sent, failedCount: result.failed }, select: CAMPAIGN_META });
   res.json({ ...campaignOut(u), error: result.error });
+}));
+
+const unsubLimiterOneClick = rateLimit({ windowMs: 10 * 60 * 1000, limit: 120, standardHeaders: true, legacyHeaders: false });
+// Public: one-click unsubscribe, called by Gmail/Yahoo/Outlook's own
+// "Unsubscribe" button (RFC 8058: POST with body List-Unsubscribe=One-Click).
+app.post('/api/unsubscribe/one-click', unsubLimiterOneClick, express.urlencoded({ extended: false, limit: '2kb' }), wrap(async (req, res) => {
+  const p = String(req.query.p || ''), k = String(req.query.k || '');
+  const pt = p ? await prisma.patient.findUnique({ where: { id: p }, select: { id: true, marketingKey: true } }) : null;
+  if (pt && pt.marketingKey && sameKey(k, pt.marketingKey)) await prisma.patient.update({ where: { id: pt.id }, data: { marketingOptOut: true } });
+  res.json({ ok: true }); // same answer either way
 }));
 
 // Public: unsubscribe / re-subscribe from the link in the email.

@@ -877,7 +877,7 @@ app.get('/api/patients/me/appointments', auth(['patient']), wrap(async (req, res
   }));
 }));
 
-async function cancelAppointment(where, by) {
+async function cancelAppointment(where, by, { notifyPatient = true } = {}) {
   const appt = await prisma.appointment.findFirst({ where, include: { doctor: { include: { department: true } }, patient: true } });
   if (!appt) throw new HttpError(404, 'Appointment not found.');
   if (appt.status === 'cancelled') return appt;
@@ -888,7 +888,7 @@ async function cancelAppointment(where, by) {
     kind: 'cancelled', appointment: appt, doctor: appt.doctor, patient: appt.patient,
     departmentName: appt.doctor.department && appt.doctor.department.name
   }).catch(err => { console.error('doctor cancellation:', err.message); return false; });
-  await mailer.notifyCancellation({ appointment: appt, doctor: appt.doctor, patient: appt.patient, by, skipDoctor: doctorNotified })
+  await mailer.notifyCancellation({ appointment: appt, doctor: appt.doctor, patient: appt.patient, by, skipDoctor: doctorNotified, skipPatient: !notifyPatient })
     .catch(err => console.error('notifyCancellation:', err.message));
   return updated;
 }
@@ -1055,6 +1055,26 @@ app.patch('/api/admin/patients/:id', perm('patients.edit'), wrap(async (req, res
   if (b.gender !== undefined) data.gender = String(b.gender).slice(0, 30);
   const updated = await prisma.patient.update({ where: { id: p.id }, data });
   res.json(patientOut(updated));
+}));
+
+// Delete a patient for good: their appointments, reports and files too.
+// Upcoming appointments are cancelled first so they leave the doctor's calendar.
+app.delete('/api/admin/patients/:id', perm('patients.delete'), wrap(async (req, res) => {
+  const p = await prisma.patient.findUnique({ where: { id: req.params.id } });
+  if (!p) throw new HttpError(404, 'Patient not found.');
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = await prisma.appointment.findMany({ where: { patientId: p.id, status: { not: 'cancelled' }, date: { gte: today } } });
+  for (const a of upcoming) {
+    await cancelAppointment({ id: a.id }, 'the clinic', { notifyPatient: false }).catch(err => console.error('cancel before delete:', err.message));
+  }
+  const [files, records, appts] = await prisma.$transaction([
+    prisma.recordFile.deleteMany({ where: { OR: [{ patientId: p.id }, { record: { patientId: p.id } }] } }),
+    prisma.medicalRecord.deleteMany({ where: { patientId: p.id } }),
+    prisma.appointment.deleteMany({ where: { patientId: p.id } }),
+    prisma.patient.delete({ where: { id: p.id } })
+  ]);
+  console.log(`Patient ${p.id} deleted by ${req.user.sub}: ${appts.count} appointments, ${records.count} records, ${files.count} files`);
+  res.json({ ok: true, deleted: { appointments: appts.count, records: records.count, files: files.count, upcomingCancelled: upcoming.length } });
 }));
 
 app.get('/api/admin/patients/:id', perm('patients.view'), wrap(async (req, res) => {

@@ -58,13 +58,13 @@ async function notifyBooking({ appointment, doctor, patient, departmentName, ski
   ]);
 }
 
-async function notifyCancellation({ appointment, doctor, patient, by, skipDoctor = false }) {
+async function notifyCancellation({ appointment, doctor, patient, by, skipDoctor = false, skipPatient = false }) {
   const cfg = await transport().catch(() => null);
   if (!cfg) return;
   const when = `${appointment.date} at ${appointment.time}`;
   await Promise.all([
     send({ to: [skipDoctor ? null : doctor.email, ...cfg.notifyEmails], subject: `Cancelled: ${patient.name} — ${when}`, text: `The appointment for ${patient.name} with ${doctor.name} on ${when} was cancelled by ${by}.` }),
-    by !== 'the patient'
+    by !== 'the patient' && !skipPatient
       ? send({ to: patient.email, subject: 'Your appointment was cancelled', text: `Hello ${patient.name},\n\nYour appointment with ${doctor.name} on ${when} has been cancelled by the clinic. Please book a new time or contact us.\n\nRadiant Health Alliance` })
       : Promise.resolve()
   ]);

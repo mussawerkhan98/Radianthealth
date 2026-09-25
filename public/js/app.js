@@ -275,3 +275,11 @@ async function openFileViewer(id, filename, mimeType) {
     body.innerHTML = `<div style="color:#b3261e; padding:2rem; text-align:center;">${esc(err.message)}</div>`;
   }
 }
+
+// "📍 City, Country" line for a doctor (empty when not set).
+function doctorLocationHtml(d) {
+  const text = [d.city, d.country].filter(Boolean).join(', ');
+  if (!text) return '';
+  const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return `<span class="doctor-location"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>${esc(text)}</span>`;
+}

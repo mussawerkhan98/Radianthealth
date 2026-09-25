@@ -59,6 +59,8 @@ model Doctor {
   workingDays        String          @default("1,2,3,4,5") // comma-separated, 0 = Sunday
   active             Boolean         @default(true) // "deleted" doctors are deactivated so history is kept
   offersVideo        Boolean         @default(false) // can be booked for video appointments
+  country            String          @default("") // where the doctor is based (remote doctors work from many countries)
+  city               String          @default("")
   // Public profile (Admin → profile editor; shown on profile.html)
   about              String          @default("") // longer "about me"
   qualifications     String          @default("") // one per line, e.g. "MBBS — University of X (2010)"
@@ -265,4 +267,22 @@ model ProfileCertificate {
   createdAt DateTime @default(now())
 
   @@index([ownerType, ownerId])
+}
+
+// One row per person a promotion was sent to — powers click tracking.
+// Their links go to /api/r/<token>, which counts the click and redirects.
+model CampaignRecipient {
+  id           String    @id
+  campaignId   String
+  token        String    @unique
+  personKind   String // patient | contact
+  personId     String
+  email        String
+  name         String    @default("")
+  clicks       Int       @default(0)
+  firstClickAt DateTime?
+  lastClickAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([campaignId])
 }

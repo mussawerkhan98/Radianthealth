@@ -22,14 +22,24 @@ datasource db {
 }
 
 model Department {
-  id          String   @id
-  name        String
-  description String   @default("")
-  icon        String   @default("stethoscope")
-  sortOrder   Int      @default(0)
-  active      Boolean  @default(true) // "deleted" departments are hidden, not removed
-  createdAt   DateTime @default(now())
-  doctors     Doctor[]
+  id            String   @id
+  name          String
+  description   String   @default("")
+  icon          String   @default("stethoscope")
+  sortOrder     Int      @default(0)
+  active        Boolean  @default(true) // "deleted" departments are hidden, not removed
+  // Public department page (department.html) — edited in Admin → Departments → Edit page
+  tagline       String   @default("")
+  about         String   @default("")
+  services      String   @default("") // one per line
+  conditions    String   @default("") // one per line
+  hours         String   @default("") // free text, one line per day range
+  faqs          String   @default("[]") // JSON: [{ "q": "...", "a": "..." }]
+  bannerData    Bytes?
+  bannerMime    String   @default("")
+  bannerVersion Int      @default(0)
+  createdAt     DateTime @default(now())
+  doctors       Doctor[]
 }
 
 model Doctor {

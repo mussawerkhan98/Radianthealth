@@ -13,26 +13,145 @@
 </head>
 <body data-page="home">
 
+<!--
+  IMAGE PLACEHOLDERS
+  Every <div class="img-ph">…</div> below is a placeholder. To use a real photo,
+  put the file in public/assets/ and replace the whole div with:
+    <img class="media-img" src="assets/your-photo.jpg" alt="Describe the photo">
+  The size hint inside each placeholder is the recommended image size.
+-->
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+</svg>
+
 <header class="site-header" id="site-header"></header>
 
-<section class="hero">
-  <div class="container">
-    <span class="eyebrow">Radiant Health Alliance</span>
-    <h1>Compassionate care for <em>every</em> stage of life</h1>
-    <p class="lead">Ten departments, a team of dedicated doctors, and a simple way to book your visit online — all in one place.</p>
-    <div class="hero-actions">
-      <a href="book.html" class="btn btn-amber">Book an Appointment</a>
-      <a href="doctors.html" class="btn btn-outline">Meet Our Doctors</a>
+<!-- ============ HERO ============ -->
+<section class="hero lp-hero">
+  <div class="container lp-hero-grid">
+    <div>
+      <span class="eyebrow">Radiant Health Alliance</span>
+      <h1>Compassionate care for <em>every</em> stage of life</h1>
+      <p class="lead">Specialists across <span data-dept-count>ten</span> departments, a team of dedicated doctors, and a simple way to book your visit online — all in one place.</p>
+      <div class="hero-actions">
+        <a href="book.html" class="btn btn-amber">Book an Appointment</a>
+        <a href="doctors.html" class="btn btn-outline">Meet Our Doctors</a>
+      </div>
+      <ul class="hero-checks">
+        <li><svg width="16" height="16"><use href="#i-check"/></svg>Book online in under 2 minutes</li>
+        <li><svg width="16" height="16"><use href="#i-check"/></svg>Family care under one roof</li>
+        <li><svg width="16" height="16"><use href="#i-check"/></svg>Your records in one portal</li>
+      </ul>
+    </div>
+    <div class="lp-hero-media">
+      <div class="img-ph" role="img" aria-label="Image placeholder: hero photo">
+        <svg><use href="#i-image"/></svg>
+        <strong>Hero image</strong>
+        <small>Doctor with patient · 1200 × 1250 px</small>
+      </div>
+      <div class="float-card fc-1">
+        <div class="fc-icon"><svg width="20" height="20"><use href="#i-calendar"/></svg></div>
+        <div><b>Online booking</b><span>Pick a doctor, date &amp; time</span></div>
+      </div>
+      <div class="float-card fc-2">
+        <div class="fc-icon"><svg width="20" height="20"><use href="#i-users"/></svg></div>
+        <div><b><span data-doc-count>Our</span> doctors</b><span>Ready to help</span></div>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<!-- ============ STATS ============ -->
+<section class="lp-section tight-top">
   <div class="container">
-    <div class="section-title">
-      <span class="eyebrow">What we treat</span>
-      <h2>Care across <em>every</em> department</h2>
-      <p>From routine check-ups to specialist care, our team covers the full range of everyday health needs.</p>
+    <div class="stats-strip">
+      <div><div class="stat-num" data-dept-count>10</div><div class="stat-label">Medical departments</div></div>
+      <div><div class="stat-num" data-doc-count>—</div><div class="stat-label">Doctors on our team</div></div>
+      <div><div class="stat-num">2 min</div><div class="stat-label">To book online</div></div>
+      <div><div class="stat-num">7 days</div><div class="stat-label">Online booking, any time</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUICK ACTIONS ============ -->
+<section class="lp-section tight-top">
+  <div class="container">
+    <div class="quick-grid">
+      <a class="quick-card" href="book.html">
+        <div class="icon-tile amber"><svg width="22" height="22"><use href="#i-calendar"/></svg></div>
+        <div><h3>Book an appointment</h3><p>Choose a department, doctor and time that suits you.</p></div>
+      </a>
+      <a class="quick-card" href="doctors.html">
+        <div class="icon-tile"><svg width="22" height="22"><use href="#i-search"/></svg></div>
+        <div><h3>Find a doctor</h3><p>Browse specialists, profiles and qualifications.</p></div>
+      </a>
+      <a class="quick-card" href="login.html">
+        <div class="icon-tile"><svg width="22" height="22"><use href="#i-file"/></svg></div>
+        <div><h3>Patient portal</h3><p>See upcoming visits and your medical history.</p></div>
+      </a>
+      <a class="quick-card" href="https://wa.me/971543397906" target="_blank" rel="noopener" data-wa-link>
+        <div class="icon-tile green"><svg width="22" height="22"><use href="#i-chat"/></svg></div>
+        <div><h3>Chat on WhatsApp</h3><p>Questions? Message our front desk directly.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section class="lp-section white">
+  <div class="container split">
+    <div class="split-media">
+      <div class="img-stack">
+        <div class="img-ph" role="img" aria-label="Image placeholder: clinic interior">
+          <svg><use href="#i-image"/></svg><strong>Clinic interior</strong><small>800 × 1100 px</small>
+        </div>
+        <div class="img-ph sm" role="img" aria-label="Image placeholder: reception">
+          <svg><use href="#i-image"/></svg><strong>Reception</strong><small>600 × 600 px</small>
+        </div>
+        <div class="img-ph sm" role="img" aria-label="Image placeholder: care team">
+          <svg><use href="#i-image"/></svg><strong>Care team</strong><small>600 × 600 px</small>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow-sm">About us</span>
+      <h2>Compassionate care, <em>redefining</em> health</h2>
+      <p>Radiant Health Alliance brings together specialists across many departments so your family can find the right care in one place — and get stronger together.</p>
+      <ul class="check-list">
+        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Our mission<span>Thoughtful, compassionate healthcare that is easy to access and easy to navigate.</span></div></li>
+        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Our approach<span>Coordinated care, so your history and treatment plan travel with you between specialists.</span></div></li>
+        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Our promise<span>Every patient is treated with dignity, patience and clear communication.</span></div></li>
+      </ul>
+      <a href="about.html" class="btn btn-primary">More About Us</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEPARTMENTS ============ -->
+<section class="lp-section" id="departments">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow-sm">What we treat</span>
+        <h2>Care across <em>every</em> department</h2>
+        <p>From routine check-ups to specialist care, our team covers the full range of everyday health needs.</p>
+      </div>
+      <a href="departments.html" class="link-arrow">All departments &rarr;</a>
     </div>
     <div class="grid grid-4" id="deptGrid">
       <div class="empty-state">Loading departments…</div>
@@ -40,31 +159,248 @@
   </div>
 </section>
 
-<section class="section" style="background:#fff;">
+<!-- ============ WHY CHOOSE US ============ -->
+<section class="lp-section white">
   <div class="container">
-    <div class="section-title">
-      <span class="eyebrow">Our team</span>
-      <h2>Meet a few of our <em>doctors</em></h2>
+    <div class="section-head">
+      <div>
+        <span class="eyebrow-sm">Why Radiant Health</span>
+        <h2>Care that feels <em>personal</em></h2>
+        <p>Everything about your visit is designed to be simple, clear and centred on you.</p>
+      </div>
+      <a href="about.html" class="link-arrow">Our story &rarr;</a>
     </div>
-    <div class="grid grid-4" id="doctorGrid">
-      <div class="empty-state">Loading doctors…</div>
-    </div>
-    <div style="text-align:center; margin-top:2rem;">
-      <a href="doctors.html" class="btn btn-outline">View All Doctors</a>
+    <div class="grid grid-3">
+      <div class="feature">
+        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-users"/></svg></div>
+        <h3>Experienced specialists</h3>
+        <p>A multi-disciplinary team of doctors working together across departments.</p>
+      </div>
+      <div class="feature">
+        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-heart"/></svg></div>
+        <h3>Family-centred care</h3>
+        <p>From children to grandparents — care for every member of the family in one place.</p>
+      </div>
+      <div class="feature">
+        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-calendar"/></svg></div>
+        <h3>Easy online booking</h3>
+        <p>See real availability and confirm your appointment in a couple of minutes.</p>
+      </div>
+      <div class="feature">
+        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-file"/></svg></div>
+        <h3>Your records, connected</h3>
+        <p>Your medical history follows you between specialists, so nothing gets lost.</p>
+      </div>
+      <div class="feature">
+        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-shield"/></svg></div>
+        <h3>Privacy first</h3>
+        <p>Your health information is kept secure and only shared with the people caring for you.</p>
+      </div>
+      <div class="feature">
+        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-chat"/></svg></div>
+        <h3>Here when you need us</h3>
+        <p>Call, email or message us on WhatsApp — our front desk is happy to help.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<!-- ============ HOW IT WORKS ============ -->
+<section class="lp-section">
   <div class="container">
-    <div class="card" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1.5rem; padding:2.5rem;">
+    <div class="section-head">
       <div>
-        <h2 style="margin-bottom:0.3rem;">Ready to see one of our doctors?</h2>
-        <p style="margin:0;">Booking takes less than two minutes.</p>
+        <span class="eyebrow-sm">How it works</span>
+        <h2>Your visit in <em>four</em> simple steps</h2>
       </div>
+      <a href="book.html" class="btn btn-amber">Start Booking</a>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Choose a department</h3><p>Pick the type of care you need, or search for a specific doctor.</p></div>
+      <div class="step"><h3>Pick a time</h3><p>See available slots and choose the date and time that work for you.</p></div>
+      <div class="step"><h3>Get confirmation</h3><p>Your appointment is confirmed straight away, with the details sent to you.</p></div>
+      <div class="step"><h3>Visit &amp; follow up</h3><p>See your doctor, then track visits and history in your patient portal.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DOCTORS ============ -->
+<section class="lp-section white">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow-sm">Our team</span>
+        <h2>Meet a few of our <em>doctors</em></h2>
+        <p>Experienced, caring specialists — view a profile to learn more or book directly.</p>
+      </div>
+      <a href="doctors.html" class="link-arrow">View all doctors &rarr;</a>
+    </div>
+    <div class="grid grid-4" id="doctorGrid">
+      <div class="empty-state">Loading doctors…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PATIENT PORTAL ============ -->
+<section class="lp-section">
+  <div class="container split">
+    <div>
+      <span class="eyebrow-sm">Patient portal</span>
+      <h2>Your care, <em>at your fingertips</em></h2>
+      <p>Create a free account to manage everything about your visits in one secure place.</p>
+      <ul class="check-list">
+        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Upcoming appointments<span>See where and when, and cancel if your plans change.</span></div></li>
+        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Past visits<span>A full list of the doctors you've seen and when.</span></div></li>
+        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Medical history<span>Notes and records from your care team, in one timeline.</span></div></li>
+        <li id="videoBullet" style="display:none;"><svg width="18" height="18"><use href="#i-check"/></svg><div>Video consultations<span>See your doctor from home when an in-person visit isn't needed.</span></div></li>
+      </ul>
       <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+        <a href="register.html" class="btn btn-primary">Create an Account</a>
+        <a href="login.html" class="btn btn-outline">Log In</a>
+      </div>
+    </div>
+    <div class="split-media">
+      <div class="img-ph" role="img" aria-label="Image placeholder: patient portal" style="--ratio: 5 / 4;">
+        <svg><use href="#i-image"/></svg>
+        <strong>Patient portal image</strong>
+        <small>Patient using phone or laptop · 1200 × 960 px</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<!-- Placeholders only: replace with real, consented patient reviews before launch. -->
+<section class="lp-section white">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow-sm">Patient stories</span>
+        <h2>What our patients <em>say</em></h2>
+      </div>
+    </div>
+    <div class="grid grid-3">
+      <div class="quote-card">
+        <blockquote>Patient review goes here — a short quote about their experience with our doctors or staff.</blockquote>
+        <div class="who"><div class="img-ph" role="img" aria-label="Photo placeholder"><svg><use href="#i-user"/></svg></div><div><b>Patient name</b>Department visited</div></div>
+      </div>
+      <div class="quote-card">
+        <blockquote>Patient review goes here — a short quote about how easy it was to book and be seen.</blockquote>
+        <div class="who"><div class="img-ph" role="img" aria-label="Photo placeholder"><svg><use href="#i-user"/></svg></div><div><b>Patient name</b>Department visited</div></div>
+      </div>
+      <div class="quote-card">
+        <blockquote>Patient review goes here — a short quote about the care and follow-up they received.</blockquote>
+        <div class="who"><div class="img-ph" role="img" aria-label="Photo placeholder"><svg><use href="#i-user"/></svg></div><div><b>Patient name</b>Department visited</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSURANCE / PARTNERS ============ -->
+<section class="lp-section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow-sm">Insurance &amp; partners</span>
+        <h2>Working with <em>leading</em> insurers</h2>
+        <p>Not sure if your plan is covered? <a href="contact.html">Contact us</a> and we'll check for you.</p>
+      </div>
+    </div>
+    <div class="logo-row">
+      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
+      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
+      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
+      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
+      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
+      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="lp-section white">
+  <div class="container faq-grid">
+    <div>
+      <span class="eyebrow-sm">FAQ</span>
+      <h2>Questions, <em>answered</em></h2>
+      <p>Can't find what you're looking for? Our team is happy to help.</p>
+      <a href="contact.html" class="btn btn-outline" style="margin-top:0.6rem;">Contact Us</a>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>How do I book an appointment?</summary>
+        <p>Use our <a href="book.html">online booking</a> page: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.</p>
+      </details>
+      <details>
+        <summary>Do I need an account to book?</summary>
+        <p>No — you can book as a guest. Creating a free account lets you see upcoming and past visits and your medical history in the patient portal.</p>
+      </details>
+      <details>
+        <summary>How do I cancel or change my appointment?</summary>
+        <p>Log in to your patient portal to cancel an upcoming appointment, or contact our front desk and we'll help you reschedule.</p>
+      </details>
+      <details>
+        <summary>Which insurance plans do you accept?</summary>
+        <p>Coverage depends on your plan. Please <a href="contact.html">contact us</a> with your insurance details before your visit and we'll confirm for you.</p>
+      </details>
+      <details>
+        <summary>What should I bring to my first visit?</summary>
+        <p>Please bring a photo ID, your insurance card (if any), a list of current medications, and any recent test results or reports.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VISIT US ============ -->
+<section class="lp-section">
+  <div class="container visit-grid">
+    <div class="visit-card">
+      <div>
+        <span class="eyebrow-sm">Visit us</span>
+        <h2>We're here to <em>help</em></h2>
+      </div>
+      <div class="visit-row" id="visitAddressRow" style="display:none;">
+        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-pin"/></svg></div>
+        <div><b>Address</b><span id="visitAddress"></span> <a id="visitDirections" class="link-arrow" target="_blank" rel="noopener" style="display:block; margin-top:0.3rem; color:var(--blue-deep);">Get directions &rarr;</a></div>
+      </div>
+      <div class="visit-row">
+        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-phone"/></svg></div>
+        <div><b>Phone</b><a id="visitPhone" href="tel:+971543397906">+971543397906</a></div>
+      </div>
+      <div class="visit-row">
+        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-mail"/></svg></div>
+        <div><b>Email</b><a id="visitEmail" href="mailto:hello@radianthealthalliance.com">hello@radianthealthalliance.com</a></div>
+      </div>
+      <div class="visit-row">
+        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-clock"/></svg></div>
+        <div><b>Opening hours</b><span>See each <a href="departments.html" style="color:var(--blue-deep);">department page</a> for its hours</span></div>
+      </div>
+      <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:auto;">
         <a href="book.html" class="btn btn-amber">Book Appointment</a>
-        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="btn btn-whatsapp">WhatsApp Us</a>
+        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="btn btn-whatsapp" data-wa-link>WhatsApp</a>
+      </div>
+    </div>
+    <div class="visit-map" id="visitMap">
+      <div class="img-ph" role="img" aria-label="Map placeholder">
+        <svg><use href="#i-pin"/></svg>
+        <strong>Map</strong>
+        <small>Set the clinic address in Admin → Site Settings to show a map here</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="lp-section tight-top">
+  <div class="container">
+    <div class="cta-band">
+      <div>
+        <h2>Ready to see one of our doctors?</h2>
+        <p>Booking takes less than two minutes.</p>
+      </div>
+      <div class="actions">
+        <a href="book.html" class="btn btn-light">Book Appointment</a>
+        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="btn btn-whatsapp" data-wa-link>WhatsApp Us</a>
       </div>
     </div>
   </div>
@@ -74,35 +410,88 @@
 
 <script src="js/app.js"></script>
 <script>
-  (async function () {
-    try {
-      const depts = await API.get('/api/departments');
-      const grid = document.getElementById('deptGrid');
-      grid.innerHTML = depts.slice(0, 8).map(d => `
-        <a class="card dept-card" href="department.html?id=${d.id}" style="text-decoration:none; color:inherit;">
-          <div class="icon-badge">+</div>
-          <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">${d.name}</h3>
-          <p style="font-size:0.88rem; margin:0;">${d.description}</p>
-        </a>
-      `).join('');
-    } catch (e) {
-      document.getElementById('deptGrid').innerHTML = '<div class="empty-state">Could not load departments right now.</div>';
-    }
+  (function () {
+    const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const setAll = (sel, text) => document.querySelectorAll(sel).forEach(el => { el.textContent = text; });
+    const imgPh = (title, hint) => `<div class="img-ph" role="img" aria-label="Image placeholder: ${esc(title)}"><svg><use href="#i-image"/></svg><strong>${esc(title)}</strong><small>${esc(hint)}</small></div>`;
 
-    try {
-      const team = await API.get('/api/team');
+    // Departments
+    API.get('/api/departments').then(depts => {
+      if (depts.length) setAll('[data-dept-count]', String(depts.length));
+      const grid = document.getElementById('deptGrid');
+      grid.innerHTML = depts.length ? depts.slice(0, 8).map(d => `
+        <a class="dept-tile" href="department.html?id=${encodeURIComponent(d.id)}">
+          ${d.bannerUrl
+            ? `<img class="media-img" src="${esc(d.bannerUrl)}" alt="${esc(d.name)}" loading="lazy">`
+            : imgPh(d.name + ' image', '800 × 500 px')}
+          <div class="dept-tile-body">
+            <h3>${esc(d.name)}</h3>
+            <p>${esc(d.tagline || d.description)}</p>
+            <div class="meta">
+              <span>${d.doctorCount ? d.doctorCount + (d.doctorCount === 1 ? ' doctor' : ' doctors') : ''}</span>
+              <span>Learn more &rarr;</span>
+            </div>
+          </div>
+        </a>
+      `).join('') : '<div class="empty-state">Departments will appear here soon.</div>';
+    }).catch(() => {
+      document.getElementById('deptGrid').innerHTML = '<div class="empty-state">Could not load departments right now.</div>';
+    });
+
+    // Doctors
+    API.get('/api/team').then(team => {
+      const docs = team.doctors || [];
+      if (docs.length) setAll('[data-doc-count]', String(docs.length));
       const grid = document.getElementById('doctorGrid');
-      grid.innerHTML = team.doctors.slice(0, 4).map(d => `
-        <div class="card doctor-card">
-          ${avatarHtml(d)}
-          <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
-          <div class="doctor-specialty">${d.specialty}</div>
-          <a href="book.html?doctor=${d.id}" class="btn btn-outline" style="margin-top:1rem; padding:0.5rem 1rem; font-size:0.82rem;">Book</a>
-        </div>
-      `).join('');
-    } catch (e) {
+      grid.innerHTML = docs.length ? docs.slice(0, 4).map(d => {
+        const profile = `profile.html?doctor=${encodeURIComponent(d.id)}`;
+        return `
+        <div class="doc-tile">
+          <a class="portrait" href="${profile}" aria-label="View profile of ${esc(d.name)}">
+            ${d.photo ? `<img src="${esc(d.photo)}" alt="${esc(d.name)}" loading="lazy">` : `<div class="initials">${esc(initialsOf(d.name))}</div>`}
+          </a>
+          <div class="doc-tile-body">
+            <h3><a href="${profile}">${esc(d.name)}</a></h3>
+            <div class="doctor-specialty">${esc(d.specialty)}</div>
+            ${doctorLocationHtml(d)}
+            <div class="doc-tile-actions">
+              <a href="${profile}" class="btn btn-outline">Profile</a>
+              <a href="book.html?doctor=${encodeURIComponent(d.id)}" class="btn btn-primary">Book</a>
+            </div>
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty-state">Our doctors will appear here soon.</div>';
+    }).catch(() => {
       document.getElementById('doctorGrid').innerHTML = '<div class="empty-state">Could not load doctors right now.</div>';
-    }
+    });
+
+    // Contact details, WhatsApp links, map and video availability from Site Settings
+    API.get('/api/settings').then(s => {
+      if (s.whatsapp) document.querySelectorAll('[data-wa-link]').forEach(a => { a.href = 'https://wa.me/' + encodeURIComponent(s.whatsapp); });
+      if (s.phone) { const p = document.getElementById('visitPhone'); p.textContent = s.phone; p.href = 'tel:' + s.phone.replace(/\s+/g, ''); }
+      if (s.contactEmail) { const m = document.getElementById('visitEmail'); m.textContent = s.contactEmail; m.href = 'mailto:' + s.contactEmail; }
+      if (s.videoEnabled) document.getElementById('videoBullet').style.display = '';
+      const loc = s.location;
+      if (loc) {
+        if (loc.address) {
+          document.getElementById('visitAddressRow').style.display = '';
+          document.getElementById('visitAddress').textContent = loc.address;
+        }
+        const dir = document.getElementById('visitDirections');
+        if (loc.link) dir.href = loc.link; else dir.style.display = 'none';
+        if (loc.embed) {
+          const map = document.getElementById('visitMap');
+          map.innerHTML = '';
+          const f = document.createElement('iframe');
+          f.title = 'Map showing Radiant Health Alliance';
+          f.loading = 'lazy';
+          f.referrerPolicy = 'no-referrer-when-downgrade';
+          f.allowFullscreen = true;
+          f.src = loc.embed;
+          map.appendChild(f);
+        }
+      }
+    }).catch(() => { /* keep the defaults already in the page */ });
   })();
 </script>
 </body>

@@ -34,7 +34,7 @@ async function brevoSend(payload, label) {
 
 // Sends (a) the template auto-reply to the patient and (b) a notification to
 // the clinic. Returns { autoReply: boolean, clinic: boolean }.
-async function sendBookingEmails({ name, email, phone, date, service, message, videoLink, doctorName, location }) {
+async function sendBookingEmails({ name, email, phone, date, service, message, videoLink, doctorName, location, homeAddress }) {
   if (!isConfigured()) {
     console.error('Brevo: BREVO_API_KEY is not set — booking emails not sent.');
     return { autoReply: false, clinic: false };
@@ -42,7 +42,8 @@ async function sendBookingEmails({ name, email, phone, date, service, message, v
   const realEmail = !!email && !String(email).toLowerCase().endsWith('.invalid');
   const rows = [
     ['Name', name], ['Email', realEmail ? email : '(no email)'], ['Phone', phone], ['Date', date], ['Service', service], ['Message', message],
-    ...(videoLink ? [['Visit', 'Video call']] : [])
+    ...(videoLink ? [['Visit', 'Video call']] : []),
+    ...(homeAddress ? [['Visit', 'Home visit'], ['Home address', homeAddress]] : [])
   ].map(([k, v]) => `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">${k}</td>` +
     `<td style="padding:6px 12px;white-space:pre-wrap">${esc(v) || '—'}</td></tr>`).join('');
 
@@ -175,29 +176,33 @@ async function sendDoctorInvite({ kind, appointment, doctor, patient, department
   const whenText = new Intl.DateTimeFormat('en-GB', { timeZone: CLINIC_TZ(), weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(start);
   const cancelled = kind === 'cancelled';
   const isVideo = !!videoLink && !cancelled;
-  const summary = `${cancelled ? 'Cancelled: ' : ''}${videoLink ? 'Video appointment' : 'Appointment'} – ${patient.name}`;
+  const homeAddress = appointment.visitType === 'home' ? String(appointment.visitAddress || '') : '';
+  const homeMap = homeAddress ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(homeAddress) : '';
+  const summary = `${cancelled ? 'Cancelled: ' : ''}${videoLink ? 'Video appointment' : homeAddress ? 'Home visit' : 'Appointment'} – ${patient.name}`;
   const description = [
     `Patient: ${patient.name}`,
     patient.phone ? `Phone: ${patient.phone}` : '',
     patient.email && !/\.invalid$/i.test(patient.email) ? `Email: ${patient.email}` : '',
     departmentName ? `Department: ${departmentName}` : '',
     appointment.reason ? `Reason: ${appointment.reason}` : '',
+    homeAddress ? `Home visit address: ${homeAddress}` : '',
+    homeMap ? `Map: ${homeMap}` : '',
     isVideo ? '' : null,
     isVideo ? `Join video call: ${videoLink}` : null,
     '',
-    `Doctor portal: ${SITE_URL()}/doctor-dashboard.html`
+    `Doctor portal: ${SITE_URL()}/doctor-dashboard`
   ].filter(l => l !== null).filter((l, i, a) => l !== '' || (i > 0 && a[i - 1] !== '')).join('\n');
   const ics = buildIcs({
     method: cancelled ? 'CANCEL' : 'REQUEST',
     uid: `${appointment.id}@radianthealthalliance.com`,
     sequence: cancelled ? 1 : 0,
     start, end, summary, description, doctor,
-    location: videoLink ? 'Video call (link in description)' : (place && place.address ? `Radiant Health Alliance, ${place.address}` : undefined),
+    location: videoLink ? 'Video call (link in description)' : homeAddress ? `Home visit: ${homeAddress}` : (place && place.address ? `Radiant Health Alliance, ${place.address}` : undefined),
     url: isVideo ? videoLink : undefined
   });
   const rows = [
     ['Patient', patient.name], ['Phone', patient.phone], ['Email', /\.invalid$/i.test(patient.email || '') ? '' : patient.email],
-    ['When', whenText], ['Visit', videoLink ? 'Video call' : 'In clinic'], ['Department', departmentName], ['Reason', appointment.reason]
+    ['When', whenText], ['Visit', videoLink ? 'Video call' : homeAddress ? 'Home visit' : 'In clinic'], ['Home address', homeAddress], ['Department', departmentName], ['Reason', appointment.reason]
   ].filter(([, v]) => v).map(([k, v]) => `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">${k}</td><td style="padding:6px 12px;white-space:pre-wrap">${esc(v)}</td></tr>`).join('');
   return brevoSend({
     sender: { email: CLINIC.email, name: CLINIC.name },
@@ -206,8 +211,9 @@ async function sendDoctorInvite({ kind, appointment, doctor, patient, department
     subject: cancelled ? `Cancelled: ${patient.name} – ${whenText}` : `New appointment: ${patient.name} – ${whenText}`,
     htmlContent: `<p>Dear ${esc(doctor.name)},</p><p>${cancelled ? 'This appointment has been <strong>cancelled</strong> and removed from your calendar.' : 'A new appointment has been booked with you. The attached invite adds it to your calendar.'}</p>` +
       `<table style="border-collapse:collapse">${rows}</table>` +
+      (homeMap && !cancelled ? `<p style="margin:22px 0"><a href="${esc(homeMap)}" style="background:#3D7DB7;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Open address in Google Maps</a></p>` : '') +
       (isVideo ? `<p style="margin:22px 0"><a href="${esc(videoLink)}" style="background:#3D7DB7;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Join video call</a></p><p style="color:#5A6B75;font-size:13px">The link opens 15 minutes before the appointment and is also in the calendar event.</p>` : '') +
-      `<p><a href="${SITE_URL()}/doctor-dashboard.html">Open the doctor portal</a></p>`,
+      `<p><a href="${SITE_URL()}/doctor-dashboard">Open the doctor portal</a></p>`,
     attachment: [{ name: cancelled ? 'cancel.ics' : 'invite.ics', content: Buffer.from(ics, 'utf8').toString('base64') }]
   }, cancelled ? 'doctor cancellation' : 'doctor invite');
 }

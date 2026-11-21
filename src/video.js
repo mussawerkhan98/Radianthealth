@@ -10,7 +10,7 @@
 // Optional upgrade: if DAILY_API_KEY is set, Daily.co private rooms with
 // time-limited tokens are used instead (no code change needed).
 //
-// People open  /video.html?a=<appointment id>&k=<their key>  — the server
+// People open  /video?a=<appointment id>&k=<their key>  — the server
 // checks the key and time window, creates the room the first time it's
 // needed, and hands back their personal join link.
 const crypto = require('crypto');

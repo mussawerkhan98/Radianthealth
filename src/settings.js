@@ -10,6 +10,8 @@ const DEFAULTS = {
   whatsapp: '971543397906',
   contactEmail: 'hello@radianthealthalliance.com',
   notifyEmails: [],
+  // Round Call / WhatsApp buttons in the bottom-right corner of public pages.
+  floatingButtons: { call: true, whatsapp: true },
   smtp: { host: '', port: 587, secure: false, user: '', pass: '', from: '' }
 };
 

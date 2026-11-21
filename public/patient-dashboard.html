@@ -2,61 +2,79 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
 <title>My Account — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="patient-dashboard">
+<body data-page="patient-dashboard" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="section">
-  <div class="container">
-    <div class="dash-layout">
-      <aside class="dash-sidebar">
-        <p style="font-weight:800; margin-bottom:0.2rem;" id="welcomeName">Welcome</p>
-        <p style="font-size:0.82rem; margin-bottom:0.3rem;">Patient Portal</p>
-        <p style="font-size:0.82rem; margin-bottom:1.2rem;" id="patientIdLine"></p>
-        <a href="#" class="active" data-tab="upcoming">Upcoming Appointments</a>
-        <a href="#" data-tab="past">Past Appointments</a>
-        <a href="#" data-tab="history">Medical History</a>
-        <a href="book.html">Book New Appointment</a>
-        <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
-      </aside>
+<main class="sx">
+  <section class="sx-page-hero">
+    <div class="container">
+      <span class="sx-eyebrow">Patient portal</span>
+      <h1 id="welcomeName">Welcome</h1>
+      <p class="sx-lead" id="patientIdLine"></p>
+    </div>
+  </section>
 
-      <div>
+  <section class="sx-section">
+    <div class="container sx-portal">
+      <nav class="sx-card sx-portal-nav" aria-label="Patient portal">
+        <a href="#" class="active" data-tab="upcoming"><svg width="18" height="18"><use href="#i-calendar"/></svg>Upcoming appointments</a>
+        <a href="#" data-tab="past"><svg width="18" height="18"><use href="#i-history"/></svg>Past appointments</a>
+        <a href="#" data-tab="history"><svg width="18" height="18"><use href="#i-folder"/></svg>Medical history</a>
+        <a href="/book" class="book"><svg width="18" height="18"><use href="#i-plus"/></svg>Book new appointment</a>
+        <a href="#" id="logoutLink" class="logout"><svg width="18" height="18"><use href="#i-logout"/></svg>Log out</a>
+      </nav>
+
+      <div class="sx-portal-main">
         <div id="tab-upcoming">
-          <h2>Upcoming Appointments</h2>
+          <h2>Upcoming <em>appointments</em></h2>
           <div id="upcomingList"><div class="empty-state">Loading…</div></div>
         </div>
 
         <div id="tab-past" style="display:none;">
-          <h2>Past Appointments</h2>
+          <h2>Past <em>appointments</em></h2>
           <div id="pastList"><div class="empty-state">Loading…</div></div>
         </div>
 
         <div id="tab-history" style="display:none;">
-          <h2>My Medical History</h2>
-          <p>These notes are added by your doctor after each visit.</p>
+          <h2>My medical <em>history</em></h2>
+          <p class="sx-p">These notes are added by your doctor after each visit.</p>
           <div id="historyList"><div class="empty-state">Loading…</div></div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+</main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   const user = requireRole('patient');
+  const escPd = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   document.getElementById('logoutLink').addEventListener('click', (e) => {
     e.preventDefault();
     API.clearSession();
-    window.location.href = 'index.html';
+    window.location.href = '/';
   });
 
   const tabs = document.querySelectorAll('[data-tab]');
@@ -75,14 +93,15 @@
     return `
       <div class="list-item">
         <div>
-          <strong>${a.doctorName}</strong> — ${a.departmentName}${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : ''}<br>
+          <strong>${escPd(a.doctorName)}</strong> — ${escPd(a.departmentName)}${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : a.visitType === 'home' ? ' <span class="badge home">Home visit</span>' : ''}<br>
           <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
-          ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${a.reason}</span>` : ''}
+          ${a.visitType === 'home' && a.visitAddress ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">At: ${escPd(a.visitAddress)}</span>` : ''}
+          ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${escPd(a.reason)}</span>` : ''}
         </div>
-        <div style="display:flex; align-items:center; gap:0.7rem;">
-          ${a.videoLink && a.status === 'confirmed' ? `<a class="btn btn-amber" style="padding:0.4rem 0.9rem; font-size:0.8rem;" href="${a.videoLink}" target="_blank" rel="noopener">Join video call</a>` : ''}
-          <span class="badge ${a.status}">${a.status}</span>
-          ${a.status === 'confirmed' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel="${a.id}">Cancel</button>` : ''}
+        <div style="display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap;">
+          ${a.videoLink && a.status === 'confirmed' ? `<a class="sx-btn sx-btn-bronze" style="height:38px; padding:0 0.9rem; font-size:0.82rem; border-radius:11px;" href="${escPd(a.videoLink)}" target="_blank" rel="noopener">Join video call</a>` : ''}
+          <span class="badge ${escPd(a.status)}">${escPd(a.status)}</span>
+          ${a.status === 'confirmed' ? `<button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-cancel="${escPd(a.id)}">Cancel</button>` : ''}
         </div>
       </div>
     `;
@@ -98,7 +117,7 @@
 
       document.getElementById('upcomingList').innerHTML = upcoming.length
         ? upcoming.map(apptRow).join('')
-        : '<div class="empty-state">No upcoming appointments. <a href="book.html">Book one now</a>.</div>';
+        : '<div class="empty-state">No upcoming appointments. <a href="/book">Book one now</a>.</div>';
 
       document.getElementById('pastList').innerHTML = past.length
         ? past.map(apptRow).join('')
@@ -129,10 +148,10 @@
       el.innerHTML = records.length
         ? records.map(r => `
             <div class="timeline-item">
-              <div class="timeline-date">${fmtDate(r.date)} — ${r.doctorName}</div>
-              ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${r.diagnosis}</p>` : ''}
-              <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${r.notes}</p>
-              ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${r.prescription}</p>` : ''}
+              <div class="timeline-date">${fmtDate(r.date)} — ${escPd(r.doctorName)}</div>
+              ${r.diagnosis ? `<p style="margin:0.3rem 0 0.2rem;"><strong>Diagnosis:</strong> ${escPd(r.diagnosis)}</p>` : ''}
+              <p style="margin:0.2rem 0;"><strong>Notes:</strong> ${escPd(r.notes)}</p>
+              ${r.prescription ? `<p style="margin:0.2rem 0;"><strong>Prescription:</strong> ${escPd(r.prescription)}</p>` : ''}
             </div>
           `).join('')
         : '<div class="empty-state">No medical history recorded yet.</div>';
@@ -141,10 +160,10 @@
     }
   }
 
-  document.getElementById('welcomeName').textContent = 'Welcome, ' + (user ? user.name.split(' ')[0] : '');
+  document.getElementById('welcomeName').innerHTML = 'Welcome, <em>' + escPd(user ? user.name.split(' ')[0] : '') + '</em>';
   API.get('/api/patients/me').then(me => {
     const el = document.getElementById('patientIdLine');
-    el.innerHTML = me.patientId ? `Patient ID: <strong>${me.patientId}</strong>` : '';
+    el.innerHTML = me.patientId ? `Your Patient ID: <strong>${escPd(me.patientId)}</strong> — use it when you call or visit the clinic.` : '';
   }).catch(() => {});
   loadAppointments();
   loadHistory();

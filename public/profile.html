@@ -2,32 +2,54 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Our Team — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Doctor and team profiles at Radiant Health Alliance — qualifications, experience and online booking.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="about">
+<body data-page="about" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="section">
-  <div class="container">
-    <a href="about.html" class="profile-back">&larr; Our team</a>
-    <div id="profile"><div class="empty-state">Loading profile…</div></div>
-  </div>
-</section>
+<main class="sx">
+  <section class="sx-page-hero">
+    <div class="container">
+      <ol class="sx-crumbs" id="crumbs"><li><a href="/">Home</a></li><li><a href="/about">Our team</a></li><li>Profile</li></ol>
+      <div id="profileHead"><div class="empty-state">Loading profile…</div></div>
+    </div>
+  </section>
+  <section class="sx-section">
+    <div class="container" id="profile"></div>
+  </section>
+</main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
+  // /doctors/<slug>, /team/<slug> (readable) or the old /profile?doctor=<id> / ?team=<id>
   const q = new URLSearchParams(location.search);
-  const type = q.get('doctor') ? 'doctor' : q.get('team') ? 'team' : '';
-  const id = q.get('doctor') || q.get('team') || '';
+  const pathMatch = location.pathname.match(/^\/(doctors|team)\/([^/]+)/);
+  const type = pathMatch ? (pathMatch[1] === 'doctors' ? 'doctor' : 'team') : q.get('doctor') ? 'doctor' : q.get('team') ? 'team' : '';
+  const id = pathMatch ? decodeURIComponent(pathMatch[2]) : (q.get('doctor') || q.get('team') || '');
   const el = document.getElementById('profile');
+  const head = document.getElementById('profileHead');
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const icon = (name, size) => `<svg width="${size || 16}" height="${size || 16}" aria-hidden="true"><use href="#${name}"/></svg>`;
   const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const t12 = t => { const [h, m] = String(t).split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
 
@@ -45,9 +67,9 @@
     return runs.join(', ');
   }
 
-  function section(title, body) { return body ? `<div class="profile-section"><h2>${title}</h2>${body}</div>` : ''; }
-  const ul = arr => arr.length ? `<ul class="profile-list">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
-  const paras = t => String(t || '').trim() ? String(t).trim().split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+  function section(title, body) { return body ? `<div class="sx-block profile-section"><h2 class="sx-block-title">${title}</h2>${body}</div>` : ''; }
+  const ul = arr => arr.length ? `<ul class="sx-bullets">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  const paras = t => String(t || '').trim() ? `<div class="sx-prose">${String(t).trim().split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('')}</div>` : '';
 
   function certCard(c) {
     const inner = c.isImage && c.fileUrl
@@ -59,46 +81,57 @@
   }
 
   async function load() {
-    if (!type || !id) { el.innerHTML = '<div class="empty-state">Profile not found. <a href="about.html">See our team</a>.</div>'; return; }
+    if (!type || !id) { head.innerHTML = '<div class="empty-state">Profile not found. <a href="/about">See our team</a>.</div>'; return; }
     let p;
     try { p = await API.get(`/api/profiles/${type}/${encodeURIComponent(id)}`); }
-    catch (e) { el.innerHTML = '<div class="empty-state">This profile is not available. <a href="about.html">See our team</a>.</div>'; return; }
+    catch (e) { head.innerHTML = '<div class="empty-state">This profile is not available. <a href="/about">See our team</a>.</div>'; return; }
     document.title = `${p.name} — Radiant Health Alliance`;
+    setCanonicalPath(type === 'doctor' ? LINKS.doctor(p) : LINKS.team(p));
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.content = `${p.name}${p.title ? ', ' + p.title : ''} at Radiant Health Alliance.${p.bio ? ' ' + p.bio : ''}`.slice(0, 300);
+    if (type === 'doctor') {
+      document.getElementById('crumbs').innerHTML = `<li><a href="/">Home</a></li><li><a href="/doctors">Doctors</a></li><li>${esc(p.name)}</li>`;
+    } else {
+      document.getElementById('crumbs').innerHTML = `<li><a href="/">Home</a></li><li><a href="/about">Our team</a></li><li>${esc(p.name)}</li>`;
+    }
     const place = [p.city, p.country].filter(Boolean).join(', ');
     const facts = [
-      place ? `<span class="profile-fact">Based in <strong>${esc(place)}</strong></span>` : '',
-      p.experienceYears ? `<span class="profile-fact"><strong>${p.experienceYears}+</strong> years experience</span>` : '',
-      p.languages.length ? `<span class="profile-fact">Speaks <strong>${p.languages.map(esc).join(', ')}</strong></span>` : '',
-      p.offersVideo ? '<span class="profile-fact"><strong>Video</strong> consultations</span>' : ''
+      place ? `<span class="sx-fact">${icon('i-pin', 14)}Based in <strong>${esc(place)}</strong></span>` : '',
+      p.experienceYears ? `<span class="sx-fact"><strong>${esc(p.experienceYears)}+</strong> years experience</span>` : '',
+      p.languages.length ? `<span class="sx-fact">Speaks <strong>${p.languages.map(esc).join(', ')}</strong></span>` : '',
+      p.offersVideo ? `<span class="sx-fact">${icon('i-video', 14)}<strong>Video</strong> consultations</span>` : '',
+      p.offersHomeVisit ? `<span class="sx-fact">${icon('i-home', 14)}<strong>Home</strong> visits</span>` : ''
     ].filter(Boolean).join('');
     const hours = type === 'doctor' && p.workingDays && p.workingDays.length
-      ? `<p class="profile-hours">Available ${daysText(p.workingDays)}, ${t12(p.workingHours.start)} – ${t12(p.workingHours.end)}</p>` : '';
-    el.innerHTML = `
-      <div class="card profile-head">
-        ${avatarHtml(p, 'profile-avatar')}
-        <div class="profile-head-text">
-          <h1>${esc(p.name)}</h1>
-          <p class="profile-title">${esc(p.title)}${p.department ? ` · <a href="department.html?id=${encodeURIComponent(p.department.id)}">${esc(p.department.name)}</a>` : ''}</p>
-          ${p.bio ? `<p class="profile-bio">${esc(p.bio)}</p>` : ''}
-          ${facts ? `<div class="profile-facts">${facts}</div>` : ''}
-          ${hours}
-          ${type === 'doctor' ? `<div class="profile-actions"><a class="btn btn-amber" href="book.html?doctor=${encodeURIComponent(p.id)}">Book an appointment</a>${p.offersVideo ? `<a class="btn btn-outline" href="book.html?doctor=${encodeURIComponent(p.id)}&visit=video">Book a video call</a>` : ''}</div>` : ''}
-        </div>
-      </div>
-      <div class="profile-grid">
+      ? `<p class="sx-profile-hours">${icon('i-clock', 15)}Available ${daysText(p.workingDays)}, ${t12(p.workingHours.start)} – ${t12(p.workingHours.end)}</p>` : '';
+    head.innerHTML = `
+      <div class="sx-profile-head">
+        <div class="sx-profile-photo">${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}">` : `<span class="initials">${esc(initialsOf(p.name))}</span>`}</div>
         <div>
+          <span class="sx-eyebrow">${type === 'doctor' ? 'Doctor profile' : 'Our team'}</span>
+          <h1>${esc(p.name)}</h1>
+          <p class="sx-profile-title">${esc(p.title)}${p.department ? ` · <a href="${LINKS.department(p.department)}">${esc(p.department.name)}</a>` : ''}</p>
+          ${p.bio ? `<p class="sx-profile-bio">${esc(p.bio)}</p>` : ''}
+          ${facts ? `<div class="sx-facts">${facts}</div>` : ''}
+          ${hours}
+          ${type === 'doctor' ? `<div class="sx-hero-actions"><a class="sx-btn sx-btn-bronze" href="/book?doctor=${encodeURIComponent(p.id)}">${icon('i-calendar', 20)}Book an appointment</a>${p.offersHomeVisit ? `<a class="sx-btn sx-btn-white" href="/book?doctor=${encodeURIComponent(p.id)}&visit=home">${icon('i-home', 20)}Book a home visit</a>` : ''}${p.offersVideo ? `<a class="sx-btn sx-btn-white" href="/book?doctor=${encodeURIComponent(p.id)}&visit=video">${icon('i-video', 20)}Book a video call</a>` : ''}</div>` : ''}
+        </div>
+      </div>`;
+    el.innerHTML = `
+      <div class="sx-layout">
+        <div id="profileMain">
           ${section('About', paras(p.about))}
           ${section('Qualifications', ul(p.qualifications))}
           ${section('Education &amp; training', ul(p.education))}
           ${section('Certificates &amp; licences', p.certificates.length ? `<div class="cert-grid">${p.certificates.map(certCard).join('')}</div>` : '')}
         </div>
-        <aside>
-          ${p.expertise.length ? `<div class="card profile-side"><h2>Areas of expertise</h2><div class="profile-chips">${p.expertise.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div></div>` : ''}
-          ${type === 'doctor' ? `<div class="card profile-side"><h2>Visit us</h2><p>Book online in a minute — no account needed.</p><a class="btn btn-primary" href="book.html?doctor=${encodeURIComponent(p.id)}">Choose a time</a></div>` : ''}
+        <aside class="sx-aside">
+          ${p.expertise.length ? `<div class="sx-card"><span class="sx-card-icon">${icon('i-star', 22)}</span><h2 class="sx-card-title">Areas of expertise</h2><div class="sx-chip-list">${p.expertise.map(x => `<span class="sx-chip">${esc(x)}</span>`).join('')}</div></div>` : ''}
+          ${type === 'doctor' ? `<div class="sx-card"><span class="sx-card-icon amber">${icon('i-calendar', 22)}</span><h2 class="sx-card-title">Visit us</h2><p class="sx-card-sub">Book online in a minute — no account needed.</p><a class="sx-btn sx-btn-blue sx-btn-block" href="/book?doctor=${encodeURIComponent(p.id)}">Choose a time</a></div>` : ''}
         </aside>
       </div>`;
     if (!el.querySelector('.profile-section') && !p.expertise.length) {
-      el.querySelector('.profile-grid').insertAdjacentHTML('afterbegin', '<p style="color:var(--ink-soft);">More details coming soon.</p>');
+      document.getElementById('profileMain').insertAdjacentHTML('afterbegin', '<p class="sx-p">More details coming soon.</p>');
     }
   }
   load();

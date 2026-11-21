@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<link rel="icon" href="/assets/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
 </head>
 <body data-page="admin">
 
@@ -26,6 +26,8 @@
         <a href="#" data-tab="staffAccounts" data-perm="staff.manage">Staff Logins</a>
         <a href="#" data-tab="roles" data-perm="staff.manage">Roles &amp; Permissions</a>
         <a href="#" data-tab="marketing" data-perm="marketing.send">Marketing</a>
+        <a href="#" data-tab="content" data-perm="content.manage">Website Content</a>
+        <a href="#" data-tab="blog" data-perm="blog.manage">Health Insights (Blog)</a>
         <a href="#" data-tab="settings" data-perm="settings.manage">Site Settings</a>
         <div id="noAccess" style="display:none; font-size:0.85rem; color:var(--ink-soft); margin:0.6rem 0;">Your role has no sections yet. Ask an admin to give it permissions.</div>
         <a href="#" id="logoutLink" style="color:var(--danger); margin-top:0.6rem;">Log Out</a>
@@ -161,6 +163,12 @@
                   <span>Offers video appointments <small id="dmVideoHint" style="display:block; font-weight:400; color:var(--ink-soft);">Patients can choose "Video call" when booking with this doctor.</small></span>
                 </label>
               </div>
+              <div class="form-group">
+                <label style="display:flex; gap:0.55rem; align-items:flex-start; cursor:pointer; font-weight:600;">
+                  <input type="checkbox" id="dmHome" style="width:auto; flex:0 0 auto; margin:0.2rem 0 0; accent-color:var(--blue);">
+                  <span>Does home visits <small style="display:block; font-weight:400; color:var(--ink-soft);">Patients can choose "Home visit" when booking with this doctor and give their address.</small></span>
+                </label>
+              </div>
               <button type="submit" class="btn btn-primary">Save Hours</button>
             </form>
           </div>
@@ -278,6 +286,20 @@
           <h2>Appointments</h2>
           <p>Every booking across every doctor and department.</p>
 
+          <div class="card" id="voCard" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;" data-perm="visits.manage">
+            <h4 style="margin:0;">Booking options right now</h4>
+            <p style="font-size:0.85rem; color:var(--ink-soft); margin:0.35rem 0 1rem;">Busy? Pause a type of visit so patients can't book it online — a pause ends by itself. <b>Switch off</b> keeps it closed until you switch it back on. Patients still see the option greyed out, with your Call / WhatsApp buttons. Staff can still book any type from "Book for a Patient".</p>
+            <div id="voAlert" class="alert"></div>
+            <div class="vo-grid" id="voGrid"><div style="color:var(--ink-soft);">Loading…</div></div>
+            <div class="form-group" style="margin:1.1rem 0 0;">
+              <label for="voMessage">Message shown to patients while something is paused (optional)</label>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <input type="text" id="voMessage" maxlength="300" style="flex:1; min-width:220px;" placeholder="e.g. We're very busy this evening — home visits reopen at 9 PM.">
+                <button type="button" class="btn btn-outline" id="voMsgSave">Save message</button>
+              </div>
+            </div>
+          </div>
+
           <div class="card" style="padding:1.4rem 1.6rem; margin-bottom:1.4rem;" data-perm="appointments.book">
             <h4 style="margin-top:0;">Book for a Patient</h4>
             <p style="font-size:0.85rem; color:var(--ink-soft);">For phone calls and walk-ins. The mobile number is the Patient ID — enter it first to find an existing patient.</p>
@@ -294,7 +316,9 @@
                   <div class="form-group"><label for="rbEmail">Email (optional — for the confirmation)</label><input type="email" id="rbEmail" maxlength="254"></div>
                 </div>
                 <div class="form-group" id="rbVisitWrap" style="display:none;"><label for="rbVisit">Type of visit</label>
-                  <select id="rbVisit"><option value="in_person">In clinic</option><option value="video">Video call</option></select></div>
+                  <select id="rbVisit"><option value="in_person">Clinic visit</option><option value="home">Home visit</option><option value="video">Video call</option></select></div>
+                <div class="form-group" id="rbAddressWrap" style="display:none;"><label for="rbAddress">Home visit address</label>
+                  <textarea id="rbAddress" maxlength="500" rows="2" placeholder="Villa / apartment, building, street, area, city"></textarea></div>
                 <div class="form-row">
                   <div class="form-group"><label for="rbDoctor">Doctor</label><select id="rbDoctor"></select></div>
                   <div class="form-group"><label for="rbDate">Date</label><input type="date" id="rbDate"></div>
@@ -449,12 +473,12 @@
               </div>
               <div class="form-group" id="mkWebsiteWrap" style="display:none;"><label for="mkWebsitePage">Website page</label>
                 <select id="mkWebsitePage">
-                  <option value="/book.html">Book an Appointment</option>
+                  <option value="/book">Book an Appointment</option>
                   <option value="/">Home page</option>
-                  <option value="/departments.html">Departments</option>
-                  <option value="/doctors.html">Our Doctors</option>
-                  <option value="/contact.html">Contact</option>
-                  <option value="/about.html">About</option>
+                  <option value="/departments">Departments</option>
+                  <option value="/doctors">Our Doctors</option>
+                  <option value="/contact">Contact</option>
+                  <option value="/about">About</option>
                 </select></div>
               <div class="form-group" id="mkWhatsappWrap" style="display:none;"><label for="mkWhatsappText">Message they send you on WhatsApp</label>
                 <input type="text" id="mkWhatsappText" maxlength="300" placeholder="e.g. Hi, I'd like the check-up offer">
@@ -562,6 +586,10 @@
           </div>
         </div>
 
+        <!-- Website Content + Blog: built by js/admin-cms.js -->
+        <div id="tab-content" style="display:none;"></div>
+        <div id="tab-blog" style="display:none;"></div>
+
         <div id="tab-settings" style="display:none;">
           <h2>Site Settings</h2>
 
@@ -581,6 +609,14 @@
               <div class="form-group">
                 <label for="setContactEmail">Public Contact Email</label>
                 <input type="email" id="setContactEmail" placeholder="hello@radianthealthalliance.com">
+              </div>
+              <div class="form-group">
+                <label style="margin-bottom:0.4rem;">Floating buttons (bottom-right corner of every public page)</label>
+                <label style="display:flex; gap:0.55rem; align-items:center; cursor:pointer; font-weight:600; margin-bottom:0.35rem;">
+                  <input type="checkbox" id="setFloatCall" style="width:auto; flex:0 0 auto; margin:0; accent-color:var(--blue);"> Show the round <b>Call</b> button</label>
+                <label style="display:flex; gap:0.55rem; align-items:center; cursor:pointer; font-weight:600;">
+                  <input type="checkbox" id="setFloatWa" style="width:auto; flex:0 0 auto; margin:0; accent-color:var(--blue);"> Show the round <b>WhatsApp</b> button</label>
+                <small style="color:var(--ink-soft);">They use the phone and WhatsApp numbers above.</small>
               </div>
               <button type="submit" class="btn btn-primary">Save Contact Info</button>
             </form>
@@ -793,8 +829,9 @@
 </div>
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
-<script src="js/countries.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/countries.js"></script>
+<script src="/js/admin-cms.js"></script>
 <script>
   const user = requireRole(['admin', 'staff']);
   let ME = { permissions: [] };
@@ -811,11 +848,11 @@
   document.getElementById('logoutLink').addEventListener('click', (e) => {
     e.preventDefault();
     API.clearSession();
-    window.location.href = 'index.html';
+    window.location.href = '/';
   });
 
   const tabs = document.querySelectorAll('[data-tab]');
-  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'roles', 'appointments', 'patients', 'marketing', 'settings'];
+  const tabNames = ['depts', 'docs', 'team', 'staffAccounts', 'roles', 'appointments', 'patients', 'marketing', 'content', 'blog', 'settings'];
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       e.preventDefault();
@@ -831,6 +868,8 @@
       if (tab.dataset.tab === 'roles') { loadRoles(); loadDoctorRules(); }
       if (tab.dataset.tab === 'settings') loadSettings();
       if (tab.dataset.tab === 'marketing') loadMarketing();
+      if (tab.dataset.tab === 'content') AdminCMS.openContent();
+      if (tab.dataset.tab === 'blog') AdminCMS.openBlog();
     });
   });
   document.querySelectorAll('[data-goto-tab]').forEach(a => a.addEventListener('click', e => {
@@ -849,7 +888,7 @@
         <div style="display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap;">
           <span class="badge">${d.doctorCount} doctor${d.doctorCount === 1 ? '' : 's'}</span>
           <button class="btn btn-primary" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-edit-dept="${d.id}">Edit page</button>
-          <a class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;" href="department.html?id=${encodeURIComponent(d.id)}" target="_blank" rel="noopener">View</a>
+          <a class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.8rem;" href="${LINKS.department(d)}" target="_blank" rel="noopener">View</a>
           <button class="btn btn-danger" style="padding:0.4rem 0.9rem; font-size:0.8rem;" data-delete-dept="${d.id}">Delete</button>
         </div>
       </div>
@@ -1098,7 +1137,94 @@
   const wireCopy = root => root.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => copyText(b.dataset.copy, b)));
 
   let apptCache = [];
+  // ---------- Booking options right now (pause / switch off visit types) ----------
+  let VO = null, voTimer = null;
+  const VO_ICON = {
+    in_person: '<path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-4h4v4M12 8v4M10 10h4"/>',
+    home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    video: '<rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/>'
+  };
+  function voUntil(iso) {
+    const d = new Date(iso), tz = VO && VO.timeZone;
+    const day = x => new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(x);
+    const opts = { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true };
+    if (day(d) !== day(new Date())) opts.weekday = 'short';
+    return new Intl.DateTimeFormat('en-US', opts).format(d);
+  }
+  function renderVisitOptions() {
+    if (!VO) return;
+    const grid = document.getElementById('voGrid');
+    const noun = { in_person: 'doctor', home: 'doctor', video: 'doctor' };
+    grid.innerHTML = VO.types.map(t => {
+      const st = VO.status[t.key], n = VO.doctors[t.key];
+      const cls = st.available ? 'on' : st.off ? 'off' : 'paused';
+      const state = st.available ? 'Open' : st.off ? 'Switched off' : 'Paused';
+      const sub = st.available ? 'Patients can book this online.'
+        : st.off ? 'Closed for online booking until you switch it back on.'
+        : `Reopens by itself at <b>${voUntil(st.pausedUntil)}</b>.`;
+      const warn = t.key === 'video' && !VO.videoConfigured ? 'Video calls are switched off for the whole site (VIDEO_ENABLED=false).'
+        : t.key !== 'in_person' && !n ? `No doctor offers ${t.key === 'home' ? 'home visits' : 'video calls'} yet — tick it in Doctors → a doctor → Working Hours. Until then patients won't see this option.`
+        : '';
+      const pauses = [[30, '30 min'], [60, '1 hour'], [120, '2 hours'], ['eod', 'Rest of today']];
+      const actions = st.off ? '' : `<div class="vo-actions">
+          ${st.available ? '<span style="font-size:0.78rem; font-weight:700; color:var(--ink-soft); align-self:center;">Pause for</span>' : `<button type="button" class="btn btn-primary" data-vo="${t.key}" data-resume>Reopen now</button><span style="font-size:0.78rem; font-weight:700; color:var(--ink-soft); align-self:center;">or pause</span>`}
+          ${pauses.map(([m, l]) => `<button type="button" class="btn btn-outline" data-vo="${t.key}" data-pause="${m}">${l}</button>`).join('')}
+        </div>`;
+      return `<div class="vo-card ${cls}">
+        <div class="vo-head">
+          <span style="display:flex; align-items:center; gap:0.55rem;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${VO_ICON[t.key]}</svg><strong>${t.label}</strong></span>
+          <span style="display:flex; align-items:center; gap:0.5rem;"><span class="vo-state">${state}</span>
+            <label class="vo-switch" title="${st.off ? 'Switch on' : 'Switch off'}"><input type="checkbox" data-vo="${t.key}" data-switch ${st.off ? '' : 'checked'} aria-label="${t.label} on/off"><span></span></label></span>
+        </div>
+        <p class="vo-sub">${sub}${t.key !== 'in_person' && n ? ` · ${n} ${noun[t.key]}${n === 1 ? ' offers' : 's offer'} it` : ''}</p>
+        ${warn ? `<p class="vo-warn">${warn}</p>` : ''}
+        ${actions}
+      </div>`;
+    }).join('');
+    const msg = document.getElementById('voMessage');
+    if (document.activeElement !== msg) msg.value = VO.config.message || '';
+  }
+  async function loadVisitOptions() {
+    if (!can('visits.manage')) return;
+    try { VO = await API.get('/api/admin/visit-options'); renderVisitOptions(); }
+    catch (e) { showAlert(document.getElementById('voAlert'), e.message, 'error'); }
+    clearInterval(voTimer);
+    // Keep the cards current (pauses end by themselves) while this tab is open.
+    voTimer = setInterval(() => {
+      if (document.getElementById('tab-appointments').style.display === 'none' || document.hidden) return;
+      API.get('/api/admin/visit-options').then(r => { VO = r; renderVisitOptions(); }).catch(() => {});
+    }, 60000);
+  }
+  async function updateVisitOptions(body, doneText) {
+    const alertEl = document.getElementById('voAlert');
+    hideAlert(alertEl);
+    try {
+      VO = await API.patch('/api/admin/visit-options', body);
+      renderVisitOptions();
+      SITE.visits = VO.status;
+      if (doneText) showAlert(alertEl, doneText, 'success');
+    } catch (e) { showAlert(alertEl, e.message, 'error'); }
+  }
+  document.getElementById('voGrid').addEventListener('click', e => {
+    const b = e.target.closest('button[data-vo]');
+    if (!b) return;
+    const type = b.dataset.vo, label = VO.types.find(t => t.key === type).label;
+    if (b.hasAttribute('data-resume')) return updateVisitOptions({ type, pauseMinutes: 0 }, `${label} is open for online booking again.`);
+    const m = b.dataset.pause;
+    updateVisitOptions(m === 'eod' ? { type, pauseUntil: 'end-of-day' } : { type, pauseMinutes: Number(m) },
+      `${label} paused. It reopens by itself — or press "Reopen now".`);
+  });
+  document.getElementById('voGrid').addEventListener('change', e => {
+    const sw = e.target.closest('input[data-switch]');
+    if (!sw) return;
+    const label = VO.types.find(t => t.key === sw.dataset.vo).label;
+    updateVisitOptions({ type: sw.dataset.vo, on: sw.checked }, sw.checked ? `${label} switched on.` : `${label} switched off for online booking.`);
+  });
+  document.getElementById('voMsgSave').addEventListener('click', () =>
+    updateVisitOptions({ message: document.getElementById('voMessage').value }, 'Message saved.'));
+
   async function loadAppointments() {
+    loadVisitOptions();
     const el = document.getElementById('apptList');
     el.innerHTML = '<div class="empty-state">Loading…</div>';
     try {
@@ -1124,8 +1250,9 @@
     el.innerHTML = list.length ? list.map(a => `
       <div class="list-item" style="flex-wrap:wrap; gap:0.7rem;">
         <div>
-          <strong>${escAttr(a.patientName)}</strong> with <strong>${escAttr(a.doctorName)}</strong>${a.patientId ? ` <span class="badge">ID ${escAttr(a.patientId)}</span>` : ''}${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : ''}<br>
+          <strong>${escAttr(a.patientName)}</strong> with <strong>${escAttr(a.doctorName)}</strong>${a.patientId ? ` <span class="badge">ID ${escAttr(a.patientId)}</span>` : ''}${a.visitType === 'video' ? ' <span class="badge video">Video call</span>' : a.visitType === 'home' ? ' <span class="badge home">Home visit</span>' : ''}<br>
           <span style="color:var(--ink-soft); font-size:0.9rem;">${fmtDate(a.date)} at ${fmtTime(a.time)}</span>
+          ${a.visitType === 'home' && a.visitAddress ? `<br><span style="font-size:0.85rem;">Address: ${escAttr(a.visitAddress)} · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.visitAddress)}" target="_blank" rel="noopener">Map</a></span>` : ''}
           ${a.patientPhone || a.patientEmail ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">${[a.patientPhone, a.patientEmail].filter(Boolean).map(escAttr).join(' · ')}</span>` : ''}
           ${a.reason ? `<br><span style="color:var(--ink-soft); font-size:0.85rem;">Reason: ${escAttr(a.reason)}</span>` : ''}
         </div>
@@ -1154,7 +1281,7 @@
   function rbReset(keepPhone) {
     rb.patient = null; rb.slot = null;
     if (!keepPhone) document.getElementById('rbPhone').value = '';
-    ['rbName', 'rbEmail', 'rbReason'].forEach(id => { document.getElementById(id).value = ''; });
+    ['rbName', 'rbEmail', 'rbReason', 'rbAddress'].forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('rbFound').innerHTML = '';
     document.getElementById('rbDetails').style.display = 'none';
     document.getElementById('rbSlotsWrap').style.display = 'none';
@@ -1176,7 +1303,15 @@
       document.getElementById('rbDetails').style.display = 'block';
       if (!rb.doctors) {
         rb.doctors = await API.get('/api/doctors');
-        document.getElementById('rbVisitWrap').style.display = SITE.videoEnabled && rb.doctors.some(d => d.offersVideo) ? '' : 'none';
+        // Offer each type some doctor provides; mark types paused for online booking (staff can still book them).
+        const vs = SITE.visits || {};
+        const offered = { in_person: true, home: rb.doctors.some(d => d.offersHomeVisit), video: SITE.videoEnabled && rb.doctors.some(d => d.offersVideo) };
+        const names = { in_person: 'Clinic visit', home: 'Home visit', video: 'Video call' };
+        document.querySelectorAll('#rbVisit option').forEach(o => {
+          o.hidden = o.disabled = !offered[o.value];
+          o.textContent = names[o.value] + (vs[o.value] && vs[o.value].available === false ? ' (paused online — you can still book)' : '');
+        });
+        document.getElementById('rbVisitWrap').style.display = offered.home || offered.video ? '' : 'none';
         rbFillDoctors();
       }
       const dateIn = document.getElementById('rbDate');
@@ -1187,9 +1322,10 @@
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
   }
   function rbFillDoctors() {
-    const video = document.getElementById('rbVisit').value === 'video';
+    const t = document.getElementById('rbVisit').value;
+    document.getElementById('rbAddressWrap').style.display = t === 'home' ? '' : 'none';
     const sel = document.getElementById('rbDoctor'), prev = sel.value;
-    const list = (rb.doctors || []).filter(d => !video || d.offersVideo);
+    const list = (rb.doctors || []).filter(d => t === 'video' ? d.offersVideo : t === 'home' ? d.offersHomeVisit : true);
     sel.innerHTML = '<option value="">Choose a doctor…</option>' +
       list.map(d => `<option value="${d.id}">${escAttr(d.name)} — ${escAttr(d.specialty)}</option>`).join('');
     if (list.some(d => d.id === prev)) sel.value = prev;
@@ -1233,10 +1369,11 @@
         phone: document.getElementById('rbPhone').value, name, email: document.getElementById('rbEmail').value.trim(),
         doctorId: document.getElementById('rbDoctor').value, date: document.getElementById('rbDate').value, time: rb.slot,
         reason: document.getElementById('rbReason').value,
-        visitType: document.getElementById('rbVisit').value
+        visitType: document.getElementById('rbVisit').value,
+        visitAddress: document.getElementById('rbAddress').value.trim()
       });
       const doc = document.getElementById('rbDoctor').selectedOptions[0].textContent.split(' — ')[0];
-      showAlert(alertEl, `Booked ${r.patient.name} (ID ${r.patient.patientId}) with ${doc} on ${fmtDate(r.date)} at ${fmtTime(r.time)}${r.visitType === 'video' ? ' as a video call' : ''}.` +
+      showAlert(alertEl, `Booked ${r.patient.name} (ID ${r.patient.patientId}) with ${doc} on ${fmtDate(r.date)} at ${fmtTime(r.time)}${r.visitType === 'video' ? ' as a video call' : r.visitType === 'home' ? ' as a home visit' : ''}.` +
         (r.patient.email ? (r.emailSent ? ' Confirmation emailed.' : ' (Confirmation email could not be sent.)') : ' No email on file, so no confirmation was sent.') +
         (r.visitType === 'video' ? (r.patient.email ? ' The video link was emailed too.' : ' Use "Copy patient link" in the list below to send them the video link (e.g. by WhatsApp).') : ''), 'success');
       rbReset(false);
@@ -1497,7 +1634,7 @@
 
   async function openDoctorManage(id) {
     dm = { id, weekStart: null, doctor: null, calendar: null };
-    document.getElementById('dmPublicLink').href = `profile.html?doctor=${encodeURIComponent(id)}`;
+    document.getElementById('dmPublicLink').href = `/doctors/${encodeURIComponent(id)}`;
     document.getElementById('docsMain').style.display = 'none';
     document.getElementById('docManage').style.display = 'block';
     ['hoursAlert', 'profileAlert', 'pwAlert'].forEach(a => hideAlert(document.getElementById(a)));
@@ -1524,6 +1661,7 @@
       `<label><input type="checkbox" value="${n}" ${d.workingDays.includes(n) ? 'checked' : ''}> ${DAY_NAMES[n]}</label>`).join('');
     document.getElementById('dmStart').value = d.workingHours.start;
     document.getElementById('dmVideo').checked = !!d.offersVideo;
+    document.getElementById('dmHome').checked = !!d.offersHomeVisit;
     document.getElementById('dmVideoHint').textContent = SITE.videoEnabled
       ? 'Patients can choose "Video call" when booking with this doctor.'
       : 'Video calls are switched off for the whole site (VIDEO_ENABLED=false in Vercel), so patients won\'t see this option.';
@@ -1552,7 +1690,7 @@
     const chip = (s, date) => {
       if (s.status === 'booked') {
         const a = s.appointment;
-        return `<button type="button" class="cal-chip booked" data-appt="${a.id}" data-date="${date}" title="${escAttr(a.patient ? a.patient.name : '')}${a.visitType === 'video' ? ' (video call)' : ''}">${fmtTime(s.time)}${a.visitType === 'video' ? ' · Video' : ''}<small>${escAttr(a.patient ? a.patient.name : 'Booked')}</small></button>`;
+        return `<button type="button" class="cal-chip booked" data-appt="${a.id}" data-date="${date}" title="${escAttr(a.patient ? a.patient.name : '')}${a.visitType === 'video' ? ' (video call)' : a.visitType === 'home' ? ' (home visit: ' + escAttr(a.visitAddress) + ')' : ''}">${fmtTime(s.time)}${a.visitType === 'video' ? ' · Video' : a.visitType === 'home' ? ' · Home' : ''}<small>${escAttr(a.patient ? a.patient.name : 'Booked')}</small></button>`;
       }
       return `<div class="cal-chip ${s.status}">${fmtTime(s.time)}<small>${s.status === 'free' ? 'Free' : '—'}</small></div>`;
     };
@@ -1632,7 +1770,7 @@
     if (!days.length) return showAlert(alertEl, 'Pick at least one working day.', 'error');
     if (start >= end) return showAlert(alertEl, 'Finishing time must be after the starting time.', 'error');
     try {
-      await API.patch(`/api/admin/doctors/${dm.id}`, { workingDays: days, workingHours: { start, end, slotMinutes: Number(document.getElementById('dmSlot').value) }, offersVideo: document.getElementById('dmVideo').checked });
+      await API.patch(`/api/admin/doctors/${dm.id}`, { workingDays: days, workingHours: { start, end, slotMinutes: Number(document.getElementById('dmSlot').value) }, offersVideo: document.getElementById('dmVideo').checked, offersHomeVisit: document.getElementById('dmHome').checked });
       showAlert(alertEl, 'Working hours saved. The booking page now uses these times.', 'success');
       await Promise.all([loadDoctorProfile(), loadDoctorCalendar()]);
     } catch (err) { showAlert(alertEl, err.message, 'error'); }
@@ -1678,6 +1816,9 @@
       document.getElementById('setPhone').value = s.phone || '';
       document.getElementById('setWhatsapp').value = s.whatsapp || '';
       document.getElementById('setContactEmail').value = s.contactEmail || '';
+      const fb = s.floatingButtons || {};
+      document.getElementById('setFloatCall').checked = fb.call !== false;
+      document.getElementById('setFloatWa').checked = fb.whatsapp !== false;
       const loc = s.location || {};
       document.getElementById('locEnabled').checked = loc.enabled !== false;
       showLocEnabledHint();
@@ -1794,7 +1935,8 @@
       await API.patch('/api/admin/settings', {
         phone: document.getElementById('setPhone').value,
         whatsapp: document.getElementById('setWhatsapp').value,
-        contactEmail: document.getElementById('setContactEmail').value
+        contactEmail: document.getElementById('setContactEmail').value,
+        floatingButtons: { call: document.getElementById('setFloatCall').checked, whatsapp: document.getElementById('setFloatWa').checked }
       });
       showAlert(alertEl, 'Contact info saved.', 'success');
     } catch (err) {
@@ -1929,7 +2071,7 @@
 
   (async function () {
     if (!user) return;
-    try { ME = await API.get('/api/me'); } catch (e) { API.clearSession(); window.location.href = 'login.html'; return; }
+    try { ME = await API.get('/api/me'); } catch (e) { API.clearSession(); window.location.href = '/login'; return; }
     try { SITE = await API.get('/api/settings'); } catch (e) { /* defaults */ }
     document.getElementById('dashTitle').textContent = user.role === 'admin' ? 'Admin' : 'Staff Portal';
     document.getElementById('dashSubtitle').textContent = `${ME.name} · ${ME.roleName || 'Admin'}`;
@@ -2041,12 +2183,13 @@
     // Work out what the saved link points to.
     const url = c ? c.buttonUrl : '';
     let type = 'none';
-    mkEl('mkWhatsappText').value = ''; mkEl('mkOtherUrl').value = ''; mkEl('mkWebsitePage').value = '/book.html';
+    mkEl('mkWhatsappText').value = ''; mkEl('mkOtherUrl').value = ''; mkEl('mkWebsitePage').value = '/book';
     if (url) {
       if (/^https:\/\/wa\.me\//.test(url)) { type = 'whatsapp'; try { mkEl('mkWhatsappText').value = new URL(url).searchParams.get('text') || ''; } catch (e) {} }
       else {
         let path = null;
-        try { const u = new URL(url); if (u.origin === location.origin) path = u.pathname + u.search; } catch (e) {}
+        // Older promotions saved links like /book.html — treat them as /book.
+        try { const u = new URL(url); if (u.origin === location.origin) path = u.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '') + u.search; } catch (e) {}
         if (path !== null && [...mkEl('mkWebsitePage').options].some(o => o.value === path)) { type = 'website'; mkEl('mkWebsitePage').value = path; }
         else { type = 'other'; mkEl('mkOtherUrl').value = url; }
       }
@@ -2430,7 +2573,7 @@
       pfEl('pfTitle').textContent = p.name;
       pfEl('pfSub').textContent = type === 'doctor' ? `Doctor · ${p.specialty || ''}${p.department ? ' · ' + p.department.name : ''}` : `Team · ${p.role}`;
       pfEl('pfAvatar').innerHTML = avatarHtml(p, 'doctor-avatar-sm');
-      pfEl('pfPublic').href = `profile.html?${type}=${encodeURIComponent(id)}`;
+      pfEl('pfPublic').href = `/${type === 'doctor' ? 'doctors' : 'team'}/${encodeURIComponent(id)}`;
       pfEl('pfTeamBasics').style.display = type === 'team' ? '' : 'none';
       pfEl('pfSpecWrap').style.display = type === 'doctor' ? '' : 'none';
       pfEl('pfLocWrap').style.display = type === 'doctor' ? '' : 'none';
@@ -2566,7 +2709,7 @@
       const d = await API.get('/api/admin/departments/' + encodeURIComponent(id));
       DP.bannerUrl = d.bannerUrl;
       dpEl('dpTitle').textContent = d.name + ' — page';
-      dpEl('dpView').href = 'department.html?id=' + encodeURIComponent(id);
+      dpEl('dpView').href = '/departments/' + encodeURIComponent(id);
       dpEl('dpName').value = d.name; dpEl('dpDesc').value = d.description; dpEl('dpTagline').value = d.tagline;
       dpEl('dpAbout').value = d.about; dpEl('dpServices').value = d.services; dpEl('dpConditions').value = d.conditions; dpEl('dpHours').value = d.hours;
       dpEl('dpBanner').value = '';

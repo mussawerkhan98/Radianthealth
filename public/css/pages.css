@@ -1,0 +1,239 @@
+/* =====================================================================
+   Inner pages (about, departments, doctors, profile, contact, book, auth,
+   patient portal, video, unsubscribe) — same "sanctuary" look as the home
+   page. Builds on the sx- components in style.css; mobile-first.
+   ===================================================================== */
+
+body.sx-body { background: var(--surface); }
+.sx [hidden] { display: none !important; }
+
+/* ---------- Page hero ---------- */
+.sx-page-hero { position: relative; overflow: hidden; padding: clamp(1.6rem, 4vw, 3.4rem) 0 clamp(1.8rem, 4vw, 3.2rem);
+  background: radial-gradient(ellipse 70% 70% at 10% 0%, rgba(150, 204, 255, 0.28) 0%, rgba(150, 204, 255, 0) 70%),
+              radial-gradient(ellipse 45% 60% at 100% 0%, rgba(255, 183, 128, 0.16) 0%, rgba(255, 183, 128, 0) 70%);
+  border-bottom: 1px solid #E2E8F0; }
+.sx-page-hero.no-border { border-bottom: 0; }
+.sx-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; color: #64748B; margin-bottom: 1rem; list-style: none; padding: 0; }
+.sx-crumbs a { color: var(--navy); text-decoration: none; }
+.sx-crumbs a:hover { text-decoration: underline; }
+.sx-crumbs li + li::before { content: "/"; margin-right: 0.35rem; color: #CBD5E1; }
+.sx-page-hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.4rem); line-height: 1.1; font-weight: 400; margin: 0 0 0.9rem; max-width: 20ch; }
+.sx-page-hero .sx-lead { margin-bottom: 0; }
+.sx-hero-split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(1.6rem, 5vw, 4rem); align-items: center; }
+.sx-hero-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 26px; display: block; box-shadow: 0 30px 60px -24px rgba(12, 29, 42, 0.35); }
+.sx-hero-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.5rem; }
+
+/* Department hero with banner photo */
+.sx-page-hero.has-banner { color: #fff; border-bottom: 0; padding: clamp(2.6rem, 7vw, 5.5rem) 0 clamp(2.4rem, 6vw, 4.5rem);
+  background: linear-gradient(90deg, rgba(12, 29, 42, 0.86) 0%, rgba(12, 29, 42, 0.6) 55%, rgba(12, 29, 42, 0.25) 100%), var(--hero-img) center / cover no-repeat; }
+.sx-page-hero.has-banner h1, .sx-page-hero.has-banner .sx-lead, .sx-page-hero.has-banner .sx-eyebrow { color: #fff; }
+.sx-page-hero.has-banner h1 em { color: #FFB780; }
+.sx-page-hero.has-banner .sx-crumbs, .sx-page-hero.has-banner .sx-crumbs a { color: rgba(255, 255, 255, 0.85); }
+.sx-page-hero.has-banner .sx-crumbs li + li::before { color: rgba(255, 255, 255, 0.4); }
+
+/* ---------- Filters bar ---------- */
+.sx-filters { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; max-width: 640px; }
+.sx-filters select { flex: 1 1 220px; }
+.sx-results-note { font-size: 0.85rem; color: #64748B; margin: 0 0 1rem; }
+
+/* ---------- Form controls inside .sx ---------- */
+.sx input:not([type="radio"]):not([type="checkbox"]), .sx select, .sx textarea {
+  border-radius: 14px; border: 1px solid #D9E1EA; background: #fff; padding: 0.8rem 1rem; font-size: 0.95rem; color: #0F172A; transition: border-color 0.15s, box-shadow 0.15s; }
+.sx input:not([type="radio"]):not([type="checkbox"]), .sx select { min-height: 50px; }
+.sx input:focus, .sx select:focus, .sx textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0, 80, 125, 0.14); }
+.sx label { font-size: 0.82rem; font-weight: 700; color: #334155; }
+.sx .form-group { margin-bottom: 1.05rem; }
+.sx .field-hint { font-size: 0.8rem; color: #64748B; margin: 0.35rem 0 0; }
+.sx .alert { border-radius: 14px; }
+.sx-btn-block { width: 100%; }
+.sx-btn:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+.sx .spinner { vertical-align: -3px; margin-right: 0.3rem; }
+
+/* ---------- Cards ---------- */
+.sx-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 24px; padding: clamp(1.3rem, 3vw, 2rem); box-shadow: 0 1px 2px rgba(12, 29, 42, 0.03); }
+.sx-card + .sx-card { margin-top: 1rem; }
+.sx-card h2, .sx-card h3 { font-family: 'Manrope', sans-serif; font-weight: 700; color: #0F172A; }
+.sx-card-title { font-size: 1.1rem; margin: 0 0 0.35rem; }
+.sx-card-sub { font-size: 0.9rem; color: #475569; margin: 0 0 1.2rem; }
+.sx-card-icon { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; background: var(--sky, #ECF4FF); color: var(--navy); margin-bottom: 0.9rem; }
+.sx-card-icon.amber { background: #FFF1E6; color: var(--bronze); }
+.sx-card-icon.green { background: #E7F8EE; color: #00733F; }
+
+/* ---------- Two-column content layout ---------- */
+.sx-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: clamp(1.2rem, 3vw, 2rem); align-items: start; }
+.sx-aside { position: sticky; top: 86px; display: grid; gap: 1rem; }
+.sx-block { margin-bottom: 2.4rem; scroll-margin-top: 140px; }
+.sx-block:last-child { margin-bottom: 0; }
+.sx-block-title { font-size: clamp(1.45rem, 2.6vw, 1.9rem); font-weight: 400; margin: 0 0 1rem; color: #0F172A; }
+.sx-prose p { color: #475569; line-height: 1.75; margin: 0 0 1rem; }
+.sx-prose p:last-child { margin-bottom: 0; }
+
+/* In-page section nav (department page) */
+.sx-subnav { position: sticky; top: 69px; z-index: 20; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid #E2E8F0; }
+.sx-subnav .container { display: flex; gap: 0.5rem; overflow-x: auto; padding-top: 0.65rem; padding-bottom: 0.65rem; scrollbar-width: none; }
+.sx-subnav a { flex: 0 0 auto; padding: 0.45rem 0.95rem; border-radius: 999px; font-size: 0.85rem; font-weight: 700; color: #475569; text-decoration: none; background: #F1F5F9; }
+.sx-subnav a:hover, .sx-subnav a:focus-visible { background: #E1EFFF; color: var(--navy); }
+
+/* Lists of services / conditions */
+.sx-checks { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.6rem; }
+.sx-checks li { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.85rem 1rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; font-weight: 600; font-size: 0.92rem; color: #1E293B; }
+.sx-checks svg { flex: 0 0 auto; color: #00733F; margin-top: 2px; }
+.sx-chip-list { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.sx-chip { display: inline-flex; align-items: center; padding: 0.4rem 0.85rem; border-radius: 999px; background: #E1EFFF; color: var(--navy); font-size: 0.85rem; font-weight: 600; }
+.sx-chip.soft { background: #F1F5F9; color: #334155; }
+.sx-hours { list-style: none; padding: 0; margin: 0; font-size: 0.92rem; color: #334155; }
+.sx-hours li { padding: 0.55rem 0; border-bottom: 1px dashed #E2E8F0; }
+.sx-hours li:last-child { border-bottom: 0; }
+.sx-link-list { display: grid; gap: 0.5rem; }
+.sx-link-list a { display: flex; align-items: center; gap: 0.55rem; font-weight: 600; color: var(--navy); text-decoration: none; font-size: 0.95rem; }
+.sx-link-list a:hover { text-decoration: underline; }
+
+/* Doctor grid variants (cards come from .sx-doc in style.css) */
+.sx-docs.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sx-doc-dept { font-size: 0.8rem; color: #64748B; margin-top: 0.3rem; }
+.sx-doc-dept a { color: inherit; }
+
+/* Departments index grid */
+.sx-dept-all { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.sx-dept-all .sx-dept-tile { min-height: 100%; }
+/* Department card without a photo: tinted panel with the department icon */
+.sx-dept-img.icon { display: flex; align-items: center; justify-content: center; color: var(--navy);
+  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%), linear-gradient(150deg, #E1EFFF 0%, #CFE2F5 100%); }
+.sx-dept-img.icon.amber { color: var(--bronze); background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%), linear-gradient(150deg, #FFF1E6 0%, #FADCC3 100%); }
+.sx-dept-img.icon.green { color: #00733F; background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%), linear-gradient(150deg, #E7F8EE 0%, #CBEEDA 100%); }
+.sx-dept-img.icon svg { width: 52px; height: 52px; padding: 12px; box-sizing: content-box; border-radius: 20px; background: rgba(255, 255, 255, 0.75); box-shadow: 0 8px 20px -8px rgba(12, 29, 42, 0.25); }
+
+/* Team (non-doctor staff) cards */
+.sx-team { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.sx-team-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.3rem; padding: 1.4rem 1.1rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 22px; text-decoration: none; color: inherit; transition: box-shadow 0.15s, transform 0.15s; }
+.sx-team-card:hover { box-shadow: 0 14px 30px -14px rgba(12, 29, 42, 0.22); transform: translateY(-2px); }
+.sx-team-card .doctor-avatar { width: 84px; height: 84px; margin: 0 0 0.6rem; font-size: 1.6rem; }
+.sx-team-card b { font-size: 1rem; color: #0F172A; }
+.sx-team-card small { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--bronze); }
+.sx-team-card p { font-size: 0.85rem; color: #64748B; margin: 0.4rem 0 0; }
+
+/* ---------- Profile page ---------- */
+.sx-profile-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(1.2rem, 3vw, 2rem); align-items: center; }
+.sx-profile-photo { width: clamp(120px, 18vw, 190px); aspect-ratio: 1; border-radius: 28px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #E1EFFF 0%, #CDE0F2 100%); box-shadow: 0 20px 40px -20px rgba(0, 80, 125, 0.45); }
+.sx-profile-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.sx-profile-photo .initials { font-family: 'Newsreader', Georgia, serif; font-size: clamp(2.4rem, 5vw, 3.4rem); color: var(--navy); }
+.sx-profile-head h1 { margin-bottom: 0.4rem; }
+.sx-profile-title { font-weight: 700; color: var(--bronze); margin: 0 0 0.8rem; font-size: 0.95rem; }
+.sx-profile-title a { color: var(--navy); }
+.sx-profile-bio { color: #475569; margin: 0 0 1rem; max-width: 62ch; line-height: 1.7; }
+.sx-facts { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.4rem; }
+.sx-fact { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.85rem; border-radius: 999px; background: #fff; border: 1px solid #E2E8F0; font-size: 0.84rem; color: #334155; }
+.sx-fact strong { color: #0F172A; }
+.sx-profile-hours { font-size: 0.88rem; color: #475569; margin: 0.6rem 0 0; display: flex; align-items: center; gap: 0.4rem; }
+.sx-bullets { margin: 0; padding-left: 1.1rem; color: #334155; line-height: 1.7; }
+.sx-bullets li { margin: 0.25rem 0; }
+.sx .cert-card { border-radius: 16px; border-color: #E2E8F0; }
+
+/* ---------- Contact page ---------- */
+.sx-contact-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.sx-contact-card { display: flex; flex-direction: column; padding: 1.3rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 22px; text-decoration: none; color: inherit; transition: box-shadow 0.15s, transform 0.15s; }
+.sx-contact-card:hover { box-shadow: 0 14px 30px -14px rgba(12, 29, 42, 0.22); transform: translateY(-2px); }
+.sx-contact-card small { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #64748B; }
+.sx-contact-card b { font-size: 1.02rem; color: var(--navy); margin-top: 0.15rem; overflow-wrap: anywhere; }
+.sx-contact-card span { font-size: 0.85rem; color: #64748B; margin-top: 0.2rem; }
+.sx-contact-card.wa b { color: #00733F; }
+
+/* ---------- Booking page ---------- */
+.sx-book { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: clamp(1.2rem, 3vw, 2rem); align-items: start; }
+.sx-step-label { display: flex; align-items: center; gap: 0.6rem; font-family: 'Manrope', sans-serif; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #64748B; margin: 1.6rem 0 0.9rem; }
+.sx-step-label:first-of-type { margin-top: 0; }
+.sx-step-label .num { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bronze); color: #fff; font-size: 0.75rem; letter-spacing: 0; }
+.sx-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.9rem; }
+.sx .slot-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 0.5rem; }
+.sx .slot-btn { border-radius: 12px; border-color: #D9E1EA; padding: 0.7rem 0.4rem; font-family: 'Manrope', sans-serif; font-size: 0.86rem; transition: border-color 0.15s, background-color 0.15s; }
+.sx .slot-btn:hover:not(:disabled) { border-color: var(--navy); color: var(--navy); }
+.sx .slot-btn.selected { background: var(--navy); border-color: var(--navy); color: #fff; }
+.sx .visit-type { border-radius: 16px; border-color: #D9E1EA; padding: 0.9rem 1rem; }
+.sx .visit-type:has(input:checked) { border-color: var(--navy); box-shadow: 0 0 0 1px var(--navy) inset; background: #F3F8FD; }
+.sx .clinic-location { border-radius: 18px; background: #F8FAFC; border-color: #E2E8F0; }
+.sx-notice { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.85rem 1rem; border-radius: 14px; background: #F3F8FD; border: 1px solid #DCEBFA; color: #334155; font-size: 0.88rem; margin: 0 0 1.4rem; }
+.sx-notice:empty { display: none; }
+p.sx-notice { display: block; }
+.sx-notice a { color: var(--navy); font-weight: 700; }
+.sx-next { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.9rem; }
+.sx-next li { display: flex; gap: 0.75rem; align-items: flex-start; font-size: 0.9rem; color: #475569; line-height: 1.55; }
+.sx-next .n { width: 28px; height: 28px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: #E1EFFF; color: var(--navy); font-weight: 800; font-size: 0.78rem; }
+.sx-next b { display: block; color: #0F172A; font-size: 0.92rem; }
+
+/* ---------- Auth pages (login / register / change password) ---------- */
+.sx-auth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(1.2rem, 4vw, 3rem); align-items: stretch; padding: clamp(1.5rem, 4vw, 3.5rem) 0; }
+.sx-auth-panel { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 2rem; padding: clamp(1.6rem, 4vw, 2.8rem); border-radius: 28px; color: #C9D6E2;
+  background: radial-gradient(circle at 100% 0%, rgba(36, 104, 154, 0.5) 0%, rgba(36, 104, 154, 0) 55%), linear-gradient(160deg, #0F2537 0%, var(--night) 100%); }
+.sx-auth-panel h2 { color: #fff; font-size: clamp(1.8rem, 3.4vw, 2.5rem); font-weight: 400; line-height: 1.15; margin: 0 0 0.8rem; }
+.sx-auth-panel h2 em { color: #FFB780; }
+.sx-auth-panel p { color: #B7C6D4; margin: 0; }
+.sx-auth-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.7rem; }
+.sx-auth-list li { display: flex; gap: 0.7rem; align-items: flex-start; font-size: 0.92rem; color: #DCE6EF; }
+.sx-auth-list svg { flex: 0 0 auto; color: #7FF9B5; margin-top: 2px; }
+.sx-auth-card { align-self: center; width: 100%; max-width: 520px; justify-self: center; }
+.sx-auth-card h1 { font-size: clamp(1.8rem, 3.4vw, 2.4rem); font-weight: 400; margin: 0 0 0.4rem; }
+.sx-auth-card .sx-card-sub { margin-bottom: 1.5rem; }
+.sx-auth-foot { text-align: center; margin: 1.3rem 0 0; font-size: 0.9rem; color: #475569; }
+.sx-auth-foot a { color: var(--navy); font-weight: 700; }
+.sx-auth.single { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Centered status card (video, unsubscribe) ---------- */
+.sx-center-card { max-width: 580px; margin: 0 auto; text-align: center; }
+.sx-center-card .sx-card-icon { width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 1.1rem; }
+.sx-center-card h1, .sx-center-card h2 { font-size: clamp(1.7rem, 3.4vw, 2.2rem); font-weight: 400; margin: 0 0 0.6rem; font-family: 'Newsreader', Georgia, serif; }
+.sx-center-card p { color: #475569; }
+.sx-center-card .sx-btn { margin-top: 0.4rem; }
+
+/* ---------- Patient portal ---------- */
+.sx-portal { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: clamp(1rem, 3vw, 2rem); align-items: start; }
+.sx-portal-nav { position: sticky; top: 86px; padding: 1.1rem; }
+.sx-portal-nav .who { padding: 0.3rem 0.4rem 1rem; margin-bottom: 0.6rem; border-bottom: 1px solid #EEF2F6; }
+.sx-portal-nav .who b { display: block; font-size: 1.05rem; color: #0F172A; }
+.sx-portal-nav .who span, .sx-portal-nav .who p { font-size: 0.82rem; color: #64748B; margin: 0.15rem 0 0; }
+.sx-portal-nav a { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 0.8rem; border-radius: 12px; font-weight: 600; font-size: 0.92rem; color: #475569; text-decoration: none; }
+.sx-portal-nav a svg { flex: 0 0 auto; }
+.sx-portal-nav a:hover { background: #F1F5F9; color: #0F172A; }
+.sx-portal-nav a.active { background: #E1EFFF; color: var(--navy); }
+.sx-portal-nav a.book { color: var(--bronze); }
+.sx-portal-nav a.logout { color: var(--danger); margin-top: 0.4rem; }
+.sx-portal-main h2 { font-size: clamp(1.5rem, 2.6vw, 1.9rem); font-weight: 400; margin: 0 0 1rem; }
+.sx .list-item { border-radius: 18px; border-color: #E2E8F0; padding: 1.05rem 1.2rem; }
+.sx .timeline-item { background: #fff; border: 1px solid #E2E8F0; border-left: 3px solid var(--navy); border-radius: 0 16px 16px 0; padding: 1rem 1.2rem; }
+.sx .timeline-item::before { display: none; }
+.sx .timeline-date { color: var(--navy); }
+.sx .empty-state { background: #fff; border: 1px dashed #D9E1EA; border-radius: 18px; }
+.sx .empty-state a { color: var(--navy); font-weight: 700; }
+
+/* ---------- Video page ---------- */
+.vc-when { font-size: 1.05rem; font-weight: 700; color: #0F172A; margin: 0.4rem 0 1.2rem; }
+.vc-count { font-size: 2.2rem; font-weight: 800; letter-spacing: 0.02em; margin: 0.4rem 0 1rem; font-variant-numeric: tabular-nums; color: var(--navy); }
+.vc-tips { text-align: left; font-size: 0.9rem; color: #475569; background: #F8FAFC; border: 1px solid #EEF2F6; border-radius: 16px; padding: 1rem 1.2rem 1rem 2.2rem; margin: 1.4rem 0 0; }
+.vc-tips li { margin: 0.3rem 0; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1080px) {
+  .sx-dept-all { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sx-team, .sx-docs.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .sx-hero-split, .sx-layout, .sx-book, .sx-auth, .sx-portal { grid-template-columns: 1fr; }
+  .sx-aside, .sx-portal-nav { position: static; }
+  .sx-contact-cards { grid-template-columns: 1fr; }
+  .sx-auth-panel { order: 2; }
+  .sx-portal-nav { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+  .sx-portal-nav .who { flex: 1 0 100%; }
+  .sx-portal-nav a { padding: 0.55rem 0.8rem; background: #F8FAFC; }
+  .sx-portal-nav a.logout { margin-top: 0; }
+}
+@media (max-width: 600px) {
+  .sx-dept-all, .sx-team, .sx-docs.cols-3 { grid-template-columns: 1fr; }
+  .sx-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sx-profile-head { grid-template-columns: 1fr; justify-items: start; }
+  .sx-2col { grid-template-columns: 1fr; }
+  .sx-hero-actions .sx-btn { flex: 1 1 100%; }
+  .sx-subnav { top: 69px; }
+  .sx-auth { padding-top: 1rem; }
+  .sx-card { border-radius: 20px; }
+  .sx .list-item { flex-direction: column; align-items: flex-start; }
+}

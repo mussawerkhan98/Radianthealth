@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Radiant Health Alliance — Elevated Clinical Care</title>
 <meta name="description" content="A multi-specialty medical center. Book appointments online, meet our doctors, and manage your care with Radiant Health Alliance.">
-<link rel="icon" href="assets/logo.png">
+<link rel="icon" href="/assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
 </head>
-<body data-page="home">
+<body data-page="home" data-seo="home">
 
 <!--
   PHOTOS
@@ -78,24 +78,24 @@
     <div class="sx-hero-copy">
       <div class="sx-status">
         <span class="sx-pulse" aria-hidden="true"></span>
-        <span>Now accepting consultations<span id="statusSlot"></span></span>
+        <span><span data-c="home.status">Now accepting consultations</span><span id="statusSlot"></span></span>
       </div>
-      <h1>Elevated clinical care, designed for <em>peace of mind</em></h1>
-      <p class="sx-lead">Specialist care across <span data-dept-count>our</span> clinical departments, experienced physicians and fast online scheduling — all in one calm, modern medical center.</p>
+      <h1 data-c="home.heroTitle">Elevated clinical care, designed for <em>peace of mind</em></h1>
+      <p class="sx-lead" data-c="home.heroLead">Specialist care across our clinical departments, experienced physicians and fast online scheduling — all in one calm, modern medical center.</p>
       <div class="sx-cta-duo">
-        <a href="book.html" class="sx-btn sx-btn-bronze"><svg width="20" height="20"><use href="#i-calendar"/></svg>Book a Consultation</a>
-        <a href="doctors.html" class="sx-btn sx-btn-white"><svg width="20" height="20"><use href="#i-badge"/></svg>Explore Specialists</a>
+        <a href="/book" class="sx-btn sx-btn-bronze"><svg width="20" height="20"><use href="#i-calendar"/></svg>Book a Consultation</a>
+        <a href="/doctors" class="sx-btn sx-btn-white"><svg width="20" height="20"><use href="#i-badge"/></svg>Explore Specialists</a>
       </div>
-      <ul class="sx-chips">
+      <ul class="sx-chips" id="heroChips">
         <li class="chip-green"><svg width="15" height="15"><use href="#i-verified"/></svg>Book online in under 2 minutes</li>
         <li class="chip-blue"><svg width="15" height="15"><use href="#i-users"/></svg>Family care under one roof</li>
-        <li class="chip-amber" id="chipThird"><svg width="15" height="15"><use href="#i-lock"/></svg>Your records in one portal</li>
+        <li class="chip-amber"><svg width="15" height="15"><use href="#i-lock"/></svg>Your records in one portal</li>
       </ul>
     </div>
 
     <div class="sx-hero-media">
-      <img src="assets/home/hero.jpg" alt="A doctor listening attentively to a patient during a consultation" class="sx-hero-img" fetchpriority="high">
-      <a class="sx-roster" id="rosterCard" href="book.html">
+      <img src="/assets/home/hero.jpg" alt="A doctor listening attentively to a patient during a consultation" class="sx-hero-img" fetchpriority="high" data-c-src="home.heroImage" data-c-alt="home.heroImageAlt">
+      <a class="sx-roster" id="rosterCard" href="/book">
         <span class="sx-roster-icon"><svg width="20" height="20"><use href="#i-calendar"/></svg><i aria-hidden="true"></i></span>
         <span class="sx-roster-text">
           <b>Live specialist availability</b>
@@ -137,17 +137,17 @@
       <span class="sx-mini-note">How can we help today?</span>
     </div>
     <div class="sx-hub">
-      <a class="sx-hub-card t-amber" href="book.html">
+      <a class="sx-hub-card t-amber" href="/book">
         <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-calendar-plus"/></svg></span>
         <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
         <b>Book a visit</b><small>Choose doctor &amp; time</small>
       </a>
-      <a class="sx-hub-card t-blue" href="doctors.html">
+      <a class="sx-hub-card t-blue" href="/doctors">
         <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-badge"/></svg></span>
         <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
         <b>Our doctors</b><small>Browse <span data-doc-count>our</span> specialists</small>
       </a>
-      <a class="sx-hub-card t-indigo" href="login.html">
+      <a class="sx-hub-card t-indigo" href="/login">
         <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-shield"/></svg></span>
         <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
         <b>Patient portal</b><small>Visits &amp; medical history</small>
@@ -162,17 +162,17 @@
 </section>
 
 <!-- ============ OUR SPACES ============ -->
-<!-- Illustrative photos: replace with real photos of the clinic before launch. -->
-<section class="sx-section sx-tight">
+<!-- Photos are managed in Admin → Website Content → Home page. -->
+<section class="sx-section sx-tight" id="gallerySection">
   <div class="container">
     <div class="sx-mini-head">
-      <span class="sx-eyebrow">Atmosphere of healing</span>
+      <span class="sx-eyebrow" data-c="home.galleryEyebrow">Atmosphere of healing</span>
     </div>
-    <h2 class="sx-h2 sx-h2-sm">Designed for unhurried comfort</h2>
-    <div class="sx-gallery">
-      <figure class="g-tall"><img src="assets/home/reception.jpg" alt="Bright reception lobby with warm wood panels and plants" loading="lazy"><figcaption>Reception</figcaption></figure>
-      <figure><img src="assets/home/consultation.jpg" alt="Modern consultation room with a desk and examination area" loading="lazy"><figcaption>Consultation rooms</figcaption></figure>
-      <figure><img src="assets/home/family-wing.jpg" alt="Family care room with a children's examination area" loading="lazy"><figcaption>Family care</figcaption></figure>
+    <h2 class="sx-h2 sx-h2-sm" data-c="home.galleryTitle">Designed for unhurried comfort</h2>
+    <div class="sx-gallery" id="galleryGrid">
+      <figure class="g-tall"><img src="/assets/home/reception.jpg" alt="Bright reception lobby with warm wood panels and plants" loading="lazy"><figcaption>Reception</figcaption></figure>
+      <figure><img src="/assets/home/consultation.jpg" alt="Modern consultation room with a desk and examination area" loading="lazy"><figcaption>Consultation rooms</figcaption></figure>
+      <figure><img src="/assets/home/family-wing.jpg" alt="Family care room with a children's examination area" loading="lazy"><figcaption>Family care</figcaption></figure>
     </div>
   </div>
 </section>
@@ -182,11 +182,11 @@
   <div class="container sx-split">
     <div>
       <span class="sx-pill-label">About Radiant Health</span>
-      <h2 class="sx-h2">Compassionate care, <em class="bronze">redefining</em> the medical standard</h2>
-      <p class="sx-p">Radiant Health Alliance brings together specialists across many disciplines so your whole family can find the right clinical guidance in one reassuring place — and get stronger together.</p>
-      <a href="about.html" class="sx-link">Read our story <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+      <h2 class="sx-h2 em-bronze" data-c="home.aboutTitle">Compassionate care, <em>redefining</em> the medical standard</h2>
+      <p class="sx-p" data-c="home.aboutText">Radiant Health Alliance brings together specialists across many disciplines so your whole family can find the right clinical guidance in one reassuring place — and get stronger together.</p>
+      <a href="/about" class="sx-link">Read our story <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
     </div>
-    <div class="sx-values">
+    <div class="sx-values" id="valuesList">
       <div class="sx-value">
         <span class="sx-value-ic blue"><svg width="20" height="20"><use href="#i-compass"/></svg></span>
         <div><b>Our mission</b><p>Thoughtful, compassionate healthcare that is easy to access, transparent and simple to navigate.</p></div>
@@ -212,7 +212,7 @@
         <h2 class="sx-h2">Care across <em>every</em> department</h2>
         <p class="sx-p">From preventive check-ups to specialist diagnostics, each department works as part of one coordinated team.</p>
       </div>
-      <a href="departments.html" class="sx-link" id="deptAllLink">View all <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+      <a href="/departments" class="sx-link" id="deptAllLink">View all <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
     </div>
     <div class="sx-dept-feature" id="deptFeature"><div class="empty-state">Loading departments…</div></div>
     <div class="sx-dept-mini" id="deptMini"></div>
@@ -225,11 +225,11 @@
     <div class="sx-head">
       <div>
         <span class="sx-eyebrow">The Radiant standard</span>
-        <h2 class="sx-h2">Care that feels <em>personal</em></h2>
-        <p class="sx-p">Everything about your visit is designed to be simple, unhurried and centred on you.</p>
+        <h2 class="sx-h2" data-c="home.whyTitle">Care that feels <em>personal</em></h2>
+        <p class="sx-p" data-c="home.whyLead">Everything about your visit is designed to be simple, unhurried and centred on you.</p>
       </div>
     </div>
-    <div class="sx-why">
+    <div class="sx-why" id="whyGrid">
       <div class="sx-why-card"><span class="sx-why-ic"><svg width="20" height="20"><use href="#i-users"/></svg></span><div><b>Experienced specialists</b><p>A multi-disciplinary team of doctors working together across departments.</p></div></div>
       <div class="sx-why-card"><span class="sx-why-ic amber"><svg width="20" height="20"><use href="#i-heart"/></svg></span><div><b>Family-centred care</b><p>From infants to grandparents — care for every generation in one place.</p></div></div>
       <div class="sx-why-card"><span class="sx-why-ic green"><svg width="20" height="20"><use href="#i-calendar"/></svg></span><div><b>Easy online booking</b><p>See real availability and lock in your consultation in about two minutes.</p></div></div>
@@ -246,16 +246,16 @@
     <div class="sx-head">
       <div>
         <span class="sx-eyebrow">Your journey</span>
-        <h2 class="sx-h2">Your visit in <em>four</em> simple steps</h2>
+        <h2 class="sx-h2" data-c="home.stepsTitle">Your visit in <em>four</em> simple steps</h2>
       </div>
     </div>
-    <ol class="sx-steps">
+    <ol class="sx-steps" id="stepsList">
       <li><span class="n">01</span><div><b>Choose a department</b><p>Pick the type of care you need, or select a preferred specialist.</p></div></li>
       <li><span class="n">02</span><div><b>Pick a time</b><p>Review live slots and choose the morning, afternoon or evening that fits your life.</p></div></li>
       <li><span class="n">03</span><div><b>Get instant confirmation</b><p>Your appointment is confirmed straight away, with the details sent to you.</p></div></li>
       <li class="done"><span class="n">04</span><div><b>Visit &amp; follow up</b><p>Meet your doctor, then track visits and history in your patient portal.</p></div></li>
     </ol>
-    <div class="sx-center"><a href="book.html" class="sx-btn sx-btn-bronze sx-btn-wide"><svg width="20" height="20"><use href="#i-calendar"/></svg>Start Online Booking</a></div>
+    <div class="sx-center"><a href="/book" class="sx-btn sx-btn-bronze sx-btn-wide"><svg width="20" height="20"><use href="#i-calendar"/></svg>Start Online Booking</a></div>
   </div>
 </section>
 
@@ -268,7 +268,7 @@
         <h2 class="sx-h2">Meet our <em>doctors</em></h2>
         <p class="sx-p">Experienced clinicians providing reassuring care. View a profile or book directly.</p>
       </div>
-      <a href="doctors.html" class="sx-link">View all <span data-doc-count></span> <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+      <a href="/doctors" class="sx-link">View all <span data-doc-count></span> <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
     </div>
     <div class="sx-docs" id="doctorGrid"><div class="empty-state">Loading doctors…</div></div>
   </div>
@@ -280,8 +280,8 @@
     <div class="sx-vault">
       <div class="sx-vault-copy">
         <span class="sx-eyebrow light">Secure patient portal</span>
-        <h2 class="sx-h2 light">Your care, <em>at your fingertips</em></h2>
-        <p>Create a free account to manage everything about your family's visits in one secure place.</p>
+        <h2 class="sx-h2 light" data-c="home.vaultTitle">Your care, <em>at your fingertips</em></h2>
+        <p data-c="home.vaultLead">Create a free account to manage everything about your family's visits in one secure place.</p>
         <ul class="sx-vault-list">
           <li><svg width="20" height="20"><use href="#i-calendar"/></svg><div><b>Upcoming appointments</b><span>See dates and times, and cancel if your plans change.</span></div></li>
           <li><svg width="20" height="20"><use href="#i-history"/></svg><div><b>Past visits</b><span>A timeline of every doctor you've seen and when.</span></div></li>
@@ -289,20 +289,20 @@
           <li id="videoBullet" hidden><svg width="20" height="20"><use href="#i-video"/></svg><div><b>Video consultations</b><span>See your doctor from home when an in-person visit isn't needed.</span></div></li>
         </ul>
         <div class="sx-vault-actions">
-          <a href="register.html" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-user-plus"/></svg>Create Free Account</a>
-          <a href="login.html" class="sx-btn sx-btn-ghost"><svg width="18" height="18"><use href="#i-login"/></svg>Log In to Portal</a>
+          <a href="/register" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-user-plus"/></svg>Create Free Account</a>
+          <a href="/login" class="sx-btn sx-btn-ghost"><svg width="18" height="18"><use href="#i-login"/></svg>Log In to Portal</a>
         </div>
       </div>
       <div class="sx-vault-media">
-        <img src="assets/home/patient-portal.jpg" alt="A patient checking her appointments on a phone" loading="lazy">
+        <img src="/assets/home/patient-portal.jpg" alt="A patient checking her appointments on a phone" loading="lazy" data-c-src="home.vaultImage">
       </div>
     </div>
   </div>
 </section>
 
 <!-- ============ TESTIMONIALS ============
-     Hidden until you have real, consented patient reviews.
-     To show it: replace the three placeholder quotes and remove the word "hidden" below. -->
+     Managed in Admin → Website Content → Testimonials. Stays hidden until it is
+     switched on there and at least one real, consented review is added. -->
 <section class="sx-section" id="testimonials" hidden>
   <div class="container">
     <div class="sx-head">
@@ -311,20 +311,7 @@
         <h2 class="sx-h2">What our patients <em class="bronze">say</em></h2>
       </div>
     </div>
-    <div class="sx-quotes">
-      <figure class="sx-quote">
-        <blockquote>“Patient review goes here.”</blockquote>
-        <figcaption><span class="av">PN</span><div><b>Patient name</b><small>Department visited</small></div></figcaption>
-      </figure>
-      <figure class="sx-quote">
-        <blockquote>“Patient review goes here.”</blockquote>
-        <figcaption><span class="av">PN</span><div><b>Patient name</b><small>Department visited</small></div></figcaption>
-      </figure>
-      <figure class="sx-quote">
-        <blockquote>“Patient review goes here.”</blockquote>
-        <figcaption><span class="av">PN</span><div><b>Patient name</b><small>Department visited</small></div></figcaption>
-      </figure>
-    </div>
+    <div class="sx-quotes" id="quotesGrid"></div>
   </div>
 </section>
 
@@ -333,9 +320,9 @@
   <div class="container sx-split sx-split-top">
     <div>
       <span class="sx-eyebrow">Insurance &amp; coverage</span>
-      <h2 class="sx-h2">Check your <em>coverage</em> before you visit</h2>
-      <p class="sx-p">Coverage depends on your plan. Send us a photo of your insurance card and our front desk will confirm what's covered before your appointment.</p>
-      <!-- Accepted insurers: add one <span class="sx-ins">Insurer name</span> per insurer you have a contract with. -->
+      <h2 class="sx-h2" data-c="home.insuranceTitle">Check your <em>coverage</em> before you visit</h2>
+      <p class="sx-p" data-c="home.insuranceText">Coverage depends on your plan. Send us a photo of your insurance card and our front desk will confirm what's covered before your appointment.</p>
+      <!-- Accepted insurers are listed in Admin → Website Content → Insurers. -->
       <div class="sx-ins-grid" id="insurers"></div>
     </div>
     <div class="sx-ins-card">
@@ -344,7 +331,7 @@
       <p>Message us your insurance details and we'll check for you — usually within the same day.</p>
       <div class="sx-ins-actions">
         <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="sx-btn sx-btn-wa" data-wa-link><svg width="18" height="18"><use href="#i-chat"/></svg>Send on WhatsApp</a>
-        <a href="contact.html" class="sx-btn sx-btn-white">Contact our desk</a>
+        <a href="/contact" class="sx-btn sx-btn-white">Contact our desk</a>
       </div>
     </div>
   </div>
@@ -358,10 +345,10 @@
       <h2 class="sx-h2">Questions, <em class="bronze">answered</em></h2>
       <p class="sx-p">Can't find what you're looking for? Our front desk is happy to help on WhatsApp.</p>
     </div>
-    <div class="sx-faq">
+    <div class="sx-faq" id="faqList">
       <details open>
         <summary>How do I book an appointment?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
-        <p>Use our <a href="book.html">online booking</a>: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.</p>
+        <p>Use our <a href="/book">online booking</a>: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.</p>
       </details>
       <details>
         <summary>Do I need an account to book?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
@@ -373,7 +360,7 @@
       </details>
       <details>
         <summary>Which insurance plans do you accept?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
-        <p>Coverage depends on your plan. Please <a href="contact.html">contact us</a> with your insurance details before your visit and we'll confirm for you.</p>
+        <p>Coverage depends on your plan. Please <a href="/contact">contact us</a> with your insurance details before your visit and we'll confirm for you.</p>
       </details>
       <details>
         <summary>What should I bring to my first visit?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
@@ -404,7 +391,7 @@
         <span><small>Clinic address</small><b id="visitAddress"></b></span>
       </div>
       <div class="sx-visit-actions">
-        <a href="book.html" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-calendar"/></svg>Book Visit</a>
+        <a href="/book" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-calendar"/></svg>Book Visit</a>
         <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="sx-btn sx-btn-wa" data-wa-link><svg width="18" height="18"><use href="#i-chat"/></svg>WhatsApp</a>
       </div>
     </div>
@@ -418,15 +405,30 @@
   </div>
 </section>
 
+<!-- ============ LATEST INSIGHTS (blog) — shown once articles are published ============ -->
+<section class="sx-section" id="insightsSection" hidden>
+  <div class="container">
+    <div class="sx-head">
+      <div>
+        <span class="sx-eyebrow">Health insights</span>
+        <h2 class="sx-h2">Advice from our <em>doctors</em></h2>
+        <p class="sx-p">Practical, trustworthy health guidance from the specialists at Radiant Health Alliance.</p>
+      </div>
+      <a href="/blog" class="sx-link">All articles <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="sx-insights" id="insightsGrid"></div>
+  </div>
+</section>
+
 <!-- ============ CTA ============ -->
 <section class="sx-section sx-tight">
   <div class="container">
     <div class="sx-cta">
       <span class="sx-cta-ic"><svg width="24" height="24"><use href="#i-heart"/></svg></span>
-      <h2>Ready to consult with a specialist?</h2>
-      <p>Online booking takes under two minutes. No waiting on hold, no paperwork.</p>
+      <h2 data-c="home.ctaTitle">Ready to consult with a specialist?</h2>
+      <p data-c="home.ctaText">Online booking takes under two minutes. No waiting on hold, no paperwork.</p>
       <div class="sx-cta-actions">
-        <a href="book.html" class="sx-btn sx-btn-bronze">Book Appointment Now</a>
+        <a href="/book" class="sx-btn sx-btn-bronze">Book Appointment Now</a>
         <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="sx-btn sx-btn-glass" data-wa-link><svg width="18" height="18"><use href="#i-chat"/></svg>WhatsApp Helpdesk</a>
       </div>
     </div>
@@ -437,7 +439,7 @@
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   (function () {
     const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -447,9 +449,74 @@
     const deptIcon = d => '#d-' + (DEPT_ICONS.includes(d.icon) ? d.icon : 'default');
     // Stock photos for departments that don't have their own banner yet.
     const DEPT_PHOTOS = { stethoscope: 'dept-general', heart: 'dept-cardiology', baby: 'dept-pediatrics', bone: 'dept-orthopedics' };
-    const deptPhoto = d => d.bannerUrl || (DEPT_PHOTOS[d.icon] ? `assets/home/${DEPT_PHOTOS[d.icon]}.jpg` : '');
+    const deptPhoto = d => d.bannerUrl || (DEPT_PHOTOS[d.icon] ? `/assets/home/${DEPT_PHOTOS[d.icon]}.jpg` : '');
 
     const settingsP = API.get('/api/settings').catch(() => ({}));
+
+    // ---- Admin-managed lists (Admin → Website Content) ----
+    // Texts marked data-c are filled in by app.js; the lists are built here.
+    CMS.load().then(c => {
+      if (!c) return;
+      const rich = t => CMS.rich(t);
+      const h = c.home;
+
+      const chipCls = ['chip-green', 'chip-blue', 'chip-amber'];
+      const chipIcon = ['#i-verified', '#i-users', '#i-lock'];
+      document.getElementById('heroChips').innerHTML = (h.chips || []).filter(Boolean).slice(0, 3)
+        .map((t, i) => `<li class="${chipCls[i]}"><svg width="15" height="15"><use href="${chipIcon[i]}"/></svg>${esc(t)}</li>`).join('');
+
+      const gallery = (h.gallery || []).filter(g => g.image);
+      const gs = document.getElementById('gallerySection');
+      if (!h.showGallery || !gallery.length) gs.hidden = true;
+      else document.getElementById('galleryGrid').innerHTML = gallery.slice(0, 3).map((g, i) =>
+        `<figure${i === 0 ? ' class="g-tall"' : ''}><img src="${esc(g.image)}" alt="${esc(g.alt)}" loading="lazy">${g.caption ? `<figcaption>${esc(g.caption)}</figcaption>` : ''}</figure>`).join('');
+
+      const valIc = [['blue', '#i-compass'], ['amber', '#i-handshake'], ['green', '#i-verified']];
+      document.getElementById('valuesList').innerHTML = (c.values || []).map((v, i) => `
+        <div class="sx-value"><span class="sx-value-ic ${valIc[i % 3][0]}"><svg width="20" height="20"><use href="${valIc[i % 3][1]}"/></svg></span>
+        <div><b>${esc(v.title)}</b><p>${esc(v.text)}</p></div></div>`).join('');
+
+      const whyIc = [['', '#i-users'], ['amber', '#i-heart'], ['green', '#i-calendar'], ['', '#i-file'], ['slate', '#i-shield'], ['green', '#i-chat']];
+      document.getElementById('whyGrid').innerHTML = (h.why || []).map((w, i) => `
+        <div class="sx-why-card"><span class="sx-why-ic ${whyIc[i % 6][0]}"><svg width="20" height="20"><use href="${whyIc[i % 6][1]}"/></svg></span>
+        <div><b>${esc(w.title)}</b><p>${esc(w.text)}</p></div></div>`).join('');
+
+      const steps = h.steps || [];
+      document.getElementById('stepsList').innerHTML = steps.map((s, i) => `
+        <li${i === steps.length - 1 ? ' class="done"' : ''}><span class="n">${String(i + 1).padStart(2, '0')}</span><div><b>${esc(s.title)}</b><p>${esc(s.text)}</p></div></li>`).join('');
+
+      const quotes = c.testimonials || [];
+      if (h.showTestimonials && quotes.length) {
+        document.getElementById('quotesGrid').innerHTML = quotes.map(q => `
+          <figure class="sx-quote"><blockquote>“${esc(q.quote)}”</blockquote>
+          <figcaption><span class="av">${esc(initialsOf(q.name || '?'))}</span><div><b>${esc(q.name)}</b>${q.detail ? `<small>${esc(q.detail)}</small>` : ''}</div></figcaption></figure>`).join('');
+        document.getElementById('testimonials').hidden = false;
+      }
+
+      document.getElementById('insurers').innerHTML = (c.insurers || []).map(n => `<span class="sx-ins">${esc(n)}</span>`).join('');
+
+      if ((c.faqs || []).length) {
+        document.getElementById('faqList').innerHTML = c.faqs.map((f, i) => `
+          <details${i === 0 ? ' open' : ''}><summary>${esc(f.q)}<svg width="18" height="18"><use href="#i-chevron"/></svg></summary><p>${rich(f.a)}</p></details>`).join('');
+      }
+    });
+
+    // ---- Latest health insights (blog) ----
+    API.get('/api/blog?limit=3').then(posts => {
+      if (!posts.length) return;
+      document.getElementById('insightsGrid').innerHTML = posts.map(p => {
+        const href = '/blog/' + encodeURIComponent(p.slug);
+        return `<article class="bl-card">
+          <a class="bl-card-img" href="${href}" tabindex="-1" aria-hidden="true">${p.coverUrl ? `<img src="${esc(p.coverUrl)}" alt="" loading="lazy">` : ''}</a>
+          <div class="bl-card-body">
+            <div class="bl-meta">${p.category ? `<span class="bl-cat">${esc(p.category)}</span>` : ''}<span><svg width="14" height="14"><use href="#i-clock"/></svg>${p.readMinutes} min read</span></div>
+            <h3 class="bl-card-title"><a href="${href}">${esc(p.title)}</a></h3>
+            <p>${esc(p.excerpt)}</p>
+            <div class="bl-card-foot"><span>${new Date(p.publishedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span><a href="${href}" class="sx-link">Read ${arrow}</a></div>
+          </div></article>`;
+      }).join('');
+      document.getElementById('insightsSection').hidden = false;
+    }).catch(() => {});
 
     // ---- Real availability: the first open slot for a doctor in the next two weeks ----
     function clinicToday(tz) {
@@ -487,7 +554,7 @@
       const rest = depts.filter(d => !withPhoto.includes(d)).slice(0, 4);
       const count = n => n ? `${n} ${n === 1 ? 'specialist' : 'specialists'}` : '';
       feature.innerHTML = withPhoto.map(d => `
-        <a class="sx-dept-card" href="department.html?id=${encodeURIComponent(d.id)}">
+        <a class="sx-dept-card" href="${LINKS.department(d)}">
           <div class="sx-dept-img"><img src="${esc(deptPhoto(d))}" alt="" loading="lazy">${d.tagline ? `<span class="sx-dept-tag">${esc(d.tagline)}</span>` : ''}</div>
           <div class="sx-dept-body">
             <div class="sx-dept-title"><h3>${esc(d.name)}</h3>${d.doctorCount ? `<span class="sx-count">${count(d.doctorCount)}</span>` : ''}</div>
@@ -497,7 +564,7 @@
         </a>`).join('');
       if (!withPhoto.length) feature.hidden = true;
       mini.innerHTML = rest.map(d => `
-        <a class="sx-dept-tile" href="department.html?id=${encodeURIComponent(d.id)}">
+        <a class="sx-dept-tile" href="${LINKS.department(d)}">
           <span class="sx-dept-ic"><svg width="22" height="22"><use href="${deptIcon(d)}"/></svg></span>
           <b>${esc(d.name)}</b>
           <small>${esc(d.tagline || d.description)}</small>
@@ -519,7 +586,7 @@
       }
       const shown = docs.slice(0, 4);
       grid.innerHTML = shown.map(d => {
-        const profile = `profile.html?doctor=${encodeURIComponent(d.id)}`;
+        const profile = `${LINKS.doctor(d)}`;
         const place = [d.city, d.country].filter(Boolean).join(', ');
         return `
         <article class="sx-doc">
@@ -532,9 +599,10 @@
             <h3><a href="${profile}">${esc(d.name)}</a></h3>
             ${place ? `<small class="sx-doc-place"><svg width="13" height="13"><use href="#i-pin"/></svg>${esc(place)}</small>` : ''}
             ${d.offersVideo ? '<span class="sx-doc-badge"><svg width="13" height="13"><use href="#i-video"/></svg>Video visits available</span>' : ''}
+            ${d.offersHomeVisit ? '<span class="sx-doc-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home visits</span>' : ''}
             <div class="sx-doc-actions">
               <a href="${profile}" class="sx-btn sx-btn-soft">View Bio</a>
-              <a href="book.html?doctor=${encodeURIComponent(d.id)}" class="sx-btn sx-btn-blue">Book Visit</a>
+              <a href="/book?doctor=${encodeURIComponent(d.id)}" class="sx-btn sx-btn-blue">Book Visit</a>
             </div>
           </div>
         </article>`;
@@ -551,7 +619,7 @@
       if (open.length) {
         const first = open[0];
         roster.textContent = `Earliest slot: ${slotLabel(first.slot)} · ${first.d.name}`;
-        document.getElementById('rosterCard').href = 'book.html?doctor=' + encodeURIComponent(first.d.id);
+        document.getElementById('rosterCard').href = '/book?doctor=' + encodeURIComponent(first.d.id);
         if (first.slot.offset === 0) document.getElementById('statusSlot').textContent = ' • Slots open today';
       } else {
         roster.textContent = 'Book online in under two minutes';
@@ -573,11 +641,7 @@
         document.getElementById('visitEmailText').textContent = s.contactEmail;
         document.getElementById('visitEmail').href = 'mailto:' + s.contactEmail;
       }
-      if (s.videoEnabled) {
-        document.getElementById('videoBullet').hidden = false;
-        const chip = document.getElementById('chipThird');
-        chip.innerHTML = '<svg width="15" height="15"><use href="#i-video"/></svg>Video consultations';
-      }
+      if (s.videoEnabled) document.getElementById('videoBullet').hidden = false;
       const loc = s.location;
       if (loc) {
         if (loc.address) {

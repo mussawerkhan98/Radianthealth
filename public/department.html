@@ -2,92 +2,129 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Department — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Specialist care at Radiant Health Alliance — services, conditions we treat, our doctors and online booking.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="departments">
+<body data-page="departments" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-directions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 22 12 12 22 2 12z"/><path d="M9 13v-2h5M12 8.5 14.5 11 12 13.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<div id="deptPage"><section class="section"><div class="container"><div class="empty-state">Loading department…</div></div></section></div>
+<main class="sx" id="deptPage">
+  <section class="sx-page-hero"><div class="container"><div class="empty-state">Loading department…</div></div></section>
+</main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
-  const id = new URLSearchParams(location.search).get('id') || '';
+  // /departments/<slug> (readable) or the old /department?id=<id>
+  const pathMatch = location.pathname.match(/^\/departments\/([^/]+)/);
+  const id = pathMatch ? decodeURIComponent(pathMatch[1]) : (new URLSearchParams(location.search).get('id') || '');
   const root = document.getElementById('deptPage');
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const paras = t => String(t || '').trim() ? String(t).trim().split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
-  const tick = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  const icon = (name, size) => `<svg width="${size || 18}" height="${size || 18}" aria-hidden="true"><use href="#${name}"/></svg>`;
+
+  function docCard(doc) {
+    const profile = `${LINKS.doctor(doc)}`;
+    const place = [doc.city, doc.country].filter(Boolean).join(', ');
+    return `
+      <article class="sx-doc">
+        <a class="sx-doc-photo" href="${profile}" aria-label="View profile of ${esc(doc.name)}">
+          ${doc.photo ? `<img src="${esc(doc.photo)}" alt="${esc(doc.name)}" loading="lazy">` : `<span class="initials">${esc(initialsOf(doc.name))}</span>`}
+        </a>
+        <div class="sx-doc-body">
+          <span class="sx-doc-spec">${esc(doc.specialty)}</span>
+          <h3><a href="${profile}">${esc(doc.name)}</a></h3>
+          ${place ? `<small class="sx-doc-place">${icon('i-pin', 13)}${esc(place)}</small>` : ''}
+          ${doc.offersVideo ? `<span class="sx-doc-badge">${icon('i-video', 13)}Video visits available</span>` : ''}
+          ${doc.offersHomeVisit ? '<span class="sx-doc-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home visits</span>' : ''}
+          <div class="sx-doc-actions">
+            <a href="${profile}" class="sx-btn sx-btn-soft">View Bio</a>
+            <a href="/book?doctor=${encodeURIComponent(doc.id)}" class="sx-btn sx-btn-blue">Book Visit</a>
+          </div>
+        </div>
+      </article>`;
+  }
 
   async function load() {
     let d;
     try { d = await API.get('/api/departments/' + encodeURIComponent(id)); }
     catch (e) {
-      root.innerHTML = '<section class="section"><div class="container"><div class="empty-state">This department isn’t available. <a href="departments.html">See all departments</a>.</div></div></section>';
+      root.innerHTML = '<section class="sx-page-hero"><div class="container"><div class="empty-state">This department isn’t available. <a href="/departments">See all departments</a>.</div></div></section>';
       return;
     }
     document.title = `${d.name} — Radiant Health Alliance`;
-    const bookHref = `book.html?department=${encodeURIComponent(d.id)}`;
+    setCanonicalPath(LINKS.department(d));
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc && (d.tagline || d.description)) metaDesc.content = `${d.name} at Radiant Health Alliance — ${d.tagline || d.description}`;
+    const bookHref = `/book?department=${encodeURIComponent(d.id)}`;
     const nav = [
       d.about || d.description ? ['about', 'About'] : null,
       d.services.length ? ['services', 'Services'] : null,
       d.conditions.length ? ['conditions', 'Conditions'] : null,
-      d.doctors.length ? ['doctors', 'Doctors'] : null,
+      ['doctors', 'Doctors'],
       d.faqs.length ? ['faqs', 'FAQs'] : null
     ].filter(Boolean);
 
     root.innerHTML = `
-      <section class="hero dept-hero${d.bannerUrl ? ' has-banner' : ''}"${d.bannerUrl ? ` style="--dept-banner:url('${esc(d.bannerUrl)}')"` : ''}>
+      <section class="sx-page-hero${d.bannerUrl ? ' has-banner' : ''}"${d.bannerUrl ? ` style="--hero-img:url('${esc(d.bannerUrl)}')"` : ''}>
         <div class="container">
-          <a href="departments.html" class="dept-back">&larr; All departments</a>
-          <span class="eyebrow">Department</span>
+          <ol class="sx-crumbs"><li><a href="/">Home</a></li><li><a href="/departments">Departments</a></li><li>${esc(d.name)}</li></ol>
+          <span class="sx-eyebrow">Department</span>
           <h1>${esc(d.name)}</h1>
-          ${d.tagline || d.description ? `<p class="lead">${esc(d.tagline || d.description)}</p>` : ''}
-          <div class="dept-hero-actions">
-            <a class="btn btn-amber" href="${bookHref}">Book an appointment</a>
-            ${d.doctors.length ? `<a class="btn btn-outline dept-hero-outline" href="#doctors">Meet our doctors</a>` : ''}
+          ${d.tagline || d.description ? `<p class="sx-lead">${esc(d.tagline || d.description)}</p>` : ''}
+          <div class="sx-hero-actions">
+            <a class="sx-btn sx-btn-bronze" href="${bookHref}">${icon('i-calendar', 20)}Book an appointment</a>
+            ${d.doctors.length ? `<a class="sx-btn ${d.bannerUrl ? 'sx-btn-glass' : 'sx-btn-white'}" href="#doctors">${icon('i-users', 20)}Meet our doctors</a>` : ''}
           </div>
         </div>
       </section>
-      ${nav.length > 1 ? `<nav class="dept-nav" aria-label="On this page"><div class="container">${nav.map(([k, t]) => `<a href="#${k}">${t}</a>`).join('')}</div></nav>` : ''}
-      <section class="section">
-        <div class="container dept-layout">
-          <div class="dept-main">
-            ${d.about || d.description ? `<div class="dept-block" id="about"><h2>About ${esc(d.name)}</h2>${paras(d.about) || `<p>${esc(d.description)}</p>`}</div>` : ''}
-            ${d.services.length ? `<div class="dept-block" id="services"><h2>Services &amp; treatments</h2>
-              <ul class="dept-services">${d.services.map(x => `<li><span class="dept-tick">${tick}</span>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-            ${d.conditions.length ? `<div class="dept-block" id="conditions"><h2>Conditions we treat</h2>
-              <div class="profile-chips">${d.conditions.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div></div>` : ''}
-            <div class="dept-block" id="doctors"><h2>Our ${esc(d.name)} doctors</h2>
-              ${d.doctors.length ? `<div class="grid grid-3">${d.doctors.map(doc => `
-                <div class="card doctor-card">
-                  ${avatarHtml(doc)}
-                  <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${esc(doc.name)}</h3>
-                  <div class="doctor-specialty">${esc(doc.specialty)}</div>
-                  ${doctorLocationHtml(doc)}
-                  ${doc.offersVideo ? '<span class="badge video" style="margin-top:0.5rem; display:inline-block;">Video visits</span>' : ''}
-                  <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap; margin-top:0.9rem;">
-                    <a href="profile.html?doctor=${encodeURIComponent(doc.id)}" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.83rem;">View Profile</a>
-                    <a href="book.html?doctor=${encodeURIComponent(doc.id)}" class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.83rem;">Book</a>
-                  </div>
-                </div>`).join('')}</div>` : '<p style="color:var(--ink-soft);">Doctors for this department will be listed here soon. You can still book and we’ll match you with the right specialist.</p>'}
+      ${nav.length > 1 ? `<nav class="sx-subnav" aria-label="On this page"><div class="container">${nav.map(([k, t]) => `<a href="#${k}">${t}</a>`).join('')}</div></nav>` : ''}
+      <section class="sx-section">
+        <div class="container sx-layout">
+          <div>
+            ${d.about || d.description ? `<div class="sx-block" id="about"><h2 class="sx-block-title">About ${esc(d.name)}</h2><div class="sx-prose">${paras(d.about) || `<p>${esc(d.description)}</p>`}</div></div>` : ''}
+            ${d.services.length ? `<div class="sx-block" id="services"><h2 class="sx-block-title">Services &amp; treatments</h2>
+              <ul class="sx-checks">${d.services.map(x => `<li>${icon('i-check')}${esc(x)}</li>`).join('')}</ul></div>` : ''}
+            ${d.conditions.length ? `<div class="sx-block" id="conditions"><h2 class="sx-block-title">Conditions we treat</h2>
+              <div class="sx-chip-list">${d.conditions.map(x => `<span class="sx-chip">${esc(x)}</span>`).join('')}</div></div>` : ''}
+            <div class="sx-block" id="doctors"><h2 class="sx-block-title">Our ${esc(d.name)} doctors</h2>
+              ${d.doctors.length ? `<div class="sx-docs cols-3">${d.doctors.map(docCard).join('')}</div>`
+                : '<p class="sx-p">Doctors for this department will be listed here soon. You can still book and we’ll match you with the right specialist.</p>'}
             </div>
-            ${d.faqs.length ? `<div class="dept-block" id="faqs"><h2>Frequently asked questions</h2>
-              <div class="dept-faqs">${d.faqs.map(f => `<details><summary>${esc(f.q)}</summary><div>${paras(f.a)}</div></details>`).join('')}</div></div>` : ''}
+            ${d.faqs.length ? `<div class="sx-block" id="faqs"><h2 class="sx-block-title">Frequently asked questions</h2>
+              <div class="sx-faq">${d.faqs.map((f, i) => `<details${i === 0 ? ' open' : ''}><summary>${esc(f.q)}${icon('i-chevron')}</summary>${paras(f.a)}</details>`).join('')}</div></div>` : ''}
           </div>
-          <aside class="dept-side">
-            <div class="card profile-side">
-              <h2>Book a visit</h2>
-              <p>Choose a doctor and time online — no account needed.</p>
-              <a class="btn btn-amber" href="${bookHref}" style="width:100%; text-align:center;">Book an appointment</a>
+          <aside class="sx-aside">
+            <div class="sx-card">
+              <span class="sx-card-icon amber">${icon('i-calendar', 22)}</span>
+              <h2 class="sx-card-title">Book a visit</h2>
+              <p class="sx-card-sub">Choose a doctor and time online — no account needed.</p>
+              <a class="sx-btn sx-btn-bronze sx-btn-block" href="${bookHref}">Book an appointment</a>
             </div>
-            ${d.hours.length ? `<div class="card profile-side"><h2>Opening hours</h2><ul class="dept-hours">${d.hours.map(h => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
-            <div class="card profile-side" id="deptContact" style="display:none;"></div>
+            ${d.hours.length ? `<div class="sx-card"><span class="sx-card-icon">${icon('i-clock', 22)}</span><h2 class="sx-card-title">Opening hours</h2><ul class="sx-hours">${d.hours.map(h => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
+            <div class="sx-card" id="deptContact" style="display:none;"></div>
           </aside>
         </div>
       </section>`;
@@ -95,10 +132,13 @@
       const s = await API.get('/api/settings');
       const box = document.getElementById('deptContact');
       const bits = [];
-      if (s.phone) bits.push(`<a href="tel:${esc(s.phone.replace(/\s/g, ''))}">${esc(s.phone)}</a>`);
-      if (s.whatsapp) bits.push(`<a href="https://wa.me/${esc(String(s.whatsapp).replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp us</a>`);
-      if (s.location && s.location.link) bits.push(`<a href="${esc(s.location.link)}" target="_blank" rel="noopener">Get directions</a>`);
-      if (bits.length) { box.innerHTML = `<h2>Questions?</h2><p class="dept-contact">${bits.join('<br>')}</p>`; box.style.display = ''; }
+      if (s.phone) bits.push(`<a href="tel:${esc(s.phone.replace(/\s/g, ''))}">${icon('i-phone')}${esc(s.phone)}</a>`);
+      if (s.whatsapp) bits.push(`<a href="https://wa.me/${esc(String(s.whatsapp).replace(/\D/g, ''))}" target="_blank" rel="noopener">${icon('i-chat')}WhatsApp us</a>`);
+      if (s.location && s.location.link) bits.push(`<a href="${esc(s.location.link)}" target="_blank" rel="noopener">${icon('i-directions')}Get directions</a>`);
+      if (bits.length) {
+        box.innerHTML = `<span class="sx-card-icon green">${icon('i-chat', 22)}</span><h2 class="sx-card-title">Questions?</h2><div class="sx-link-list">${bits.join('')}</div>`;
+        box.style.display = '';
+      }
     } catch (e) { /* optional */ }
   }
   load();

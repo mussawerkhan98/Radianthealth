@@ -118,7 +118,7 @@ async function sendCampaign(c, recipients, opts) {
 
 // One test email to a staff member (same headers as the real thing).
 async function sendTest(c, to, opts) {
-  const unsub = opts.siteUrl + '/unsubscribe.html';
+  const unsub = opts.siteUrl + '/unsubscribe';
   const { html, text } = buildEmail(c, { ...opts, values: { NAME: to.name || 'there', UNSUB: unsub } });
   await post({ sender: SENDER, replyTo: SENDER, to: [{ email: to.email, name: plain(to.name).slice(0, 70) }], subject: plain(c.subject), htmlContent: html, textContent: text, tags: ['promotion-test'], headers: unsubHeaders(opts.siteUrl + '/api/unsubscribe/one-click?test=1') });
 }

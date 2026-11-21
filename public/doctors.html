@@ -2,53 +2,85 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Our Doctors — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Meet our specialist doctors. View profiles and book an appointment online in minutes.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="doctors">
+<body data-page="doctors" data-seo="doctors" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="hero" style="padding-bottom:2vh;">
+<main class="sx">
+
+<section class="sx-page-hero">
   <div class="container">
-    <span class="eyebrow">Our Doctors</span>
-    <h1>Meet the team <em>behind</em> your care</h1>
-    <p class="lead">Our doctors see patients in person and by video from around the world. Filter by department or country, then book directly.</p>
-    <div style="margin-top:1.4rem; display:flex; gap:0.6rem; flex-wrap:wrap; max-width:600px;">
-      <select id="deptFilter" style="flex:1 1 220px;" aria-label="Filter by department">
+    <ol class="sx-crumbs"><li><a href="/">Home</a></li><li>Doctors</li></ol>
+    <span class="sx-eyebrow">Our faculty</span>
+    <h1 data-c="doctors.heroTitle">Meet the team <em>behind</em> your care</h1>
+    <p class="sx-lead" data-c="doctors.heroLead">Our doctors see patients in person and by video. Filter by department or country, then book directly.</p>
+    <div class="sx-filters">
+      <select id="deptFilter" aria-label="Filter by department">
         <option value="">All Departments</option>
       </select>
-      <select id="countryFilter" style="flex:1 1 220px; display:none;" aria-label="Filter by country">
+      <select id="countryFilter" style="display:none;" aria-label="Filter by country">
         <option value="">All Countries</option>
       </select>
     </div>
   </div>
 </section>
 
-<section class="section">
+<section class="sx-section">
   <div class="container">
-    <div class="grid grid-4" id="doctorGrid">
+    <p class="sx-results-note" id="docCount" aria-live="polite"></p>
+    <div class="sx-docs" id="doctorGrid">
       <div class="empty-state">Loading doctors…</div>
     </div>
   </div>
 </section>
 
+<section class="sx-section sx-tight">
+  <div class="container">
+    <div class="sx-cta">
+      <span class="sx-cta-ic"><svg width="24" height="24"><use href="#i-heart"/></svg></span>
+      <h2>Not sure who to see?</h2>
+      <p>Pick a department and we'll show the doctors with the earliest open times.</p>
+      <div class="sx-cta-actions">
+        <a href="/book" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-calendar"/></svg>Book Appointment</a>
+        <a href="/departments" class="sx-btn sx-btn-glass">Browse Departments</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
   const initialDept = params.get('department') || '';
   let departments = [];
+  const escHtmlD = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   async function loadDepartments() {
     departments = await API.get('/api/departments');
     const select = document.getElementById('deptFilter');
     select.innerHTML = '<option value="">All Departments</option>' +
-      departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+      departments.map(d => `<option value="${escHtmlD(d.id)}">${escHtmlD(d.name)}</option>`).join('');
     select.value = initialDept;
     select.addEventListener('change', () => loadDoctors(select.value));
     // Countries that have doctors
@@ -62,10 +94,34 @@
       cf.addEventListener('change', () => loadDoctors(select.value));
     }
   }
-  const escHtmlD = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function docCard(d) {
+    const dept = departments.find(x => x.id === d.departmentId);
+    const profile = `${LINKS.doctor(d)}`;
+    const place = [d.city, d.country].filter(Boolean).join(', ');
+    return `
+      <article class="sx-doc">
+        <a class="sx-doc-photo" href="${profile}" aria-label="View profile of ${escHtmlD(d.name)}">
+          ${d.photo ? `<img src="${escHtmlD(d.photo)}" alt="${escHtmlD(d.name)}" loading="lazy">` : `<span class="initials">${escHtmlD(initialsOf(d.name))}</span>`}
+        </a>
+        <div class="sx-doc-body">
+          <span class="sx-doc-spec">${escHtmlD(d.specialty)}</span>
+          <h3><a href="${profile}">${escHtmlD(d.name)}</a></h3>
+          ${dept ? `<small class="sx-doc-dept"><a href="${LINKS.department(dept)}">${escHtmlD(dept.name)}</a></small>` : ''}
+          ${place ? `<small class="sx-doc-place"><svg width="13" height="13"><use href="#i-pin"/></svg>${escHtmlD(place)}</small>` : ''}
+          ${d.offersVideo ? '<span class="sx-doc-badge"><svg width="13" height="13"><use href="#i-video"/></svg>Video visits available</span>' : ''}
+          ${d.offersHomeVisit ? '<span class="sx-doc-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home visits</span>' : ''}
+          <div class="sx-doc-actions">
+            <a href="${profile}" class="sx-btn sx-btn-soft">View Profile</a>
+            <a href="/book?doctor=${encodeURIComponent(d.id)}" class="sx-btn sx-btn-blue">Book Visit</a>
+          </div>
+        </div>
+      </article>`;
+  }
 
   async function loadDoctors(departmentId) {
     const grid = document.getElementById('doctorGrid');
+    const count = document.getElementById('docCount');
     grid.innerHTML = '<div class="empty-state">Loading doctors…</div>';
     try {
       const qs = new URLSearchParams();
@@ -74,26 +130,12 @@
       if (country) qs.set('country', country);
       const url = '/api/doctors' + (qs.toString() ? '?' + qs : '');
       const doctors = await API.get(url);
+      count.textContent = doctors.length ? `${doctors.length} doctor${doctors.length === 1 ? '' : 's'}` : '';
       if (doctors.length === 0) {
         grid.innerHTML = '<div class="empty-state">No doctors match these filters yet.</div>';
         return;
       }
-      grid.innerHTML = doctors.map(d => {
-        const dept = departments.find(x => x.id === d.departmentId);
-        return `
-          <div class="card doctor-card">
-            ${avatarHtml(d)}
-            <h3 style="font-size:1.02rem; margin-bottom:0.2rem;">${d.name}</h3>
-            <div class="doctor-specialty">${d.specialty}</div>
-            ${doctorLocationHtml(d)}
-            <p style="font-size:0.85rem; margin:0.6rem 0 0.9rem;">${dept ? dept.name : ''}</p>
-            <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
-              <a href="profile.html?doctor=${d.id}" class="btn btn-outline" style="padding:0.55rem 1.1rem; font-size:0.85rem;">View Profile</a>
-              <a href="book.html?doctor=${d.id}" class="btn btn-primary" style="padding:0.55rem 1.1rem; font-size:0.85rem;">Book Appointment</a>
-            </div>
-          </div>
-        `;
-      }).join('');
+      grid.innerHTML = doctors.map(docCard).join('');
     } catch (e) {
       grid.innerHTML = '<div class="empty-state">Could not load doctors right now.</div>';
     }

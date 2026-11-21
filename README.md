@@ -60,6 +60,24 @@ vercel.json               Vercel config
 
 Admin: `admin@radianthealthalliance.com` / `ChangeMe123!` — you'll be forced to set a new password. The seed also adds 13 placeholder doctors (same temporary password): delete them in Admin → Doctors once your real team is added.
 
+## Managing the website (Admin panel)
+
+- **Website Content** — every text, photo, FAQ, testimonial and insurer on the public pages, plus the Google title and description of each page. Headings accept `*asterisks*` around the highlighted italic words. Saved changes show on the site within about a minute.
+- **Health Insights (Blog)** — write articles with the formatting toolbar, upload a cover photo, pick a category, tags and a doctor as the author, then save as a draft, publish, or schedule with a future date. Drafts can be previewed privately.
+- **Types of visit** — patients choose a **Clinic visit**, **Home visit** (they enter their address) or **Video call**. Tick "Does home visits" / "Offers video appointments" per doctor (Doctors → a doctor → Working Hours); a type only appears when at least one doctor offers it.
+- **Rush hours** — Admin → Appointments → *Booking options right now*: pause any type for 30 min / 1 h / 2 h / the rest of today (it reopens by itself), or switch it off until you switch it back on, plus an optional message to patients. Paused types show greyed out on the booking page with Call / WhatsApp links. Staff can still book any type from "Book for a Patient".
+- **Floating Call / WhatsApp buttons** — bottom-right on every public page; each can be switched off in Site Settings → Contact Info (they use the phone and WhatsApp numbers there).
+- Departments, doctors, the team page and contact details are managed in their own tabs as before.
+- Staff roles need the new permissions **content.manage**, **blog.manage** and **visits.manage** (pause visit types) — Admin → Roles & Permissions. The admin role has them automatically.
+
+### SEO
+
+- Blog pages are rendered on the server at `/blog` and `/blog/<slug>` with the full article, canonical URL, Open Graph tags and structured data (BlogPosting + breadcrumbs), so Google sees everything without running JavaScript.
+- `/sitemap.xml` (pages, departments, doctor profiles, articles), `/robots.txt` and `/blog/rss.xml` are generated automatically.
+- **Clean URLs:** pages have no `.html` (`/contact`, `/book`) and detail pages use names: `/departments/cardiology`, `/doctors/dr-amina-farouk`, `/team/<name>`, `/blog/<article>`. Slugs come from the name, so renaming in Admin updates the address. Old links (`/contact.html`, `/department.html?id=…`, `/profile.html?doctor=…`) redirect to the new ones. Vercel: `cleanUrls` + rewrites in `vercel.json`; local/VPS: the same rules in `src/app.js`.
+- Optional env var `SITE_URL` (e.g. `https://radianthealthalliance.com`) fixes the domain used in canonical links and the sitemap; otherwise the request's domain is used.
+- After going live, add the site in **Google Search Console** and submit `https://<your-domain>/sitemap.xml`.
+
 ## Local development
 
 ```bash

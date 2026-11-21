@@ -410,3 +410,43 @@ function doctorLocationHtml(d) {
   const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   return `<span class="doctor-location"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>${esc(text)}</span>`;
 }
+
+// ---------------------------------------------------------------------------
+// Google Analytics 4 (G-DJH7NJWLTB) + conversion tracking.
+// Loaded on public pages only — never on portals that show patient data.
+// Events: whatsapp_click, phone_call_click, email_click, book_appointment_click,
+// and book_appointment (fired from book.html after a booking succeeds).
+(function () {
+  var GA_ID = 'G-DJH7NJWLTB';
+  var PRIVATE = /^\/(admin|doctor-dashboard|patient-dashboard|staff-dashboard|change-password|video|login|register|unsubscribe)(\.html)?(\/|$)/i;
+  var path = location.pathname;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  window.rhaTrack = function (name, params) {
+    try { if (!PRIVATE.test(location.pathname)) window.gtag('event', name, params || {}); } catch (e) { /* ignore */ }
+  };
+  if (PRIVATE.test(path) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return;
+
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+  window.gtag('js', new Date());
+  window.gtag('config', GA_ID);
+
+  // One listener catches every link, including buttons added later (floating Call/WhatsApp).
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var params = {
+      link_url: href.split('?')[0],
+      link_text: (a.textContent || a.getAttribute('aria-label') || '').trim().slice(0, 100),
+      page_path: path
+    };
+    if (/wa\.me|whatsapp\.com|^whatsapp:/i.test(href)) window.rhaTrack('whatsapp_click', params);
+    else if (/^tel:/i.test(href)) window.rhaTrack('phone_call_click', params);
+    else if (/^mailto:/i.test(href)) window.rhaTrack('email_click', params);
+    else if (/^(https?:\/\/[^/]*radianthealthalliance\.com)?\/book(\.html)?(\?|#|$)/i.test(href)) window.rhaTrack('book_appointment_click', params);
+  }, true);
+})();

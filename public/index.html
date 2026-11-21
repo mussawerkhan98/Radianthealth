@@ -2,409 +2,438 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radiant Health Alliance — Compassionate Care, Redefining Health</title>
-<meta name="description" content="A multi-department medical center. Book appointments online, meet our doctors, and manage your care with Radiant Health Alliance.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Radiant Health Alliance — Elevated Clinical Care</title>
+<meta name="description" content="A multi-specialty medical center. Book appointments online, meet our doctors, and manage your care with Radiant Health Alliance.">
 <link rel="icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-page="home">
 
 <!--
-  IMAGE PLACEHOLDERS
-  Every <div class="img-ph">…</div> below is a placeholder. To use a real photo,
-  put the file in public/assets/ and replace the whole div with:
-    <img class="media-img" src="assets/your-photo.jpg" alt="Describe the photo">
-  The size hint inside each placeholder is the recommended image size.
+  PHOTOS
+  Photos live in public/assets/home/. The ones in the "Our spaces" gallery are
+  illustrative — replace them with real photos of the clinic before launch
+  (same file names, or change the src below).
+  Doctor photos come from Admin → Doctors; department photos from Admin → Departments
+  (a department banner, when set, replaces the stock photo below).
 -->
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></symbol>
   <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-calendar-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="15" rx="2.5"/><path d="M9 3h6v4H9zM8 17c.6-1.6 2.2-2.5 4-2.5s3.4.9 4 2.5"/><circle cx="12" cy="11.5" r="2"/></symbol>
   <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-speed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 18a9 9 0 1 1 15 0"/><path d="m12 13 4-4"/><circle cx="12" cy="13" r="1"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1.4 1.4 0 0 0 2-2"/><path d="m14 14 2.5 2.5a1.4 1.4 0 0 0 2-2l-3.9-3.9a2.8 2.8 0 0 0-4 0l-.9.9a1.4 1.4 0 0 1-2-2l2.8-2.8a5 5 0 0 1 6 -.8l.5.3a3 3 0 0 0 2 .3L21 6"/><path d="m21 15-1 1M3 6l1.5-.5a3 3 0 0 1 2 .2L8 6.5M3 15l5.5 5.5a1.4 1.4 0 0 0 2-2"/></symbol>
+  <symbol id="i-verified" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 14.6 4.4l3.2-.1 1 3 2.6 1.9-1 3.1 1 3-2.6 1.9-1 3-3.2-.1L12 21.5l-2.6-1.9-3.2.1-1-3L2.6 14.8l1-3-1-3.1 2.6-1.9 1-3 3.2.1z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-directions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 22 12 12 22 2 12z"/><path d="M9 13v-2h5M12 8.5 14.5 11 12 13.5"/></symbol>
+  <!-- Department icons (matched to each department's "icon" value) -->
+  <symbol id="d-stethoscope" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3H4v6a5 5 0 0 0 10 0V3h-1"/><path d="M9 14v1.5a4.5 4.5 0 0 0 9 0V13"/><circle cx="18" cy="11" r="2"/></symbol>
+  <symbol id="d-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l1.5-2.5 2.5 5 1.5-2.5h7.5"/></symbol>
+  <symbol id="d-baby" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 10.5h.01M15 10.5h.01"/><path d="M9.5 15a3.5 3.5 0 0 0 5 0"/><path d="M12 3c0 1.5 1 2.5 2.5 2.5"/></symbol>
+  <symbol id="d-bone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"/></symbol>
+  <symbol id="d-skin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/></symbol>
+  <symbol id="d-gyno" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M12 14.5V22M8.5 18.5h7"/></symbol>
+  <symbol id="d-ent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"/></symbol>
+  <symbol id="d-tooth" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 3C5.3 3 3.8 4.8 3.8 7.2c0 2 .8 3.3 1.3 5.3.5 2.2.7 5.5 2.2 8 .6 1 1.8.6 2-.5l.8-3.8c.2-1 .9-1.6 1.9-1.6s1.7.6 1.9 1.6l.8 3.8c.2 1.1 1.4 1.5 2 .5 1.5-2.5 1.7-5.8 2.2-8 .5-2 1.3-3.3 1.3-5.3C20.2 4.8 18.7 3 16.5 3c-2 0-2.8 1-4.5 1s-2.5-1-4.5-1z"/></symbol>
+  <symbol id="d-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="d-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10M12 7v10"/></symbol>
+  <symbol id="d-physio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 8L9 4l-3 8H2"/></symbol>
+  <symbol id="d-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></symbol>
 </svg>
 
 <header class="site-header" id="site-header"></header>
 
+<main class="sx">
+
 <!-- ============ HERO ============ -->
-<section class="hero lp-hero">
-  <div class="container lp-hero-grid">
-    <div>
-      <span class="eyebrow">Radiant Health Alliance</span>
-      <h1>Compassionate care for <em>every</em> stage of life</h1>
-      <p class="lead">Specialists across <span data-dept-count>ten</span> departments, a team of dedicated doctors, and a simple way to book your visit online — all in one place.</p>
-      <div class="hero-actions">
-        <a href="book.html" class="btn btn-amber">Book an Appointment</a>
-        <a href="doctors.html" class="btn btn-outline">Meet Our Doctors</a>
+<section class="sx-hero">
+  <div class="container sx-hero-grid">
+    <div class="sx-hero-copy">
+      <div class="sx-status">
+        <span class="sx-pulse" aria-hidden="true"></span>
+        <span>Now accepting consultations<span id="statusSlot"></span></span>
       </div>
-      <ul class="hero-checks">
-        <li><svg width="16" height="16"><use href="#i-check"/></svg>Book online in under 2 minutes</li>
-        <li><svg width="16" height="16"><use href="#i-check"/></svg>Family care under one roof</li>
-        <li><svg width="16" height="16"><use href="#i-check"/></svg>Your records in one portal</li>
+      <h1>Elevated clinical care, designed for <em>peace of mind</em></h1>
+      <p class="sx-lead">Specialist care across <span data-dept-count>our</span> clinical departments, experienced physicians and fast online scheduling — all in one calm, modern medical center.</p>
+      <div class="sx-cta-duo">
+        <a href="book.html" class="sx-btn sx-btn-bronze"><svg width="20" height="20"><use href="#i-calendar"/></svg>Book a Consultation</a>
+        <a href="doctors.html" class="sx-btn sx-btn-white"><svg width="20" height="20"><use href="#i-badge"/></svg>Explore Specialists</a>
+      </div>
+      <ul class="sx-chips">
+        <li class="chip-green"><svg width="15" height="15"><use href="#i-verified"/></svg>Book online in under 2 minutes</li>
+        <li class="chip-blue"><svg width="15" height="15"><use href="#i-users"/></svg>Family care under one roof</li>
+        <li class="chip-amber" id="chipThird"><svg width="15" height="15"><use href="#i-lock"/></svg>Your records in one portal</li>
       </ul>
     </div>
-    <div class="lp-hero-media">
-      <div class="img-ph" role="img" aria-label="Image placeholder: hero photo">
-        <svg><use href="#i-image"/></svg>
-        <strong>Hero image</strong>
-        <small>Doctor with patient · 1200 × 1250 px</small>
+
+    <div class="sx-hero-media">
+      <img src="assets/home/hero.jpg" alt="A doctor listening attentively to a patient during a consultation" class="sx-hero-img" fetchpriority="high">
+      <a class="sx-roster" id="rosterCard" href="book.html">
+        <span class="sx-roster-icon"><svg width="20" height="20"><use href="#i-calendar"/></svg><i aria-hidden="true"></i></span>
+        <span class="sx-roster-text">
+          <b>Live specialist availability</b>
+          <span id="rosterText">Checking the earliest open slot…</span>
+        </span>
+        <span class="sx-roster-btn">Select <svg width="14" height="14"><use href="#i-arrow"/></svg></span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="container">
+    <div class="sx-stats">
+      <div class="sx-stat">
+        <div class="sx-stat-top"><b data-dept-count>—</b><span class="sx-stat-ic"><svg width="18" height="18"><use href="#d-stethoscope"/></svg></span></div>
+        <strong>Medical specialties</strong><small>Under one roof</small>
       </div>
-      <div class="float-card fc-1">
-        <div class="fc-icon"><svg width="20" height="20"><use href="#i-calendar"/></svg></div>
-        <div><b>Online booking</b><span>Pick a doctor, date &amp; time</span></div>
+      <div class="sx-stat">
+        <div class="sx-stat-top"><b data-doc-count>—</b><span class="sx-stat-ic"><svg width="18" height="18"><use href="#i-users"/></svg></span></div>
+        <strong>Specialist doctors</strong><small>In-person &amp; video visits</small>
       </div>
-      <div class="float-card fc-2">
-        <div class="fc-icon"><svg width="20" height="20"><use href="#i-users"/></svg></div>
-        <div><b><span data-doc-count>Our</span> doctors</b><span>Ready to help</span></div>
+      <div class="sx-stat">
+        <div class="sx-stat-top"><b>2 min</b><span class="sx-stat-ic bronze"><svg width="18" height="18"><use href="#i-speed"/></svg></span></div>
+        <strong>Online booking</strong><small>No phone queue</small>
+      </div>
+      <div class="sx-stat">
+        <div class="sx-stat-top"><b>24/7</b><span class="sx-stat-ic green"><svg width="18" height="18"><use href="#i-chat"/></svg></span></div>
+        <strong>Book any time</strong><small>Or message us on WhatsApp</small>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ STATS ============ -->
-<section class="lp-section tight-top">
+<!-- ============ CONCIERGE ACCESS HUB ============ -->
+<section class="sx-section sx-tight">
   <div class="container">
-    <div class="stats-strip">
-      <div><div class="stat-num" data-dept-count>10</div><div class="stat-label">Medical departments</div></div>
-      <div><div class="stat-num" data-doc-count>—</div><div class="stat-label">Doctors on our team</div></div>
-      <div><div class="stat-num">2 min</div><div class="stat-label">To book online</div></div>
-      <div><div class="stat-num">7 days</div><div class="stat-label">Online booking, any time</div></div>
+    <div class="sx-mini-head">
+      <span class="sx-dot-label">Quick access</span>
+      <span class="sx-mini-note">How can we help today?</span>
+    </div>
+    <div class="sx-hub">
+      <a class="sx-hub-card t-amber" href="book.html">
+        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-calendar-plus"/></svg></span>
+        <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
+        <b>Book a visit</b><small>Choose doctor &amp; time</small>
+      </a>
+      <a class="sx-hub-card t-blue" href="doctors.html">
+        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-badge"/></svg></span>
+        <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
+        <b>Our doctors</b><small>Browse <span data-doc-count>our</span> specialists</small>
+      </a>
+      <a class="sx-hub-card t-indigo" href="login.html">
+        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-shield"/></svg></span>
+        <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
+        <b>Patient portal</b><small>Visits &amp; medical history</small>
+      </a>
+      <a class="sx-hub-card t-green" href="https://wa.me/971543397906" target="_blank" rel="noopener" data-wa-link>
+        <span class="sx-hub-ic solid"><svg width="22" height="22"><use href="#i-chat"/></svg></span>
+        <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
+        <b>WhatsApp desk</b><small data-phone-text>+971 54 339 7906</small>
+      </a>
     </div>
   </div>
 </section>
 
-<!-- ============ QUICK ACTIONS ============ -->
-<section class="lp-section tight-top">
+<!-- ============ OUR SPACES ============ -->
+<!-- Illustrative photos: replace with real photos of the clinic before launch. -->
+<section class="sx-section sx-tight">
   <div class="container">
-    <div class="quick-grid">
-      <a class="quick-card" href="book.html">
-        <div class="icon-tile amber"><svg width="22" height="22"><use href="#i-calendar"/></svg></div>
-        <div><h3>Book an appointment</h3><p>Choose a department, doctor and time that suits you.</p></div>
-      </a>
-      <a class="quick-card" href="doctors.html">
-        <div class="icon-tile"><svg width="22" height="22"><use href="#i-search"/></svg></div>
-        <div><h3>Find a doctor</h3><p>Browse specialists, profiles and qualifications.</p></div>
-      </a>
-      <a class="quick-card" href="login.html">
-        <div class="icon-tile"><svg width="22" height="22"><use href="#i-file"/></svg></div>
-        <div><h3>Patient portal</h3><p>See upcoming visits and your medical history.</p></div>
-      </a>
-      <a class="quick-card" href="https://wa.me/971543397906" target="_blank" rel="noopener" data-wa-link>
-        <div class="icon-tile green"><svg width="22" height="22"><use href="#i-chat"/></svg></div>
-        <div><h3>Chat on WhatsApp</h3><p>Questions? Message our front desk directly.</p></div>
-      </a>
+    <div class="sx-mini-head">
+      <span class="sx-eyebrow">Atmosphere of healing</span>
+    </div>
+    <h2 class="sx-h2 sx-h2-sm">Designed for unhurried comfort</h2>
+    <div class="sx-gallery">
+      <figure class="g-tall"><img src="assets/home/reception.jpg" alt="Bright reception lobby with warm wood panels and plants" loading="lazy"><figcaption>Reception</figcaption></figure>
+      <figure><img src="assets/home/consultation.jpg" alt="Modern consultation room with a desk and examination area" loading="lazy"><figcaption>Consultation rooms</figcaption></figure>
+      <figure><img src="assets/home/family-wing.jpg" alt="Family care room with a children's examination area" loading="lazy"><figcaption>Family care</figcaption></figure>
     </div>
   </div>
 </section>
 
 <!-- ============ ABOUT ============ -->
-<section class="lp-section white">
-  <div class="container split">
-    <div class="split-media">
-      <div class="img-stack">
-        <div class="img-ph" role="img" aria-label="Image placeholder: clinic interior">
-          <svg><use href="#i-image"/></svg><strong>Clinic interior</strong><small>800 × 1100 px</small>
-        </div>
-        <div class="img-ph sm" role="img" aria-label="Image placeholder: reception">
-          <svg><use href="#i-image"/></svg><strong>Reception</strong><small>600 × 600 px</small>
-        </div>
-        <div class="img-ph sm" role="img" aria-label="Image placeholder: care team">
-          <svg><use href="#i-image"/></svg><strong>Care team</strong><small>600 × 600 px</small>
-        </div>
-      </div>
-    </div>
+<section class="sx-section">
+  <div class="container sx-split">
     <div>
-      <span class="eyebrow-sm">About us</span>
-      <h2>Compassionate care, <em>redefining</em> health</h2>
-      <p>Radiant Health Alliance brings together specialists across many departments so your family can find the right care in one place — and get stronger together.</p>
-      <ul class="check-list">
-        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Our mission<span>Thoughtful, compassionate healthcare that is easy to access and easy to navigate.</span></div></li>
-        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Our approach<span>Coordinated care, so your history and treatment plan travel with you between specialists.</span></div></li>
-        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Our promise<span>Every patient is treated with dignity, patience and clear communication.</span></div></li>
-      </ul>
-      <a href="about.html" class="btn btn-primary">More About Us</a>
+      <span class="sx-pill-label">About Radiant Health</span>
+      <h2 class="sx-h2">Compassionate care, <em class="bronze">redefining</em> the medical standard</h2>
+      <p class="sx-p">Radiant Health Alliance brings together specialists across many disciplines so your whole family can find the right clinical guidance in one reassuring place — and get stronger together.</p>
+      <a href="about.html" class="sx-link">Read our story <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="sx-values">
+      <div class="sx-value">
+        <span class="sx-value-ic blue"><svg width="20" height="20"><use href="#i-compass"/></svg></span>
+        <div><b>Our mission</b><p>Thoughtful, compassionate healthcare that is easy to access, transparent and simple to navigate.</p></div>
+      </div>
+      <div class="sx-value">
+        <span class="sx-value-ic amber"><svg width="20" height="20"><use href="#i-handshake"/></svg></span>
+        <div><b>Our approach</b><p>Coordinated care, so your history, tests and treatment plans travel with you between specialists.</p></div>
+      </div>
+      <div class="sx-value">
+        <span class="sx-value-ic green"><svg width="20" height="20"><use href="#i-verified"/></svg></span>
+        <div><b>Our promise</b><p>Every patient is welcomed with dignity, unhurried listening and clear communication.</p></div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============ DEPARTMENTS ============ -->
-<section class="lp-section" id="departments">
+<section class="sx-section sx-alt" id="departments">
   <div class="container">
-    <div class="section-head">
+    <div class="sx-head">
       <div>
-        <span class="eyebrow-sm">What we treat</span>
-        <h2>Care across <em>every</em> department</h2>
-        <p>From routine check-ups to specialist care, our team covers the full range of everyday health needs.</p>
+        <span class="sx-eyebrow">Clinical departments</span>
+        <h2 class="sx-h2">Care across <em>every</em> department</h2>
+        <p class="sx-p">From preventive check-ups to specialist diagnostics, each department works as part of one coordinated team.</p>
       </div>
-      <a href="departments.html" class="link-arrow">All departments &rarr;</a>
+      <a href="departments.html" class="sx-link" id="deptAllLink">View all <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
     </div>
-    <div class="grid grid-4" id="deptGrid">
-      <div class="empty-state">Loading departments…</div>
+    <div class="sx-dept-feature" id="deptFeature"><div class="empty-state">Loading departments…</div></div>
+    <div class="sx-dept-mini" id="deptMini"></div>
+  </div>
+</section>
+
+<!-- ============ WHY US ============ -->
+<section class="sx-section">
+  <div class="container">
+    <div class="sx-head">
+      <div>
+        <span class="sx-eyebrow">The Radiant standard</span>
+        <h2 class="sx-h2">Care that feels <em>personal</em></h2>
+        <p class="sx-p">Everything about your visit is designed to be simple, unhurried and centred on you.</p>
+      </div>
+    </div>
+    <div class="sx-why">
+      <div class="sx-why-card"><span class="sx-why-ic"><svg width="20" height="20"><use href="#i-users"/></svg></span><div><b>Experienced specialists</b><p>A multi-disciplinary team of doctors working together across departments.</p></div></div>
+      <div class="sx-why-card"><span class="sx-why-ic amber"><svg width="20" height="20"><use href="#i-heart"/></svg></span><div><b>Family-centred care</b><p>From infants to grandparents — care for every generation in one place.</p></div></div>
+      <div class="sx-why-card"><span class="sx-why-ic green"><svg width="20" height="20"><use href="#i-calendar"/></svg></span><div><b>Easy online booking</b><p>See real availability and lock in your consultation in about two minutes.</p></div></div>
+      <div class="sx-why-card"><span class="sx-why-ic"><svg width="20" height="20"><use href="#i-file"/></svg></span><div><b>Your records, connected</b><p>Your history follows you between departments, so you never have to repeat your story.</p></div></div>
+      <div class="sx-why-card"><span class="sx-why-ic slate"><svg width="20" height="20"><use href="#i-shield"/></svg></span><div><b>Privacy first</b><p>Your health information is kept secure and shared only with the people caring for you.</p></div></div>
+      <div class="sx-why-card"><span class="sx-why-ic green"><svg width="20" height="20"><use href="#i-chat"/></svg></span><div><b>Here when you need us</b><p>Call, email or message us on WhatsApp — our front desk is happy to help.</p></div></div>
     </div>
   </div>
 </section>
 
-<!-- ============ WHY CHOOSE US ============ -->
-<section class="lp-section white">
+<!-- ============ STEPS ============ -->
+<section class="sx-section sx-alt">
   <div class="container">
-    <div class="section-head">
+    <div class="sx-head">
       <div>
-        <span class="eyebrow-sm">Why Radiant Health</span>
-        <h2>Care that feels <em>personal</em></h2>
-        <p>Everything about your visit is designed to be simple, clear and centred on you.</p>
-      </div>
-      <a href="about.html" class="link-arrow">Our story &rarr;</a>
-    </div>
-    <div class="grid grid-3">
-      <div class="feature">
-        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-users"/></svg></div>
-        <h3>Experienced specialists</h3>
-        <p>A multi-disciplinary team of doctors working together across departments.</p>
-      </div>
-      <div class="feature">
-        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-heart"/></svg></div>
-        <h3>Family-centred care</h3>
-        <p>From children to grandparents — care for every member of the family in one place.</p>
-      </div>
-      <div class="feature">
-        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-calendar"/></svg></div>
-        <h3>Easy online booking</h3>
-        <p>See real availability and confirm your appointment in a couple of minutes.</p>
-      </div>
-      <div class="feature">
-        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-file"/></svg></div>
-        <h3>Your records, connected</h3>
-        <p>Your medical history follows you between specialists, so nothing gets lost.</p>
-      </div>
-      <div class="feature">
-        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-shield"/></svg></div>
-        <h3>Privacy first</h3>
-        <p>Your health information is kept secure and only shared with the people caring for you.</p>
-      </div>
-      <div class="feature">
-        <div class="icon-tile soft"><svg width="22" height="22"><use href="#i-chat"/></svg></div>
-        <h3>Here when you need us</h3>
-        <p>Call, email or message us on WhatsApp — our front desk is happy to help.</p>
+        <span class="sx-eyebrow">Your journey</span>
+        <h2 class="sx-h2">Your visit in <em>four</em> simple steps</h2>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============ HOW IT WORKS ============ -->
-<section class="lp-section">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow-sm">How it works</span>
-        <h2>Your visit in <em>four</em> simple steps</h2>
-      </div>
-      <a href="book.html" class="btn btn-amber">Start Booking</a>
-    </div>
-    <div class="steps">
-      <div class="step"><h3>Choose a department</h3><p>Pick the type of care you need, or search for a specific doctor.</p></div>
-      <div class="step"><h3>Pick a time</h3><p>See available slots and choose the date and time that work for you.</p></div>
-      <div class="step"><h3>Get confirmation</h3><p>Your appointment is confirmed straight away, with the details sent to you.</p></div>
-      <div class="step"><h3>Visit &amp; follow up</h3><p>See your doctor, then track visits and history in your patient portal.</p></div>
-    </div>
+    <ol class="sx-steps">
+      <li><span class="n">01</span><div><b>Choose a department</b><p>Pick the type of care you need, or select a preferred specialist.</p></div></li>
+      <li><span class="n">02</span><div><b>Pick a time</b><p>Review live slots and choose the morning, afternoon or evening that fits your life.</p></div></li>
+      <li><span class="n">03</span><div><b>Get instant confirmation</b><p>Your appointment is confirmed straight away, with the details sent to you.</p></div></li>
+      <li class="done"><span class="n">04</span><div><b>Visit &amp; follow up</b><p>Meet your doctor, then track visits and history in your patient portal.</p></div></li>
+    </ol>
+    <div class="sx-center"><a href="book.html" class="sx-btn sx-btn-bronze sx-btn-wide"><svg width="20" height="20"><use href="#i-calendar"/></svg>Start Online Booking</a></div>
   </div>
 </section>
 
 <!-- ============ DOCTORS ============ -->
-<section class="lp-section white">
+<section class="sx-section">
   <div class="container">
-    <div class="section-head">
+    <div class="sx-head">
       <div>
-        <span class="eyebrow-sm">Our team</span>
-        <h2>Meet a few of our <em>doctors</em></h2>
-        <p>Experienced, caring specialists — view a profile to learn more or book directly.</p>
+        <span class="sx-eyebrow">Our faculty</span>
+        <h2 class="sx-h2">Meet our <em>doctors</em></h2>
+        <p class="sx-p">Experienced clinicians providing reassuring care. View a profile or book directly.</p>
       </div>
-      <a href="doctors.html" class="link-arrow">View all doctors &rarr;</a>
+      <a href="doctors.html" class="sx-link">View all <span data-doc-count></span> <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
     </div>
-    <div class="grid grid-4" id="doctorGrid">
-      <div class="empty-state">Loading doctors…</div>
+    <div class="sx-docs" id="doctorGrid"><div class="empty-state">Loading doctors…</div></div>
+  </div>
+</section>
+
+<!-- ============ PATIENT VAULT ============ -->
+<section class="sx-section sx-tight">
+  <div class="container">
+    <div class="sx-vault">
+      <div class="sx-vault-copy">
+        <span class="sx-eyebrow light">Secure patient portal</span>
+        <h2 class="sx-h2 light">Your care, <em>at your fingertips</em></h2>
+        <p>Create a free account to manage everything about your family's visits in one secure place.</p>
+        <ul class="sx-vault-list">
+          <li><svg width="20" height="20"><use href="#i-calendar"/></svg><div><b>Upcoming appointments</b><span>See dates and times, and cancel if your plans change.</span></div></li>
+          <li><svg width="20" height="20"><use href="#i-history"/></svg><div><b>Past visits</b><span>A timeline of every doctor you've seen and when.</span></div></li>
+          <li><svg width="20" height="20"><use href="#i-folder"/></svg><div><b>Medical history</b><span>Notes and records from your care team, in one place.</span></div></li>
+          <li id="videoBullet" hidden><svg width="20" height="20"><use href="#i-video"/></svg><div><b>Video consultations</b><span>See your doctor from home when an in-person visit isn't needed.</span></div></li>
+        </ul>
+        <div class="sx-vault-actions">
+          <a href="register.html" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-user-plus"/></svg>Create Free Account</a>
+          <a href="login.html" class="sx-btn sx-btn-ghost"><svg width="18" height="18"><use href="#i-login"/></svg>Log In to Portal</a>
+        </div>
+      </div>
+      <div class="sx-vault-media">
+        <img src="assets/home/patient-portal.jpg" alt="A patient checking her appointments on a phone" loading="lazy">
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ============ PATIENT PORTAL ============ -->
-<section class="lp-section">
-  <div class="container split">
+<!-- ============ TESTIMONIALS ============
+     Hidden until you have real, consented patient reviews.
+     To show it: replace the three placeholder quotes and remove the word "hidden" below. -->
+<section class="sx-section" id="testimonials" hidden>
+  <div class="container">
+    <div class="sx-head">
+      <div>
+        <span class="sx-eyebrow">Patient stories</span>
+        <h2 class="sx-h2">What our patients <em class="bronze">say</em></h2>
+      </div>
+    </div>
+    <div class="sx-quotes">
+      <figure class="sx-quote">
+        <blockquote>“Patient review goes here.”</blockquote>
+        <figcaption><span class="av">PN</span><div><b>Patient name</b><small>Department visited</small></div></figcaption>
+      </figure>
+      <figure class="sx-quote">
+        <blockquote>“Patient review goes here.”</blockquote>
+        <figcaption><span class="av">PN</span><div><b>Patient name</b><small>Department visited</small></div></figcaption>
+      </figure>
+      <figure class="sx-quote">
+        <blockquote>“Patient review goes here.”</blockquote>
+        <figcaption><span class="av">PN</span><div><b>Patient name</b><small>Department visited</small></div></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSURANCE ============ -->
+<section class="sx-section sx-alt">
+  <div class="container sx-split sx-split-top">
     <div>
-      <span class="eyebrow-sm">Patient portal</span>
-      <h2>Your care, <em>at your fingertips</em></h2>
-      <p>Create a free account to manage everything about your visits in one secure place.</p>
-      <ul class="check-list">
-        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Upcoming appointments<span>See where and when, and cancel if your plans change.</span></div></li>
-        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Past visits<span>A full list of the doctors you've seen and when.</span></div></li>
-        <li><svg width="18" height="18"><use href="#i-check"/></svg><div>Medical history<span>Notes and records from your care team, in one timeline.</span></div></li>
-        <li id="videoBullet" style="display:none;"><svg width="18" height="18"><use href="#i-check"/></svg><div>Video consultations<span>See your doctor from home when an in-person visit isn't needed.</span></div></li>
-      </ul>
-      <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
-        <a href="register.html" class="btn btn-primary">Create an Account</a>
-        <a href="login.html" class="btn btn-outline">Log In</a>
-      </div>
+      <span class="sx-eyebrow">Insurance &amp; coverage</span>
+      <h2 class="sx-h2">Check your <em>coverage</em> before you visit</h2>
+      <p class="sx-p">Coverage depends on your plan. Send us a photo of your insurance card and our front desk will confirm what's covered before your appointment.</p>
+      <!-- Accepted insurers: add one <span class="sx-ins">Insurer name</span> per insurer you have a contract with. -->
+      <div class="sx-ins-grid" id="insurers"></div>
     </div>
-    <div class="split-media">
-      <div class="img-ph" role="img" aria-label="Image placeholder: patient portal" style="--ratio: 5 / 4;">
-        <svg><use href="#i-image"/></svg>
-        <strong>Patient portal image</strong>
-        <small>Patient using phone or laptop · 1200 × 960 px</small>
+    <div class="sx-ins-card">
+      <span class="sx-ins-ic"><svg width="24" height="24"><use href="#i-shield"/></svg></span>
+      <b>Not sure if you're covered?</b>
+      <p>Message us your insurance details and we'll check for you — usually within the same day.</p>
+      <div class="sx-ins-actions">
+        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="sx-btn sx-btn-wa" data-wa-link><svg width="18" height="18"><use href="#i-chat"/></svg>Send on WhatsApp</a>
+        <a href="contact.html" class="sx-btn sx-btn-white">Contact our desk</a>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ TESTIMONIALS ============ -->
-<!-- Placeholders only: replace with real, consented patient reviews before launch. -->
-<section class="lp-section white">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow-sm">Patient stories</span>
-        <h2>What our patients <em>say</em></h2>
-      </div>
-    </div>
-    <div class="grid grid-3">
-      <div class="quote-card">
-        <blockquote>Patient review goes here — a short quote about their experience with our doctors or staff.</blockquote>
-        <div class="who"><div class="img-ph" role="img" aria-label="Photo placeholder"><svg><use href="#i-user"/></svg></div><div><b>Patient name</b>Department visited</div></div>
-      </div>
-      <div class="quote-card">
-        <blockquote>Patient review goes here — a short quote about how easy it was to book and be seen.</blockquote>
-        <div class="who"><div class="img-ph" role="img" aria-label="Photo placeholder"><svg><use href="#i-user"/></svg></div><div><b>Patient name</b>Department visited</div></div>
-      </div>
-      <div class="quote-card">
-        <blockquote>Patient review goes here — a short quote about the care and follow-up they received.</blockquote>
-        <div class="who"><div class="img-ph" role="img" aria-label="Photo placeholder"><svg><use href="#i-user"/></svg></div><div><b>Patient name</b>Department visited</div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ INSURANCE / PARTNERS ============ -->
-<section class="lp-section">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow-sm">Insurance &amp; partners</span>
-        <h2>Working with <em>leading</em> insurers</h2>
-        <p>Not sure if your plan is covered? <a href="contact.html">Contact us</a> and we'll check for you.</p>
-      </div>
-    </div>
-    <div class="logo-row">
-      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
-      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
-      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
-      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
-      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
-      <div class="img-ph sm" role="img" aria-label="Logo placeholder"><strong>Partner logo</strong><small>400 × 175</small></div>
     </div>
   </div>
 </section>
 
 <!-- ============ FAQ ============ -->
-<section class="lp-section white">
-  <div class="container faq-grid">
+<section class="sx-section">
+  <div class="container sx-split sx-split-top">
     <div>
-      <span class="eyebrow-sm">FAQ</span>
-      <h2>Questions, <em>answered</em></h2>
-      <p>Can't find what you're looking for? Our team is happy to help.</p>
-      <a href="contact.html" class="btn btn-outline" style="margin-top:0.6rem;">Contact Us</a>
+      <span class="sx-eyebrow">Patient guide</span>
+      <h2 class="sx-h2">Questions, <em class="bronze">answered</em></h2>
+      <p class="sx-p">Can't find what you're looking for? Our front desk is happy to help on WhatsApp.</p>
     </div>
-    <div class="faq">
+    <div class="sx-faq">
       <details open>
-        <summary>How do I book an appointment?</summary>
-        <p>Use our <a href="book.html">online booking</a> page: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.</p>
+        <summary>How do I book an appointment?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
+        <p>Use our <a href="book.html">online booking</a>: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.</p>
       </details>
       <details>
-        <summary>Do I need an account to book?</summary>
-        <p>No — you can book as a guest. Creating a free account lets you see upcoming and past visits and your medical history in the patient portal.</p>
+        <summary>Do I need an account to book?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
+        <p>No — you can book as a guest. A free account lets you see upcoming and past visits and your medical history in the patient portal.</p>
       </details>
       <details>
-        <summary>How do I cancel or change my appointment?</summary>
-        <p>Log in to your patient portal to cancel an upcoming appointment, or contact our front desk and we'll help you reschedule.</p>
+        <summary>How do I cancel or reschedule?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
+        <p>Log in to your patient portal to cancel an upcoming appointment, or message our front desk and we'll help you reschedule.</p>
       </details>
       <details>
-        <summary>Which insurance plans do you accept?</summary>
+        <summary>Which insurance plans do you accept?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
         <p>Coverage depends on your plan. Please <a href="contact.html">contact us</a> with your insurance details before your visit and we'll confirm for you.</p>
       </details>
       <details>
-        <summary>What should I bring to my first visit?</summary>
-        <p>Please bring a photo ID, your insurance card (if any), a list of current medications, and any recent test results or reports.</p>
+        <summary>What should I bring to my first visit?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary>
+        <p>Please bring a photo ID (Emirates ID or passport), your insurance card if you have one, a list of current medications, and any recent test results or reports.</p>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ============ VISIT US ============ -->
-<section class="lp-section">
-  <div class="container visit-grid">
-    <div class="visit-card">
-      <div>
-        <span class="eyebrow-sm">Visit us</span>
-        <h2>We're here to <em>help</em></h2>
+<!-- ============ VISIT ============ -->
+<section class="sx-section sx-alt">
+  <div class="container sx-visit">
+    <div class="sx-visit-card">
+      <div class="sx-visit-head">
+        <span class="sx-value-ic blue"><svg width="20" height="20"><use href="#i-pin"/></svg></span>
+        <div><b>Visit our clinic</b><small>We're here to help</small></div>
       </div>
-      <div class="visit-row" id="visitAddressRow" style="display:none;">
-        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-pin"/></svg></div>
-        <div><b>Address</b><span id="visitAddress"></span> <a id="visitDirections" class="link-arrow" target="_blank" rel="noopener" style="display:block; margin-top:0.3rem; color:var(--blue-deep);">Get directions &rarr;</a></div>
+      <a class="sx-contact-row" id="visitPhone" href="tel:+971543397906">
+        <span class="ic blue"><svg width="18" height="18"><use href="#i-phone"/></svg></span>
+        <span><small>Helpline &amp; appointments</small><b data-phone-text>+971 54 339 7906</b></span>
+      </a>
+      <a class="sx-contact-row" id="visitEmail" href="mailto:hello@radianthealthalliance.com">
+        <span class="ic amber"><svg width="18" height="18"><use href="#i-mail"/></svg></span>
+        <span><small>Email</small><b id="visitEmailText">hello@radianthealthalliance.com</b></span>
+      </a>
+      <div class="sx-contact-row" id="visitAddressRow" hidden>
+        <span class="ic green"><svg width="18" height="18"><use href="#i-pin"/></svg></span>
+        <span><small>Clinic address</small><b id="visitAddress"></b></span>
       </div>
-      <div class="visit-row">
-        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-phone"/></svg></div>
-        <div><b>Phone</b><a id="visitPhone" href="tel:+971543397906">+971543397906</a></div>
-      </div>
-      <div class="visit-row">
-        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-mail"/></svg></div>
-        <div><b>Email</b><a id="visitEmail" href="mailto:hello@radianthealthalliance.com">hello@radianthealthalliance.com</a></div>
-      </div>
-      <div class="visit-row">
-        <div class="icon-tile soft"><svg width="20" height="20"><use href="#i-clock"/></svg></div>
-        <div><b>Opening hours</b><span>See each <a href="departments.html" style="color:var(--blue-deep);">department page</a> for its hours</span></div>
-      </div>
-      <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:auto;">
-        <a href="book.html" class="btn btn-amber">Book Appointment</a>
-        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="btn btn-whatsapp" data-wa-link>WhatsApp</a>
+      <div class="sx-visit-actions">
+        <a href="book.html" class="sx-btn sx-btn-bronze"><svg width="18" height="18"><use href="#i-calendar"/></svg>Book Visit</a>
+        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="sx-btn sx-btn-wa" data-wa-link><svg width="18" height="18"><use href="#i-chat"/></svg>WhatsApp</a>
       </div>
     </div>
-    <div class="visit-map" id="visitMap">
-      <div class="img-ph" role="img" aria-label="Map placeholder">
-        <svg><use href="#i-pin"/></svg>
-        <strong>Map</strong>
-        <small>Set the clinic address in Admin → Site Settings to show a map here</small>
+    <div class="sx-map" id="visitMap">
+      <div class="sx-map-ph">
+        <svg width="28" height="28"><use href="#i-pin"/></svg>
+        <span>Map appears here once the clinic address is set in Admin → Site Settings</span>
       </div>
+      <a id="visitDirections" class="sx-map-link" target="_blank" rel="noopener" hidden><svg width="16" height="16"><use href="#i-directions"/></svg>Open in Google Maps</a>
     </div>
   </div>
 </section>
 
 <!-- ============ CTA ============ -->
-<section class="lp-section tight-top">
+<section class="sx-section sx-tight">
   <div class="container">
-    <div class="cta-band">
-      <div>
-        <h2>Ready to see one of our doctors?</h2>
-        <p>Booking takes less than two minutes.</p>
-      </div>
-      <div class="actions">
-        <a href="book.html" class="btn btn-light">Book Appointment</a>
-        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="btn btn-whatsapp" data-wa-link>WhatsApp Us</a>
+    <div class="sx-cta">
+      <span class="sx-cta-ic"><svg width="24" height="24"><use href="#i-heart"/></svg></span>
+      <h2>Ready to consult with a specialist?</h2>
+      <p>Online booking takes under two minutes. No waiting on hold, no paperwork.</p>
+      <div class="sx-cta-actions">
+        <a href="book.html" class="sx-btn sx-btn-bronze">Book Appointment Now</a>
+        <a href="https://wa.me/971543397906" target="_blank" rel="noopener" class="sx-btn sx-btn-glass" data-wa-link><svg width="18" height="18"><use href="#i-chat"/></svg>WhatsApp Helpdesk</a>
       </div>
     </div>
   </div>
 </section>
+
+</main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
@@ -413,85 +442,163 @@
   (function () {
     const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const setAll = (sel, text) => document.querySelectorAll(sel).forEach(el => { el.textContent = text; });
-    const imgPh = (title, hint) => `<div class="img-ph" role="img" aria-label="Image placeholder: ${esc(title)}"><svg><use href="#i-image"/></svg><strong>${esc(title)}</strong><small>${esc(hint)}</small></div>`;
+    const arrow = '<svg width="16" height="16"><use href="#i-arrow"/></svg>';
+    const DEPT_ICONS = ['stethoscope', 'heart', 'baby', 'bone', 'skin', 'gyno', 'ent', 'tooth', 'eye', 'scan', 'physio'];
+    const deptIcon = d => '#d-' + (DEPT_ICONS.includes(d.icon) ? d.icon : 'default');
+    // Stock photos for departments that don't have their own banner yet.
+    const DEPT_PHOTOS = { stethoscope: 'dept-general', heart: 'dept-cardiology', baby: 'dept-pediatrics', bone: 'dept-orthopedics' };
+    const deptPhoto = d => d.bannerUrl || (DEPT_PHOTOS[d.icon] ? `assets/home/${DEPT_PHOTOS[d.icon]}.jpg` : '');
 
-    // Departments
+    const settingsP = API.get('/api/settings').catch(() => ({}));
+
+    // ---- Real availability: the first open slot for a doctor in the next two weeks ----
+    function clinicToday(tz) {
+      try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'Asia/Dubai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+      catch (e) { return new Date().toISOString().slice(0, 10); }
+    }
+    function addDays(ymd, n) { const d = new Date(ymd + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+    async function nextSlot(doctorId, today) {
+      for (let i = 0; i < 14; i++) {
+        const date = addDays(today, i);
+        try {
+          const r = await API.get(`/api/doctors/${encodeURIComponent(doctorId)}/slots?date=${date}`);
+          if (r.available && r.available.length) return { date, time: r.available[0], offset: i };
+        } catch (e) { return null; }
+      }
+      return null;
+    }
+    function slotLabel(s) {
+      const day = s.offset === 0 ? 'Today' : s.offset === 1 ? 'Tomorrow'
+        : new Date(s.date + 'T00:00:00Z').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+      return `${day}, ${fmtTime(s.time)}`;
+    }
+
+    // ---- Departments ----
     API.get('/api/departments').then(depts => {
       if (depts.length) setAll('[data-dept-count]', String(depts.length));
-      const grid = document.getElementById('deptGrid');
-      grid.innerHTML = depts.length ? depts.slice(0, 8).map(d => `
-        <a class="dept-tile" href="department.html?id=${encodeURIComponent(d.id)}">
-          ${d.bannerUrl
-            ? `<img class="media-img" src="${esc(d.bannerUrl)}" alt="${esc(d.name)}" loading="lazy">`
-            : imgPh(d.name + ' image', '800 × 500 px')}
-          <div class="dept-tile-body">
-            <h3>${esc(d.name)}</h3>
-            <p>${esc(d.tagline || d.description)}</p>
-            <div class="meta">
-              <span>${d.doctorCount ? d.doctorCount + (d.doctorCount === 1 ? ' doctor' : ' doctors') : ''}</span>
-              <span>Learn more &rarr;</span>
-            </div>
+      const allLink = document.getElementById('deptAllLink');
+      if (depts.length) allLink.innerHTML = `View all ${depts.length} ${arrow}`;
+      const feature = document.getElementById('deptFeature');
+      const mini = document.getElementById('deptMini');
+      if (!depts.length) { feature.innerHTML = '<div class="empty-state">Departments will appear here soon.</div>'; return; }
+
+      // Up to four departments with a photo get the large card; the next four get compact tiles.
+      const withPhoto = depts.filter(deptPhoto).slice(0, 4);
+      const rest = depts.filter(d => !withPhoto.includes(d)).slice(0, 4);
+      const count = n => n ? `${n} ${n === 1 ? 'specialist' : 'specialists'}` : '';
+      feature.innerHTML = withPhoto.map(d => `
+        <a class="sx-dept-card" href="department.html?id=${encodeURIComponent(d.id)}">
+          <div class="sx-dept-img"><img src="${esc(deptPhoto(d))}" alt="" loading="lazy">${d.tagline ? `<span class="sx-dept-tag">${esc(d.tagline)}</span>` : ''}</div>
+          <div class="sx-dept-body">
+            <div class="sx-dept-title"><h3>${esc(d.name)}</h3>${d.doctorCount ? `<span class="sx-count">${count(d.doctorCount)}</span>` : ''}</div>
+            <p>${esc(d.description)}</p>
+            <span class="sx-dept-more">Consult department ${arrow}</span>
           </div>
-        </a>
-      `).join('') : '<div class="empty-state">Departments will appear here soon.</div>';
+        </a>`).join('');
+      if (!withPhoto.length) feature.hidden = true;
+      mini.innerHTML = rest.map(d => `
+        <a class="sx-dept-tile" href="department.html?id=${encodeURIComponent(d.id)}">
+          <span class="sx-dept-ic"><svg width="22" height="22"><use href="${deptIcon(d)}"/></svg></span>
+          <b>${esc(d.name)}</b>
+          <small>${esc(d.tagline || d.description)}</small>
+          <span class="sx-explore">Explore &rarr;</span>
+        </a>`).join('');
     }).catch(() => {
-      document.getElementById('deptGrid').innerHTML = '<div class="empty-state">Could not load departments right now.</div>';
+      document.getElementById('deptFeature').innerHTML = '<div class="empty-state">Could not load departments right now.</div>';
     });
 
-    // Doctors
-    API.get('/api/team').then(team => {
+    // ---- Doctors + live availability ----
+    Promise.all([API.get('/api/team'), settingsP]).then(async ([team, s]) => {
       const docs = team.doctors || [];
       if (docs.length) setAll('[data-doc-count]', String(docs.length));
       const grid = document.getElementById('doctorGrid');
-      grid.innerHTML = docs.length ? docs.slice(0, 4).map(d => {
+      if (!docs.length) {
+        grid.innerHTML = '<div class="empty-state">Our doctors will appear here soon.</div>';
+        document.getElementById('rosterText').textContent = 'Book online in under two minutes';
+        return;
+      }
+      const shown = docs.slice(0, 4);
+      grid.innerHTML = shown.map(d => {
         const profile = `profile.html?doctor=${encodeURIComponent(d.id)}`;
+        const place = [d.city, d.country].filter(Boolean).join(', ');
         return `
-        <div class="doc-tile">
-          <a class="portrait" href="${profile}" aria-label="View profile of ${esc(d.name)}">
-            ${d.photo ? `<img src="${esc(d.photo)}" alt="${esc(d.name)}" loading="lazy">` : `<div class="initials">${esc(initialsOf(d.name))}</div>`}
+        <article class="sx-doc">
+          <a class="sx-doc-photo" href="${profile}" aria-label="View profile of ${esc(d.name)}">
+            ${d.photo ? `<img src="${esc(d.photo)}" alt="${esc(d.name)}" loading="lazy">` : `<span class="initials">${esc(initialsOf(d.name))}</span>`}
+            <span class="sx-slot" data-slot-for="${esc(d.id)}" hidden></span>
           </a>
-          <div class="doc-tile-body">
+          <div class="sx-doc-body">
+            <span class="sx-doc-spec">${esc(d.specialty)}</span>
             <h3><a href="${profile}">${esc(d.name)}</a></h3>
-            <div class="doctor-specialty">${esc(d.specialty)}</div>
-            ${doctorLocationHtml(d)}
-            <div class="doc-tile-actions">
-              <a href="${profile}" class="btn btn-outline">Profile</a>
-              <a href="book.html?doctor=${encodeURIComponent(d.id)}" class="btn btn-primary">Book</a>
+            ${place ? `<small class="sx-doc-place"><svg width="13" height="13"><use href="#i-pin"/></svg>${esc(place)}</small>` : ''}
+            ${d.offersVideo ? '<span class="sx-doc-badge"><svg width="13" height="13"><use href="#i-video"/></svg>Video visits available</span>' : ''}
+            <div class="sx-doc-actions">
+              <a href="${profile}" class="sx-btn sx-btn-soft">View Bio</a>
+              <a href="book.html?doctor=${encodeURIComponent(d.id)}" class="sx-btn sx-btn-blue">Book Visit</a>
             </div>
           </div>
-        </div>`;
-      }).join('') : '<div class="empty-state">Our doctors will appear here soon.</div>';
+        </article>`;
+      }).join('');
+
+      const today = clinicToday(s && s.timeZone);
+      const results = await Promise.all(shown.map(d => nextSlot(d.id, today).then(slot => ({ d, slot }))));
+      results.forEach(({ d, slot }) => {
+        const el = document.querySelector(`[data-slot-for="${CSS.escape(d.id)}"]`);
+        if (el && slot) { el.textContent = 'Next slot: ' + slotLabel(slot); el.hidden = false; }
+      });
+      const open = results.filter(r => r.slot).sort((a, b) => (a.slot.date + a.slot.time).localeCompare(b.slot.date + b.slot.time));
+      const roster = document.getElementById('rosterText');
+      if (open.length) {
+        const first = open[0];
+        roster.textContent = `Earliest slot: ${slotLabel(first.slot)} · ${first.d.name}`;
+        document.getElementById('rosterCard').href = 'book.html?doctor=' + encodeURIComponent(first.d.id);
+        if (first.slot.offset === 0) document.getElementById('statusSlot').textContent = ' • Slots open today';
+      } else {
+        roster.textContent = 'Book online in under two minutes';
+      }
     }).catch(() => {
       document.getElementById('doctorGrid').innerHTML = '<div class="empty-state">Could not load doctors right now.</div>';
+      document.getElementById('rosterText').textContent = 'Book online in under two minutes';
     });
 
-    // Contact details, WhatsApp links, map and video availability from Site Settings
-    API.get('/api/settings').then(s => {
+    // ---- Contact details, map, video availability ----
+    settingsP.then(s => {
+      if (!s) return;
       if (s.whatsapp) document.querySelectorAll('[data-wa-link]').forEach(a => { a.href = 'https://wa.me/' + encodeURIComponent(s.whatsapp); });
-      if (s.phone) { const p = document.getElementById('visitPhone'); p.textContent = s.phone; p.href = 'tel:' + s.phone.replace(/\s+/g, ''); }
-      if (s.contactEmail) { const m = document.getElementById('visitEmail'); m.textContent = s.contactEmail; m.href = 'mailto:' + s.contactEmail; }
-      if (s.videoEnabled) document.getElementById('videoBullet').style.display = '';
+      if (s.phone) {
+        setAll('[data-phone-text]', s.phone);
+        document.getElementById('visitPhone').href = 'tel:' + s.phone.replace(/\s+/g, '');
+      }
+      if (s.contactEmail) {
+        document.getElementById('visitEmailText').textContent = s.contactEmail;
+        document.getElementById('visitEmail').href = 'mailto:' + s.contactEmail;
+      }
+      if (s.videoEnabled) {
+        document.getElementById('videoBullet').hidden = false;
+        const chip = document.getElementById('chipThird');
+        chip.innerHTML = '<svg width="15" height="15"><use href="#i-video"/></svg>Video consultations';
+      }
       const loc = s.location;
       if (loc) {
         if (loc.address) {
-          document.getElementById('visitAddressRow').style.display = '';
+          document.getElementById('visitAddressRow').hidden = false;
           document.getElementById('visitAddress').textContent = loc.address;
         }
         const dir = document.getElementById('visitDirections');
-        if (loc.link) dir.href = loc.link; else dir.style.display = 'none';
+        if (loc.link) { dir.href = loc.link; dir.hidden = false; }
         if (loc.embed) {
           const map = document.getElementById('visitMap');
-          map.innerHTML = '';
+          map.querySelector('.sx-map-ph').remove();
           const f = document.createElement('iframe');
           f.title = 'Map showing Radiant Health Alliance';
           f.loading = 'lazy';
           f.referrerPolicy = 'no-referrer-when-downgrade';
           f.allowFullscreen = true;
           f.src = loc.embed;
-          map.appendChild(f);
+          map.prepend(f);
         }
       }
-    }).catch(() => { /* keep the defaults already in the page */ });
+    });
   })();
 </script>
 </body>

@@ -102,9 +102,9 @@ function renderHeader(activePage) {
 
   el.innerHTML = `
     <div class="container nav-row">
-      <a href="index.html" class="brand">
-        <img src="assets/logo.png" alt="Radiant Health Alliance">
-        <span>Radiant Health Alliance</span>
+      <a href="index.html" class="brand" aria-label="Radiant Health Alliance — home">
+        <span class="brand-mark"><img src="assets/logo.png" alt=""></span>
+        <span class="brand-text"><span class="brand-name">Radiant Health</span><span class="brand-sub">Alliance Medical Center</span></span>
       </a>
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">&#9776;</button>
       <nav class="main-nav" id="mainNav">
@@ -124,6 +124,34 @@ function renderHeader(activePage) {
   if (hamburger && nav) {
     hamburger.addEventListener('click', () => nav.classList.toggle('open'));
   }
+  renderMobileDock(activePage, portalLink);
+}
+
+// Phone-only bottom bar on public pages: WhatsApp + Book Visit, then tab links.
+const DOCK_PAGES = ['home', 'departments', 'doctors', 'about', 'contact'];
+function renderMobileDock(activePage, portalLink) {
+  if (!DOCK_PAGES.includes(activePage) || document.getElementById('mDock')) return;
+  const portalHref = (portalLink.match(/href="([^"]+)"/) || [])[1] || 'login.html';
+  const icon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const tab = (page, href, label, path) =>
+    `<a href="${href}"${activePage === page ? ' class="active" aria-current="page"' : ''}>${icon(path)}${label}</a>`;
+  const dock = document.createElement('nav');
+  dock.className = 'm-dock';
+  dock.id = 'mDock';
+  dock.setAttribute('aria-label', 'Quick actions');
+  dock.innerHTML = `
+    <div class="m-dock-actions">
+      <a class="wa" href="https://wa.me/971543397906" target="_blank" rel="noopener" data-dock-wa>${icon('<path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/>')}WhatsApp</a>
+      <a class="book" href="book.html">${icon('<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/>')}Book Visit</a>
+    </div>
+    <div class="m-dock-tabs">
+      ${tab('home', 'index.html', 'Home', '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>')}
+      ${tab('departments', 'departments.html', 'Care', '<path d="M5 3H4v6a5 5 0 0 0 10 0V3h-1"/><path d="M9 14v1.5a4.5 4.5 0 0 0 9 0V13"/><circle cx="18" cy="11" r="2"/>')}
+      ${tab('doctors', 'doctors.html', 'Doctors', '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>')}
+      ${tab('portal', portalHref, 'Portal', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h4"/>')}
+    </div>`;
+  document.body.appendChild(dock);
+  document.body.classList.add('has-dock');
 }
 
 async function renderFooter() {
@@ -142,8 +170,8 @@ async function renderFooter() {
     <div class="container">
       <div class="footer-grid">
         <div>
-          <h4>Radiant Health Alliance</h4>
-          <p style="color:#C6D2D8; opacity:0.85;">Compassionate care, redefining health, stronger together. A multi-department medical center for the whole family.</p>
+          <div class="footer-brand"><span class="brand-mark"><img src="assets/logo.png" alt=""></span><b>Radiant Health Alliance</b></div>
+          <p>Compassionate care, redefining health, stronger together. A multi-specialty medical center for the whole family.</p>
         </div>
         <div>
           <h4>Quick Links</h4>
@@ -171,6 +199,8 @@ async function renderFooter() {
     </div>
   `;
   document.getElementById('footerYear').textContent = new Date().getFullYear();
+  const dockWa = document.querySelector('[data-dock-wa]');
+  if (dockWa) dockWa.href = `https://wa.me/${whatsapp}`;
 }
 
 // requireRole('doctor') or requireRole(['admin', 'staff'])

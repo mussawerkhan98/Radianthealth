@@ -405,10 +405,14 @@
         return;
       }
     }
-    const preselectDept = params.get('department') || '';
-    if (preselectDept && departments.some(d => d.id === preselectDept)) {
-      deptSelect.value = preselectDept;
-      await loadDoctorsForDept(preselectDept, false);
+    // ?department=<id or readable name>, e.g. /book?department=physiotherapy&visit=home
+    const deptParam = (params.get('department') || '').toLowerCase();
+    const preDept = deptParam && departments.find(d => d.id.toLowerCase() === deptParam || d.slug === deptParam);
+    if (preDept) {
+      deptSelect.value = preDept.id;
+      await loadDoctorsForDept(preDept.id, false);
+      // Only one doctor offers this here? Choose them and show their times straight away.
+      if (doctorSelect.options.length === 2) { doctorSelect.selectedIndex = 1; loadSlots(); }
       return;
     }
     await loadDoctorsForDept('', false);

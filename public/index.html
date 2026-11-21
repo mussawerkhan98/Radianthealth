@@ -33,7 +33,8 @@
   <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="15" rx="2.5"/><path d="M9 3h6v4H9zM8 17c.6-1.6 2.2-2.5 4-2.5s3.4.9 4 2.5"/><circle cx="12" cy="11.5" r="2"/></symbol>
   <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
-  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-heart"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-speed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 18a9 9 0 1 1 15 0"/><path d="m12 13 4-4"/><circle cx="12" cy="13" r="1"/></symbol>
@@ -78,18 +79,18 @@
     <div class="sx-hero-copy">
       <div class="sx-status">
         <span class="sx-pulse" aria-hidden="true"></span>
-        <span><span data-c="home.status">Now accepting consultations</span><span id="statusSlot"></span></span>
+        <span><span data-c="home.status">Home physiotherapy visits available</span><span id="statusSlot"></span></span>
       </div>
-      <h1 data-c="home.heroTitle">Elevated clinical care, designed for <em>peace of mind</em></h1>
-      <p class="sx-lead" data-c="home.heroLead">Specialist care across our clinical departments, experienced physicians and fast online scheduling — all in one calm, modern medical center.</p>
+      <h1 data-c="home.heroTitle">Expert physiotherapy, <em>at home</em> or in our clinic</h1>
+      <p class="sx-lead" data-c="home.heroLead">Licensed physiotherapists who come to your door — or see you at our center. Recover from pain, injury and surgery with a plan built around you, backed by specialist doctors when you need them.</p>
       <div class="sx-cta-duo">
-        <a href="/book" class="sx-btn sx-btn-bronze"><svg width="20" height="20"><use href="#i-calendar"/></svg>Book a Consultation</a>
-        <a href="/doctors" class="sx-btn sx-btn-white"><svg width="20" height="20"><use href="#i-badge"/></svg>Explore Specialists</a>
+        <a href="/book?department=physiotherapy&amp;visit=home" class="sx-btn sx-btn-bronze" data-physio-link="home"><svg width="20" height="20"><use href="#i-home"/></svg><span data-c="home.heroBtnHome">Book Home Physio</span></a>
+        <a href="/book?department=physiotherapy&amp;visit=clinic" class="sx-btn sx-btn-white" data-physio-link="clinic"><svg width="20" height="20"><use href="#i-calendar"/></svg><span data-c="home.heroBtnClinic">Book at the Clinic</span></a>
       </div>
       <ul class="sx-chips" id="heroChips">
-        <li class="chip-green"><svg width="15" height="15"><use href="#i-verified"/></svg>Book online in under 2 minutes</li>
-        <li class="chip-blue"><svg width="15" height="15"><use href="#i-users"/></svg>Family care under one roof</li>
-        <li class="chip-amber"><svg width="15" height="15"><use href="#i-lock"/></svg>Your records in one portal</li>
+        <li class="chip-green"><svg width="15" height="15"><use href="#i-home"/></svg>Physiotherapist comes to you</li>
+        <li class="chip-blue"><svg width="15" height="15"><use href="#i-verified"/></svg>Personal recovery plan</li>
+        <li class="chip-amber"><svg width="15" height="15"><use href="#i-speed"/></svg>Book online in 2 minutes</li>
       </ul>
     </div>
 
@@ -115,7 +116,7 @@
       </div>
       <div class="sx-stat">
         <div class="sx-stat-top"><b data-doc-count>—</b><span class="sx-stat-ic"><svg width="18" height="18"><use href="#i-users"/></svg></span></div>
-        <strong>Specialist doctors</strong><small>In-person &amp; video visits</small>
+        <strong>Physiotherapists &amp; doctors</strong><small>Home, clinic &amp; video visits</small>
       </div>
       <div class="sx-stat">
         <div class="sx-stat-top"><b>2 min</b><span class="sx-stat-ic bronze"><svg width="18" height="18"><use href="#i-speed"/></svg></span></div>
@@ -137,20 +138,20 @@
       <span class="sx-mini-note">How can we help today?</span>
     </div>
     <div class="sx-hub">
-      <a class="sx-hub-card t-amber" href="/book">
-        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-calendar-plus"/></svg></span>
+      <a class="sx-hub-card t-amber" href="/book?department=physiotherapy&amp;visit=home" data-physio-link="home">
+        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-home"/></svg></span>
         <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
-        <b>Book a visit</b><small>Choose doctor &amp; time</small>
+        <b>Home physiotherapy</b><small>We come to you</small>
       </a>
-      <a class="sx-hub-card t-blue" href="/doctors">
+      <a class="sx-hub-card t-blue" href="/book?department=physiotherapy&amp;visit=clinic" data-physio-link="clinic">
+        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#d-physio"/></svg></span>
+        <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
+        <b>Clinic physiotherapy</b><small>Sessions at our center</small>
+      </a>
+      <a class="sx-hub-card t-indigo" href="/doctors">
         <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-badge"/></svg></span>
         <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
-        <b>Our doctors</b><small>Browse <span data-doc-count>our</span> specialists</small>
-      </a>
-      <a class="sx-hub-card t-indigo" href="/login">
-        <span class="sx-hub-ic"><svg width="22" height="22"><use href="#i-shield"/></svg></span>
-        <svg class="sx-hub-go" width="18" height="18"><use href="#i-arrow-up"/></svg>
-        <b>Patient portal</b><small>Visits &amp; medical history</small>
+        <b>Our team</b><small>Physiotherapists &amp; <span data-doc-count>our</span> doctors</small>
       </a>
       <a class="sx-hub-card t-green" href="https://wa.me/971543397906" target="_blank" rel="noopener" data-wa-link>
         <span class="sx-hub-ic solid"><svg width="22" height="22"><use href="#i-chat"/></svg></span>
@@ -158,6 +159,38 @@
         <b>WhatsApp desk</b><small data-phone-text>+971 54 339 7906</small>
       </a>
     </div>
+  </div>
+</section>
+
+<!-- ============ PHYSIOTHERAPY AT HOME (main service) ============ -->
+<!-- Texts, conditions and steps: Admin → Website Content → Home page → Physiotherapy at home. -->
+<section class="sx-section" id="physio">
+  <div class="container px-grid">
+    <div class="px-copy">
+      <span class="sx-eyebrow" data-c="home.physioEyebrow">Physiotherapy at home</span>
+      <h2 class="sx-h2" data-c="home.physioTitle">Rehab that comes <em>to your door</em></h2>
+      <p class="sx-p" data-c="home.physioLead">No traffic, no waiting rooms. Your physiotherapist treats you where you're most comfortable — ideal after surgery, for older family members, or when moving is painful.</p>
+      <h3 class="px-sub">What we treat</h3>
+      <ul class="px-conditions" id="physioConditions">
+        <li>Back &amp; neck pain</li><li>Sports injuries</li><li>Post-surgery rehab (knee, hip, shoulder)</li><li>Stroke &amp; neurological rehab</li>
+        <li>Arthritis &amp; joint pain</li><li>Elderly mobility &amp; fall prevention</li><li>Posture &amp; work-related pain</li><li>Sprains, strains &amp; fractures</li>
+      </ul>
+      <div class="sx-cta-duo">
+        <a class="sx-btn sx-btn-bronze" href="/book?department=physiotherapy&amp;visit=home" data-physio-link="home"><svg width="20" height="20"><use href="#i-home"/></svg>Book a home visit</a>
+        <a class="sx-btn sx-btn-white" href="/departments/physiotherapy" data-physio-link="page">About our physiotherapy <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+    <aside class="px-card">
+      <span class="px-badge"><svg width="16" height="16"><use href="#i-home"/></svg>Home visit</span>
+      <h3 data-c="home.physioStepsTitle">How a home session works</h3>
+      <ol class="px-steps" id="physioSteps">
+        <li><b>Book online or on WhatsApp</b><span>Choose "Home visit", pick a time and add your address.</span></li>
+        <li><b>Assessment at home</b><span>Your physiotherapist assesses you and agrees clear goals with you.</span></li>
+        <li><b>Treatment &amp; exercise plan</b><span>Hands-on treatment plus simple exercises to do between sessions.</span></li>
+      </ol>
+      <p class="px-note"><svg width="16" height="16"><use href="#i-chat"/></svg><span data-c="home.physioNote">Not sure if home or clinic is right for you? Message us on WhatsApp and we'll help you choose.</span></p>
+      <a class="px-wa" href="https://wa.me/971543397906" target="_blank" rel="noopener" data-wa-link>Chat on WhatsApp</a>
+    </aside>
   </div>
 </section>
 
@@ -208,9 +241,9 @@
   <div class="container">
     <div class="sx-head">
       <div>
-        <span class="sx-eyebrow">Clinical departments</span>
-        <h2 class="sx-h2">Care across <em>every</em> department</h2>
-        <p class="sx-p">From preventive check-ups to specialist diagnostics, each department works as part of one coordinated team.</p>
+        <span class="sx-eyebrow">Physiotherapy &amp; specialist care</span>
+        <h2 class="sx-h2">Physiotherapy first, backed by <em>every</em> department</h2>
+        <p class="sx-p">Our physiotherapists work side by side with specialist doctors — from orthopedics to general medicine — as one coordinated team.</p>
       </div>
       <a href="/departments" class="sx-link" id="deptAllLink">View all <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
     </div>
@@ -461,7 +494,7 @@
       const h = c.home;
 
       const chipCls = ['chip-green', 'chip-blue', 'chip-amber'];
-      const chipIcon = ['#i-verified', '#i-users', '#i-lock'];
+      const chipIcon = ['#i-home', '#i-verified', '#i-speed'];
       document.getElementById('heroChips').innerHTML = (h.chips || []).filter(Boolean).slice(0, 3)
         .map((t, i) => `<li class="${chipCls[i]}"><svg width="15" height="15"><use href="${chipIcon[i]}"/></svg>${esc(t)}</li>`).join('');
 
@@ -476,7 +509,13 @@
         <div class="sx-value"><span class="sx-value-ic ${valIc[i % 3][0]}"><svg width="20" height="20"><use href="${valIc[i % 3][1]}"/></svg></span>
         <div><b>${esc(v.title)}</b><p>${esc(v.text)}</p></div></div>`).join('');
 
-      const whyIc = [['', '#i-users'], ['amber', '#i-heart'], ['green', '#i-calendar'], ['', '#i-file'], ['slate', '#i-shield'], ['green', '#i-chat']];
+      const conditions = (h.physioConditions || []).filter(Boolean);
+      document.getElementById('physioConditions').innerHTML = conditions.map(x => `<li>${esc(x)}</li>`).join('');
+      document.getElementById('physioConditions').hidden = !conditions.length;
+      document.getElementById('physioSteps').innerHTML = (h.physioSteps || []).filter(s => s.title || s.text)
+        .map(s => `<li><b>${esc(s.title)}</b><span>${esc(s.text)}</span></li>`).join('');
+
+      const whyIc = [['', '#d-physio'], ['amber', '#i-home'], ['green', '#i-users'], ['', '#d-stethoscope'], ['slate', '#i-file'], ['green', '#i-chat']];
       document.getElementById('whyGrid').innerHTML = (h.why || []).map((w, i) => `
         <div class="sx-why-card"><span class="sx-why-ic ${whyIc[i % 6][0]}"><svg width="20" height="20"><use href="${whyIc[i % 6][1]}"/></svg></span>
         <div><b>${esc(w.title)}</b><p>${esc(w.text)}</p></div></div>`).join('');
@@ -548,6 +587,14 @@
       const feature = document.getElementById('deptFeature');
       const mini = document.getElementById('deptMini');
       if (!depts.length) { feature.innerHTML = '<div class="empty-state">Departments will appear here soon.</div>'; return; }
+
+      // Physiotherapy links follow the department's current address (it changes if renamed in Admin).
+      const physio = depts.find(d => d.icon === 'physio') || depts.find(d => /physio/i.test(d.name));
+      if (physio) document.querySelectorAll('[data-physio-link]').forEach(a => {
+        const kind = a.dataset.physioLink;
+        a.href = kind === 'page' ? LINKS.department(physio)
+          : `/book?department=${encodeURIComponent(physio.slug || physio.id)}&visit=${kind}`;
+      });
 
       // Up to four departments with a photo get the large card; the next four get compact tiles.
       const withPhoto = depts.filter(deptPhoto).slice(0, 4);

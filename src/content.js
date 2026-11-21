@@ -9,22 +9,40 @@
 
 const DEFAULTS = {
   seo: {
-    home:        { title: 'Radiant Health Alliance — Elevated Clinical Care', description: 'A multi-specialty medical center. Book appointments online, meet our doctors, and manage your care with Radiant Health Alliance.' },
-    about:       { title: 'About Us — Radiant Health Alliance', description: 'Our mission, approach and promise: compassionate, coordinated care for every member of the family.' },
-    departments: { title: 'Departments — Radiant Health Alliance', description: 'Explore our clinical departments and find the right specialist for your visit.' },
-    doctors:     { title: 'Our Doctors — Radiant Health Alliance', description: 'Meet our specialist doctors. View profiles and book an appointment online in minutes.' },
-    contact:     { title: 'Contact Us — Radiant Health Alliance', description: 'Call, email or message us on WhatsApp. Find our clinic and get directions.' },
-    book:        { title: 'Book an Appointment — Radiant Health Alliance', description: 'Choose a department and doctor, pick a time that works, and you are booked — no account needed.' },
-    blog:        { title: 'Health Insights — Radiant Health Alliance', description: 'Practical health advice and clinic news from the doctors at Radiant Health Alliance.' }
+    home:        { title: 'Physiotherapy at Home & in Clinic — Radiant Health Alliance', description: 'Expert physiotherapy at home or in our clinic: back and neck pain, sports injuries, post-surgery and stroke rehabilitation, elderly mobility. Book a home physio visit online.' },
+    about:       { title: 'About Us — Radiant Health Alliance', description: 'A physiotherapy-led medical center: home and clinic physiotherapy backed by specialist doctors, with compassionate, coordinated care for the whole family.' },
+    departments: { title: 'Physiotherapy & Medical Departments — Radiant Health Alliance', description: 'Physiotherapy at home and in clinic, plus specialist medical departments working as one coordinated team.' },
+    doctors:     { title: 'Physiotherapists & Doctors — Radiant Health Alliance', description: 'Meet our physiotherapists and specialist doctors. View profiles and book a home, clinic or video visit online.' },
+    contact:     { title: 'Contact Us — Radiant Health Alliance', description: 'Call or WhatsApp us to book home physiotherapy or a clinic visit. Find our clinic and get directions.' },
+    book:        { title: 'Book Physiotherapy at Home or in Clinic — Radiant Health Alliance', description: 'Book a home physiotherapy visit, a clinic session or a video call in under two minutes — no account needed.' },
+    blog:        { title: 'Health Insights — Radiant Health Alliance', description: 'Physiotherapy tips, recovery advice and health guidance from the team at Radiant Health Alliance.' }
   },
 
   home: {
-    status: 'Now accepting consultations',
-    heroTitle: 'Elevated clinical care, designed for *peace of mind*',
-    heroLead: 'Specialist care across our clinical departments, experienced physicians and fast online scheduling — all in one calm, modern medical center.',
+    status: 'Home physiotherapy visits available',
+    heroTitle: 'Expert physiotherapy, *at home* or in our clinic',
+    heroLead: 'Licensed physiotherapists who come to your door — or see you at our center. Recover from pain, injury and surgery with a plan built around you, backed by specialist doctors when you need them.',
     heroImage: '/assets/home/hero.jpg',
     heroImageAlt: 'A doctor listening attentively to a patient during a consultation',
-    chips: ['Book online in under 2 minutes', 'Family care under one roof', 'Your records in one portal'],
+    heroBtnHome: 'Book Home Physio',
+    heroBtnClinic: 'Book at the Clinic',
+    chips: ['Physiotherapist comes to you', 'Personal recovery plan', 'Book online in 2 minutes'],
+
+    // "Physiotherapy at home" feature section
+    physioEyebrow: 'Physiotherapy at home',
+    physioTitle: 'Rehab that comes *to your door*',
+    physioLead: "No traffic, no waiting rooms. Your physiotherapist treats you where you're most comfortable — ideal after surgery, for older family members, or when moving is painful.",
+    physioConditions: [
+      'Back & neck pain', 'Sports injuries', 'Post-surgery rehab (knee, hip, shoulder)', 'Stroke & neurological rehab',
+      'Arthritis & joint pain', 'Elderly mobility & fall prevention', 'Posture & work-related pain', 'Sprains, strains & fractures'
+    ],
+    physioStepsTitle: 'How a home session works',
+    physioSteps: [
+      { title: 'Book online or on WhatsApp', text: 'Choose "Home visit", pick a time and add your address.' },
+      { title: 'Assessment at home', text: 'Your physiotherapist assesses you and agrees clear goals with you.' },
+      { title: 'Treatment & exercise plan', text: 'Hands-on treatment plus simple exercises to do between sessions.' }
+    ],
+    physioNote: "Not sure if home or clinic is right for you? Message us on WhatsApp and we'll help you choose.",
 
     showGallery: true,
     galleryEyebrow: 'Atmosphere of healing',
@@ -35,26 +53,26 @@ const DEFAULTS = {
       { image: '/assets/home/family-wing.jpg', caption: 'Family care', alt: "Family care room with a children's examination area" }
     ],
 
-    aboutTitle: 'Compassionate care, *redefining* the medical standard',
-    aboutText: 'Radiant Health Alliance brings together specialists across many disciplines so your whole family can find the right clinical guidance in one reassuring place — and get stronger together.',
+    aboutTitle: 'Physiotherapy first, *whole-person* care',
+    aboutText: 'Radiant Health Alliance is built around physiotherapy — at home and in our clinic — with specialist doctors on the same team, so your recovery, tests and follow-ups are coordinated in one reassuring place.',
 
-    whyTitle: 'Care that feels *personal*',
-    whyLead: 'Everything about your visit is designed to be simple, unhurried and centred on you.',
+    whyTitle: 'Recovery that feels *personal*',
+    whyLead: 'Every session is one-to-one, unhurried and centred on getting you moving again.',
     why: [
-      { title: 'Experienced specialists', text: 'A multi-disciplinary team of doctors working together across departments.' },
-      { title: 'Family-centred care', text: 'From infants to grandparents — care for every generation in one place.' },
-      { title: 'Easy online booking', text: 'See real availability and lock in your consultation in about two minutes.' },
-      { title: 'Your records, connected', text: 'Your history follows you between departments, so you never have to repeat your story.' },
-      { title: 'Privacy first', text: 'Your health information is kept secure and shared only with the people caring for you.' },
-      { title: 'Here when you need us', text: 'Call, email or message us on WhatsApp — our front desk is happy to help.' }
+      { title: 'Licensed physiotherapists', text: 'Experienced therapists for pain, injury, post-surgery and neurological rehabilitation.' },
+      { title: 'We come to you', text: 'Home physiotherapy across the city — no travel, no waiting room, no stairs to worry about.' },
+      { title: 'One-to-one sessions', text: 'Your therapist focuses only on you for the whole session, with a plan built for your goals.' },
+      { title: 'Doctors on the same team', text: 'Orthopedic and specialist doctors work alongside our physiotherapists when you need them.' },
+      { title: 'Progress you can see', text: 'Clear goals, simple home exercises and your history kept in one secure patient portal.' },
+      { title: 'Here when you need us', text: 'Call or message us on WhatsApp — our front desk will find a home or clinic slot for you.' }
     ],
 
-    stepsTitle: 'Your visit in *four* simple steps',
+    stepsTitle: 'Start your recovery in *four* simple steps',
     steps: [
-      { title: 'Choose a department', text: 'Pick the type of care you need, or select a preferred specialist.' },
-      { title: 'Pick a time', text: 'Review live slots and choose the morning, afternoon or evening that fits your life.' },
-      { title: 'Get instant confirmation', text: 'Your appointment is confirmed straight away, with the details sent to you.' },
-      { title: 'Visit & follow up', text: 'Meet your doctor, then track visits and history in your patient portal.' }
+      { title: 'Choose home or clinic', text: 'Pick a home visit, a clinic session or a video consultation.' },
+      { title: 'Pick a time', text: 'See live availability and choose the slot that fits your day.' },
+      { title: 'Assessment & plan', text: 'Your physiotherapist assesses you and sets clear goals together with you.' },
+      { title: 'Recover & follow up', text: 'Treatment plus home exercises, with every visit tracked in your patient portal.' }
     ],
 
     vaultTitle: 'Your care, *at your fingertips*',
@@ -65,8 +83,8 @@ const DEFAULTS = {
     insuranceTitle: 'Check your *coverage* before you visit',
     insuranceText: "Coverage depends on your plan. Send us a photo of your insurance card and our front desk will confirm what's covered before your appointment.",
 
-    ctaTitle: 'Ready to consult with a specialist?',
-    ctaText: 'Online booking takes under two minutes. No waiting on hold, no paperwork.'
+    ctaTitle: 'Ready to start your recovery?',
+    ctaText: 'Book a home physiotherapy visit or a clinic session in under two minutes. No waiting on hold, no paperwork.'
   },
 
   // Shared by the home page and the About page.
@@ -84,6 +102,10 @@ const DEFAULTS = {
 
   // Shared FAQ (home page + contact page).
   faqs: [
+    { q: 'Do you offer physiotherapy at home?', a: 'Yes. Choose "Home visit" when you book, pick a time and add your address — a physiotherapist comes to you. You can also book by phone or WhatsApp.' },
+    { q: 'Which areas do you cover for home visits?', a: "Send us your area by WhatsApp or phone and we'll confirm straight away whether a home visit is available where you are." },
+    { q: 'What happens in the first physiotherapy session?', a: 'Your physiotherapist asks about your symptoms and history, assesses how you move, explains what is going on and agrees a treatment plan with you — usually starting treatment the same day.' },
+    { q: 'Do I need a doctor’s referral for physiotherapy?', a: 'You can book physiotherapy directly. Some insurance plans ask for a referral — check with us and our doctors can help if one is needed.' },
     { q: 'How do I book an appointment?', a: 'Use our online booking: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.' },
     { q: 'Do I need an account to book?', a: 'No — you can book as a guest. A free account lets you see upcoming and past visits and your medical history in the patient portal.' },
     { q: 'How do I cancel or reschedule?', a: "Log in to your patient portal to cancel an upcoming appointment, or message our front desk and we'll help you reschedule." },
@@ -93,7 +115,7 @@ const DEFAULTS = {
 
   about: {
     heroTitle: 'Compassionate care, *redefining* health',
-    heroLead: 'Radiant Health Alliance brings together specialists across many departments so your family can find the right care in one place — and get stronger together.',
+    heroLead: 'Radiant Health Alliance is a physiotherapy-led medical center: expert physiotherapy at home and in clinic, with specialist doctors on the same team — so your family gets the right care in one place.',
     heroImage: '/assets/home/reception.jpg',
     storyTitle: 'Our *story*',
     storyText: 'We started Radiant Health Alliance with a simple idea: getting good care should not be complicated.\n\nToday our doctors work side by side across departments, sharing your history so every visit picks up where the last one left off.',
@@ -103,13 +125,13 @@ const DEFAULTS = {
   },
 
   departments: {
-    heroTitle: 'Every department, *one* coordinated team',
-    heroLead: 'Browse our departments to find the right specialist for your visit.'
+    heroTitle: 'Physiotherapy first, *one* coordinated team',
+    heroLead: 'Start with physiotherapy at home or in our clinic — and see specialist doctors from the same team whenever you need them.'
   },
 
   doctors: {
     heroTitle: 'Meet the team *behind* your care',
-    heroLead: 'Our doctors see patients in person and by video. Filter by department or country, then book directly.'
+    heroLead: 'Our physiotherapists and doctors see patients at home, in our clinic and by video. Filter by department, then book directly.'
   },
 
   contact: {
@@ -119,17 +141,17 @@ const DEFAULTS = {
   },
 
   book: {
-    heroTitle: "Let's find you a *time*",
-    heroLead: "Choose a department and doctor, pick a time that works, and you're booked."
+    heroTitle: "Book physiotherapy *at home* or in clinic",
+    heroLead: "Choose a home visit, clinic session or video call, pick a time that works, and you're booked."
   },
 
   blog: {
     heroTitle: 'Health *insights*',
-    heroLead: 'Practical health advice and clinic news from our doctors.'
+    heroLead: 'Physiotherapy tips, recovery advice and clinic news from our team.'
   },
 
   footer: {
-    tagline: 'Compassionate care, redefining health, stronger together. A multi-specialty medical center for the whole family.'
+    tagline: 'Physiotherapy at home and in our clinic, backed by a multi-specialty medical team. Compassionate care, stronger together.'
   }
 };
 
@@ -181,15 +203,44 @@ function normalize(saved) {
   return out;
 }
 
+// Only fields the admin actually changed are stored, so improving a default
+// (e.g. new wording) reaches every site that kept the default.
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const isPlain = v => v && typeof v === 'object' && !Array.isArray(v);
+function diff(def, val) {
+  if (same(def, val)) return undefined;
+  if (isPlain(def) && isPlain(val)) {
+    const out = {};
+    for (const k of Object.keys(val)) { const d = diff(def[k], val[k]); if (d !== undefined) out[k] = d; }
+    return Object.keys(out).length ? out : undefined;
+  }
+  return val;
+}
+
+// Earlier saves stored a full copy of the content. A saved value that still
+// equals a *previous* default was never edited, so the current default wins.
+const LEGACY = require('./content-legacy.json');
+function dropLegacy(saved) {
+  if (!isPlain(saved)) return saved;
+  const copy = JSON.parse(JSON.stringify(saved));
+  for (const [p, oldDefault] of Object.entries(LEGACY)) {
+    const keys = p.split('.'), last = keys.pop();
+    const parent = keys.reduce((o, k) => (isPlain(o) ? o[k] : undefined), copy);
+    if (isPlain(parent) && last in parent && same(parent[last], oldDefault)) delete parent[last];
+  }
+  return copy;
+}
+
 async function get(prisma) {
   const row = await prisma.setting.findUnique({ where: { key: 'siteContent' } });
-  return normalize(row ? row.value : null);
+  return normalize(row ? dropLegacy(row.value) : null);
 }
 
 async function save(prisma, value) {
   const clean = normalize(value);
-  await prisma.setting.upsert({ where: { key: 'siteContent' }, update: { value: clean }, create: { key: 'siteContent', value: clean } });
+  const stored = diff(DEFAULTS, clean) || {};
+  await prisma.setting.upsert({ where: { key: 'siteContent' }, update: { value: stored }, create: { key: 'siteContent', value: stored } });
   return clean;
 }
 
-module.exports = { DEFAULTS, normalize, get, save };
+module.exports = { DEFAULTS, normalize, get, save, diff, dropLegacy };

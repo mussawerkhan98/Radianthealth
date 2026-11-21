@@ -164,13 +164,14 @@ function renderHeader(activePage) {
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">&#9776;</button>
       <nav class="main-nav" id="mainNav">
         <a href="/" ${activePage === 'home' ? 'class="active"' : ''}>Home</a>
-        <a href="/departments" ${activePage === 'departments' ? 'class="active"' : ''}>Departments</a>
+        <a href="/departments/physiotherapy" ${/^\/departments\/physio/.test(location.pathname) ? 'class="active"' : ''}>Physiotherapy</a>
+        <a href="/departments" ${activePage === 'departments' && !/^\/departments\/physio/.test(location.pathname) ? 'class="active"' : ''}>Departments</a>
         <a href="/doctors" ${activePage === 'doctors' ? 'class="active"' : ''}>Doctors</a>
         <a href="/about" ${activePage === 'about' ? 'class="active"' : ''}>About</a>
         <a href="/blog" ${activePage === 'blog' ? 'class="active"' : ''}>Insights</a>
         <a href="/contact" ${activePage === 'contact' ? 'class="active"' : ''}>Contact</a>
         ${portalLink}
-        <a href="/book" class="nav-cta">Book Appointment</a>
+        <a href="/book" class="nav-cta">Book a Session</a>
       </nav>
     </div>
   `;
@@ -202,7 +203,7 @@ function renderMobileDock(activePage, portalLink) {
     </div>
     <div class="m-dock-tabs">
       ${tab('home', '/', 'Home', '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>')}
-      ${tab('departments', '/departments', 'Care', '<path d="M5 3H4v6a5 5 0 0 0 10 0V3h-1"/><path d="M9 14v1.5a4.5 4.5 0 0 0 9 0V13"/><circle cx="18" cy="11" r="2"/>')}
+      ${tab(/^\/departments\/physio/.test(location.pathname) ? activePage : 'physio', '/departments/physiotherapy', 'Physio', '<path d="M22 12h-4l-3 8L9 4l-3 8H2"/>')}
       ${tab('doctors', '/doctors', 'Doctors', '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>')}
       ${tab('portal', portalHref, 'Portal', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h4"/>')}
     </div>`;
@@ -228,7 +229,7 @@ async function renderFloatingContact(activePage) {
   const wa = String(s.whatsapp || '971543397906').replace(/\D/g, '');
   const buttons = [];
   if (fb.whatsapp !== false && wa) {
-    const text = encodeURIComponent("Hello Radiant Health Alliance, I'd like to ask about an appointment.");
+    const text = encodeURIComponent("Hello Radiant Health Alliance, I'd like to book a physiotherapy session (home or clinic).");
     buttons.push(`<a class="fab fab-wa" href="https://wa.me/${wa}?text=${text}" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
       <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.47-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.41-.08-.13-.27-.2-.57-.35M12.05 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.16-3.48-8.41"/></svg>
       <span class="fab-label">WhatsApp</span></a>`);

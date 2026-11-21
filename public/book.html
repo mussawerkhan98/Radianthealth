@@ -265,6 +265,7 @@
     try {
       const result = await API.post(url, body);
       confirmBtn.textContent = 'Booked';
+      if (window.rhaTrack) window.rhaTrack('book_appointment', { visit_type: body.visitType || 'clinic', department: (deptSelect.options[deptSelect.selectedIndex] || {}).text || '', patient_type: patient ? 'registered' : 'guest' });
       const emailed = result && result.emailSent;
       const loc = result && result.location;
       const locNote = loc && loc.link ? (emailed ? ' We’ve also emailed you directions to the clinic.' : '') : '';

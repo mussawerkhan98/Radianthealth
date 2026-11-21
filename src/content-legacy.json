@@ -1,0 +1,102 @@
+{
+  "seo.home.title": "Radiant Health Alliance — Elevated Clinical Care",
+  "seo.home.description": "A multi-specialty medical center. Book appointments online, meet our doctors, and manage your care with Radiant Health Alliance.",
+  "seo.about.description": "Our mission, approach and promise: compassionate, coordinated care for every member of the family.",
+  "seo.departments.title": "Departments — Radiant Health Alliance",
+  "seo.departments.description": "Explore our clinical departments and find the right specialist for your visit.",
+  "seo.doctors.title": "Our Doctors — Radiant Health Alliance",
+  "seo.doctors.description": "Meet our specialist doctors. View profiles and book an appointment online in minutes.",
+  "seo.contact.description": "Call, email or message us on WhatsApp. Find our clinic and get directions.",
+  "seo.book.title": "Book an Appointment — Radiant Health Alliance",
+  "seo.book.description": "Choose a department and doctor, pick a time that works, and you are booked — no account needed.",
+  "seo.blog.description": "Practical health advice and clinic news from the doctors at Radiant Health Alliance.",
+  "home.status": "Now accepting consultations",
+  "home.heroTitle": "Elevated clinical care, designed for *peace of mind*",
+  "home.heroLead": "Specialist care across our clinical departments, experienced physicians and fast online scheduling — all in one calm, modern medical center.",
+  "home.chips": [
+    "Book online in under 2 minutes",
+    "Family care under one roof",
+    "Your records in one portal"
+  ],
+  "home.aboutTitle": "Compassionate care, *redefining* the medical standard",
+  "home.aboutText": "Radiant Health Alliance brings together specialists across many disciplines so your whole family can find the right clinical guidance in one reassuring place — and get stronger together.",
+  "home.whyTitle": "Care that feels *personal*",
+  "home.whyLead": "Everything about your visit is designed to be simple, unhurried and centred on you.",
+  "home.why": [
+    {
+      "title": "Experienced specialists",
+      "text": "A multi-disciplinary team of doctors working together across departments."
+    },
+    {
+      "title": "Family-centred care",
+      "text": "From infants to grandparents — care for every generation in one place."
+    },
+    {
+      "title": "Easy online booking",
+      "text": "See real availability and lock in your consultation in about two minutes."
+    },
+    {
+      "title": "Your records, connected",
+      "text": "Your history follows you between departments, so you never have to repeat your story."
+    },
+    {
+      "title": "Privacy first",
+      "text": "Your health information is kept secure and shared only with the people caring for you."
+    },
+    {
+      "title": "Here when you need us",
+      "text": "Call, email or message us on WhatsApp — our front desk is happy to help."
+    }
+  ],
+  "home.stepsTitle": "Your visit in *four* simple steps",
+  "home.steps": [
+    {
+      "title": "Choose a department",
+      "text": "Pick the type of care you need, or select a preferred specialist."
+    },
+    {
+      "title": "Pick a time",
+      "text": "Review live slots and choose the morning, afternoon or evening that fits your life."
+    },
+    {
+      "title": "Get instant confirmation",
+      "text": "Your appointment is confirmed straight away, with the details sent to you."
+    },
+    {
+      "title": "Visit & follow up",
+      "text": "Meet your doctor, then track visits and history in your patient portal."
+    }
+  ],
+  "home.ctaTitle": "Ready to consult with a specialist?",
+  "home.ctaText": "Online booking takes under two minutes. No waiting on hold, no paperwork.",
+  "faqs": [
+    {
+      "q": "How do I book an appointment?",
+      "a": "Use our online booking: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp."
+    },
+    {
+      "q": "Do I need an account to book?",
+      "a": "No — you can book as a guest. A free account lets you see upcoming and past visits and your medical history in the patient portal."
+    },
+    {
+      "q": "How do I cancel or reschedule?",
+      "a": "Log in to your patient portal to cancel an upcoming appointment, or message our front desk and we'll help you reschedule."
+    },
+    {
+      "q": "Which insurance plans do you accept?",
+      "a": "Coverage depends on your plan. Please contact us with your insurance details before your visit and we'll confirm for you."
+    },
+    {
+      "q": "What should I bring to my first visit?",
+      "a": "Please bring a photo ID (Emirates ID or passport), your insurance card if you have one, a list of current medications, and any recent test results or reports."
+    }
+  ],
+  "about.heroLead": "Radiant Health Alliance brings together specialists across many departments so your family can find the right care in one place — and get stronger together.",
+  "departments.heroTitle": "Every department, *one* coordinated team",
+  "departments.heroLead": "Browse our departments to find the right specialist for your visit.",
+  "doctors.heroLead": "Our doctors see patients in person and by video. Filter by department or country, then book directly.",
+  "book.heroTitle": "Let's find you a *time*",
+  "book.heroLead": "Choose a department and doctor, pick a time that works, and you're booked.",
+  "blog.heroLead": "Practical health advice and clinic news from our doctors.",
+  "footer.tagline": "Compassionate care, redefining health, stronger together. A multi-specialty medical center for the whole family."
+}

@@ -51,7 +51,18 @@ const AdminCMS = (() => {
         ta('home.heroLead', 'Intro paragraph'),
         img('home.heroImage', 'Hero photo', { hint: 'Portrait or square photo, about 1200 × 1100 px.' }),
         t('home.heroImageAlt', 'Photo description', { hint: 'Describe the photo for screen readers and Google.' }),
+        t('home.heroBtnHome', 'Main button (home physiotherapy visit)'),
+        t('home.heroBtnClinic', 'Second button (physiotherapy at the clinic)'),
         { k: 'home.chips', label: 'Highlight chips', type: 'strings', max: 3, hint: 'Up to three short points under the buttons.' }
+      ] },
+      { title: 'Physiotherapy at home', note: 'The main service section, right under the quick-access cards.', fields: [
+        t('home.physioEyebrow', 'Small label above the title'),
+        t('home.physioTitle', 'Title', { hint: HL }),
+        ta('home.physioLead', 'Intro'),
+        { k: 'home.physioConditions', label: 'What we treat', type: 'strings', max: 12, hint: 'One condition per line — shown as a ticked list.' },
+        t('home.physioStepsTitle', 'Title of the "how it works" card'),
+        { k: 'home.physioSteps', label: 'Home visit steps', type: 'list', max: 4, item: { title: '', text: '' }, itemLabel: 'Step', fields: [t('title', 'Title'), ta('text', 'Text')] },
+        ta('home.physioNote', 'Note above the WhatsApp button')
       ] },
       { title: 'Our spaces gallery', fields: [
         tog('home.showGallery', 'Show the gallery on the home page'),

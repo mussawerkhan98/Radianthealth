@@ -82,7 +82,7 @@ header.site-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.9rem 0;
+  padding: 0.9rem var(--gutter);
 }
 
 .brand {
@@ -126,7 +126,8 @@ nav.main-nav a.active { color: var(--navy); }
 
 .hamburger { display: none; background: none; border: none; font-size: 1.6rem; cursor: pointer; color: var(--ink); }
 
-@media (max-width: 860px) {
+@media (max-width: 1360px) { nav.main-nav { gap: 1.15rem; } nav.main-nav a { font-size: 0.9rem; } }
+@media (max-width: 1100px) {
   nav.main-nav {
     position: absolute;
     top: 100%; left: 0; right: 0;
@@ -1110,3 +1111,25 @@ textarea.cms-md { border-radius: 0 0 12px 12px !important; font-family: ui-monos
 .visit-types.three .visit-type:has(input:focus-visible) { outline: 3px solid rgba(0, 80, 125, 0.3); outline-offset: 2px; }
 .visit-types.three .visit-type:has(input:checked) { border-color: var(--navy); box-shadow: 0 0 0 1px var(--navy) inset; background: rgba(0, 80, 125, 0.04); }
 .visit-types.three .visit-type:has(input:checked) .vt-icon { background: var(--navy); color: #fff; }
+
+/* Home: Physiotherapy at home (main service) */
+.px-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 2.4rem; align-items: center; }
+.px-sub { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--navy); margin: 1.6rem 0 0.8rem; }
+.px-conditions { list-style: none; padding: 0; margin: 0 0 1.8rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 1.2rem; }
+.px-conditions li { position: relative; padding-left: 1.6rem; font-weight: 600; color: var(--ink, #1b2730); font-size: 0.95rem; line-height: 1.45; }
+.px-conditions li::before { content: ""; position: absolute; left: 0; top: 0.18em; width: 1.05rem; height: 1.05rem; border-radius: 50%; background: rgba(0, 80, 125, 0.1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300507D' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 0.7rem no-repeat; }
+.px-card { position: relative; background: linear-gradient(155deg, var(--navy) 0%, var(--navy-deep) 100%); color: #fff; border-radius: 24px; padding: 2rem 1.9rem; box-shadow: 0 24px 48px rgba(0, 59, 92, 0.22); overflow: hidden; }
+.px-card::after { content: ""; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 70%); pointer-events: none; }
+.px-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.22); padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.px-card h3 { font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 1.7rem; line-height: 1.2; margin: 1rem 0 1.2rem; color: #fff; }
+.px-steps { list-style: none; counter-reset: px; padding: 0; margin: 0 0 1.3rem; display: grid; gap: 0.95rem; }
+.px-steps li { counter-increment: px; position: relative; padding-left: 2.8rem; min-height: 2rem; }
+.px-steps li::before { content: counter(px); position: absolute; left: 0; top: 0; width: 2rem; height: 2rem; border-radius: 50%; background: var(--bronze); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+.px-steps b { display: block; font-size: 1rem; margin-bottom: 0.15rem; }
+.px-steps span { font-size: 0.88rem; color: rgba(255, 255, 255, 0.78); line-height: 1.5; }
+.px-note { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.86rem; color: rgba(255, 255, 255, 0.85); margin: 0 0 1rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.px-note svg { flex: 0 0 auto; margin-top: 0.15rem; }
+.px-wa { display: flex; align-items: center; justify-content: center; height: 46px; border-radius: 12px; background: var(--whatsapp); color: #fff; font-weight: 800; text-decoration: none; }
+.px-wa:hover { background: var(--whatsapp-deep); color: #fff; }
+@media (max-width: 900px) { .px-grid { grid-template-columns: 1fr; gap: 1.8rem; } }
+@media (max-width: 520px) { .px-conditions { grid-template-columns: 1fr; } .px-card { padding: 1.6rem 1.3rem; } }

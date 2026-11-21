@@ -371,7 +371,7 @@ app.post('/api/change-password', auth(), wrap(async (req, res) => {
 app.get('/api/settings', wrap(async (req, res) => {
   const s = await settings.getAll();
   res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail, videoEnabled: video.isConfigured(),
-    location: clinicLocation.publicLocation(s.location) });
+    location: clinicLocation.publicLocation(s.location), timeZone: CLINIC_TZ });
 }));
 
 // ---------- DEPARTMENTS ----------

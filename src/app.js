@@ -16,9 +16,12 @@ const settings = require('./settings');
 const mailer = require('./mailer');
 const brevo = require('./brevo');
 const video = require('./video');
+const visits = require('./visits');
 const marketing = require('./marketing');
 const audience = require('./audience');
 const clinicLocation = require('./location');
+const siteContent = require('./content');
+const slugs = require('./slugs');
 const { canonicalCountry } = require('./countries');
 const { newId } = require('./ids');
 const { normalizePhone, displayPatientId } = require('./phone');
@@ -47,7 +50,9 @@ app.use(express.urlencoded({ extended: false, limit: '100kb' })); // for plain H
 
 // Strip < and > from text inputs so names/notes can't inject HTML into the
 // pages (the frontend renders with innerHTML). Passwords/photos untouched.
-const RAW_FIELDS = new Set(['password', 'currentPassword', 'newPassword', 'photo', 'pass']);
+// Blog article bodies ("markdown") are kept raw: they are rendered by
+// src/markdown.js, which escapes all HTML.
+const RAW_FIELDS = new Set(['password', 'currentPassword', 'newPassword', 'photo', 'pass', 'markdown']);
 function sanitize(value, key) {
   if (typeof value === 'string') return RAW_FIELDS.has(key) ? value : value.replace(/[<>]/g, '');
   if (Array.isArray(value)) return value.map(v => sanitize(v, key));
@@ -60,8 +65,44 @@ function sanitize(value, key) {
 }
 app.use((req, res, next) => { if (req.body) req.body = sanitize(req.body); next(); });
 
+// Clean URLs: /contact instead of /contact.html. Old .html links (bookmarks,
+// emails already sent, Google) get a permanent redirect. On Vercel the same is
+// done by "cleanUrls" in vercel.json.
+app.use((req, res, next) => {
+  if ((req.method !== 'GET' && req.method !== 'HEAD') || req.path.startsWith('/api/')) return next();
+  const q = req.originalUrl.indexOf('?');
+  const qs = q >= 0 ? req.originalUrl.slice(q) : '';
+  if (/\.html$/i.test(req.path)) {
+    return res.redirect(301, req.path.replace(/\/index\.html$/i, '/').replace(/\.html$/i, '') + qs);
+  }
+  // /contact/ → /contact (one address per page)
+  if (req.path.length > 1 && req.path.endsWith('/')) return res.redirect(301, req.path.replace(/\/+$/, '') + qs);
+  next();
+});
+
+// Readable detail pages — same HTML files, nicer addresses:
+//   /departments/cardiology → department.html   /doctors/<name>, /team/<name> → profile.html
+// Old-style links (/department?id=…, /profile?doctor=…) redirect to them.
+// On Vercel the same mapping is done by the rewrites in vercel.json (and the
+// pages themselves tidy an old-style address in the browser bar).
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const sendPage = file => (req, res) => res.sendFile(path.join(PUBLIC_DIR, file));
+app.get('/departments/:slug', sendPage('department.html'));
+app.get('/doctors/:slug', sendPage('profile.html'));
+app.get('/team/:slug', sendPage('profile.html'));
+app.get(['/department', '/profile'], (req, res, next) => {
+  const kind = req.path === '/department' ? (req.query.id ? 'department' : null) : req.query.doctor ? 'doctor' : req.query.team ? 'team' : null;
+  if (!kind) return next();
+  const id = String(req.query.id || req.query.doctor || req.query.team);
+  (async () => {
+    const slug = (await slugs.mapFor(prisma, kind)).get(await slugs.resolveId(prisma, kind, id));
+    if (!slug) return next();
+    res.redirect(301, `/${kind === 'department' ? 'departments' : kind === 'doctor' ? 'doctors' : 'team'}/${encodeURIComponent(slug)}`);
+  })().catch(next);
+});
+
 // Static frontend (on Vercel the CDN serves /public directly instead).
-app.use(express.static(path.join(__dirname, '..', 'public'), {
+app.use(express.static(PUBLIC_DIR, {
   extensions: ['html'],
   // Emails show the logo, so other sites (mail apps) may load images.
   setHeaders: (res, file) => { if (/[\\/]assets[\\/][^\\/]+\.(png|jpe?g|gif|webp|svg)$/i.test(file)) res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); }
@@ -135,6 +176,13 @@ function perm(key) {
     res.status(403).json({ error: `Your role doesn't allow this (${p ? p.label.toLowerCase() : key}). Ask an admin to change your permissions.` });
   }];
 }
+// permAny(['a', 'b']) — allowed if the role has at least one of the permissions.
+function permAny(keys) {
+  return [auth(['admin', 'staff']), (req, res, next) => {
+    if (keys.some(k => req.perms.has(k))) return next();
+    res.status(403).json({ error: "Your role doesn't allow this. Ask an admin to change your permissions." });
+  }];
+}
 const staffCan = (req, key) => !!(req.perms && req.perms.has(key));
 
 function isValidPhoto(photo) {
@@ -163,6 +211,7 @@ function doctorOut(d, { includeEmail = true } = {}) {
     workingHours: { start: d.workStart, end: d.workEnd, slotMinutes: d.slotMinutes },
     workingDays: parseDays(d.workingDays),
     offersVideo: !!d.offersVideo,
+    offersHomeVisit: !!d.offersHomeVisit,
     country: d.country || '', city: d.city || ''
   };
   if (includeEmail) out.email = d.email;
@@ -171,14 +220,17 @@ function doctorOut(d, { includeEmail = true } = {}) {
 
 const apptOut = a => ({
   id: a.id, patientId: a.patientId, doctorId: a.doctorId, date: a.date, time: a.time,
-  reason: a.reason, status: a.status, visitType: a.visitType || 'in_person', createdAt: a.createdAt
+  reason: a.reason, status: a.status, visitType: a.visitType || 'in_person', visitAddress: a.visitAddress || '', createdAt: a.createdAt
 });
 
-// Personal join links for a video appointment (open /video.html).
+// Google Maps search link for a home-visit address.
+const mapsLink = address => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+
+// Personal join links for a video appointment (open /video).
 const SITE_URL = () => (process.env.SITE_URL || 'https://www.radianthealthalliance.com').replace(/\/$/, '');
 function videoLinks(a) {
   if (!a || a.visitType !== 'video' || !a.videoPatientKey) return null;
-  const base = `${SITE_URL()}/video.html?a=${encodeURIComponent(a.id)}&k=`;
+  const base = `${SITE_URL()}/video?a=${encodeURIComponent(a.id)}&k=`;
   return { patient: base + a.videoPatientKey, doctor: base + a.videoDoctorKey };
 }
 
@@ -370,8 +422,98 @@ app.post('/api/change-password', auth(), wrap(async (req, res) => {
 
 app.get('/api/settings', wrap(async (req, res) => {
   const s = await settings.getAll();
+  const fb = { call: true, whatsapp: true, ...(s.floatingButtons || {}) };
+  res.set('Cache-Control', 'no-store'); // visit pauses must show straight away
   res.json({ phone: s.phone, whatsapp: s.whatsapp, contactEmail: s.contactEmail, videoEnabled: video.isConfigured(),
-    location: clinicLocation.publicLocation(s.location), timeZone: CLINIC_TZ });
+    location: clinicLocation.publicLocation(s.location), timeZone: CLINIC_TZ,
+    floatingButtons: { call: fb.call !== false, whatsapp: fb.whatsapp !== false },
+    visits: visits.status(await visits.load(prisma)) });
+}));
+
+// ---------- BOOKING OPTIONS RIGHT NOW (clinic / home / video) ----------
+// Admin → Appointments. Switch a visit type off, or pause it for a while at
+// rush hours (it switches back on by itself). Staff can still book any type.
+
+async function visitOptionsOut() {
+  const [cfg, docs] = await Promise.all([
+    visits.load(prisma),
+    prisma.doctor.findMany({ where: { active: true }, select: { offersVideo: true, offersHomeVisit: true } })
+  ]);
+  return {
+    config: cfg, status: visits.status(cfg), now: new Date().toISOString(), timeZone: CLINIC_TZ,
+    types: visits.TYPES,
+    doctors: { in_person: docs.length, home: docs.filter(d => d.offersHomeVisit).length, video: docs.filter(d => d.offersVideo).length },
+    videoConfigured: video.isConfigured()
+  };
+}
+
+app.get('/api/admin/visit-options', permAny(['visits.manage', 'appointments.book']), wrap(async (req, res) => {
+  res.json(await visitOptionsOut());
+}));
+
+// Body: { type, on?: boolean, pauseMinutes?: number (0 = resume), pauseUntil?: 'end-of-day', message?: string }
+app.patch('/api/admin/visit-options', perm('visits.manage'), wrap(async (req, res) => {
+  const b = req.body || {};
+  const cfg = await visits.load(prisma);
+  if (b.message !== undefined) cfg.message = String(b.message || '');
+  if (b.type !== undefined) {
+    if (!visits.KEYS.includes(b.type)) throw new HttpError(400, 'Unknown type of visit.');
+    const t = cfg[b.type];
+    if (b.on !== undefined) { t.on = !!b.on; t.pausedUntil = null; }
+    if (b.pauseUntil === 'end-of-day') {
+      t.on = true;
+      t.pausedUntil = new Date(brevo.clinicTimeToDate(clinicNow().date, '23:59').getTime() + 59999).toISOString();
+    } else if (b.pauseMinutes !== undefined) {
+      const m = Math.round(Number(b.pauseMinutes));
+      if (!Number.isFinite(m) || m < 0 || m > visits.MAX_PAUSE_MIN) throw new HttpError(400, 'Choose a pause between a few minutes and 7 days.');
+      t.on = true;
+      t.pausedUntil = m === 0 ? null : new Date(Date.now() + m * 60000).toISOString();
+    }
+  }
+  await visits.save(prisma, cfg);
+  res.json(await visitOptionsOut());
+}));
+
+// ---------- WEBSITE CONTENT (Admin → Website Content) ----------
+
+app.get('/api/content', wrap(async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+  res.json(await siteContent.get(prisma));
+}));
+
+app.get('/api/admin/content', perm('content.manage'), wrap(async (req, res) => {
+  res.json({ content: await siteContent.get(prisma), defaults: siteContent.DEFAULTS });
+}));
+
+app.put('/api/admin/content', perm('content.manage'), wrap(async (req, res) => {
+  const body = req.body && req.body.content;
+  if (!body || typeof body !== 'object') throw new HttpError(400, 'Nothing to save.');
+  res.json({ content: await siteContent.save(prisma, body) });
+}));
+
+// ---------- MEDIA (images uploaded for website content and the blog) ----------
+
+const MEDIA_MAX = 2 * 1024 * 1024;
+app.post('/api/admin/media', permAny(['content.manage', 'blog.manage']), wrap(async (req, res) => {
+  const m = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/=\s]+)$/.exec(String((req.body && req.body.image) || ''));
+  if (!m) throw new HttpError(400, 'Please upload a JPG, PNG, WEBP or GIF image.');
+  const buf = Buffer.from(m[2], 'base64');
+  const ext = m[1] === 'jpg' ? 'jpeg' : m[1];
+  if (!buf.length || !FILE_TYPES[ext].magic(buf)) throw new HttpError(400, "That image file doesn't look right. Please try another.");
+  if (buf.length > MEDIA_MAX) throw new HttpError(413, 'That image is larger than 2 MB. Please use a smaller one.');
+  const a = await prisma.mediaAsset.create({
+    data: { id: newId('img'), data: buf, mime: FILE_TYPES[ext].mime, size: buf.length, name: String((req.body && req.body.name) || '').slice(0, 120) }
+  });
+  res.json({ id: a.id, url: `/api/media/${a.id}` });
+}));
+
+app.get('/api/media/:id', wrap(async (req, res) => {
+  const a = await prisma.mediaAsset.findUnique({ where: { id: String(req.params.id) }, select: { data: true, mime: true } });
+  if (!a) throw new HttpError(404, 'Not found.');
+  res.set('Content-Type', a.mime);
+  res.set('Cache-Control', 'public, max-age=31536000, immutable'); // ids never change content
+  res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.send(Buffer.from(a.data));
 }));
 
 // ---------- DEPARTMENTS ----------
@@ -382,11 +524,12 @@ app.get('/api/departments', wrap(async (req, res) => {
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     include: { _count: { select: { doctors: { where: { active: true } } } } }
   });
-  res.json(depts.map(d => ({ id: d.id, name: d.name, description: d.description, icon: d.icon, doctorCount: d._count.doctors,
+  const slug = slugs.slugMap(depts);
+  res.json(depts.map(d => ({ id: d.id, slug: slug.get(d.id), name: d.name, description: d.description, icon: d.icon, doctorCount: d._count.doctors,
     tagline: d.tagline, bannerUrl: deptBannerUrl(d) })));
 }));
 
-// ---- Department pages (department.html) ----
+// ---- Department pages (/department) ----
 const deptBannerUrl = d => d.bannerMime ? `/api/departments/${d.id}/banner?v=${d.bannerVersion}` : '';
 const deptLines = v => String(v || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
 function parseFaqs(v) {
@@ -399,11 +542,17 @@ const deptPageOut = d => ({
   bannerUrl: deptBannerUrl(d)
 });
 
+// :id may be the department ID or its slug (/departments/cardiology).
 app.get('/api/departments/:id', wrap(async (req, res) => {
-  const d = await prisma.department.findUnique({ where: { id: String(req.params.id) } });
+  const id = await slugs.resolveId(prisma, 'department', req.params.id);
+  const d = await prisma.department.findUnique({ where: { id } });
   if (!d || !d.active) throw new HttpError(404, 'Department not found.');
-  const doctors = await prisma.doctor.findMany({ where: { departmentId: d.id, active: true }, orderBy: { createdAt: 'asc' } });
-  res.json({ ...deptPageOut(d), doctors: doctors.map(x => doctorOut(x, { includeEmail: false })) });
+  const [doctors, deptSlugs, docSlugs] = await Promise.all([
+    prisma.doctor.findMany({ where: { departmentId: d.id, active: true }, orderBy: { createdAt: 'asc' } }),
+    slugs.mapFor(prisma, 'department'), slugs.mapFor(prisma, 'doctor')
+  ]);
+  res.json({ ...deptPageOut(d), slug: deptSlugs.get(d.id),
+    doctors: doctors.map(x => ({ ...doctorOut(x, { includeEmail: false }), slug: docSlugs.get(x.id) })) });
 }));
 
 app.get('/api/departments/:id/banner', wrap(async (req, res) => {
@@ -480,8 +629,8 @@ app.get('/api/doctors', wrap(async (req, res) => {
   const where = { active: true };
   if (req.query.department) where.departmentId = String(req.query.department);
   if (req.query.country) where.country = canonicalCountry(req.query.country);
-  const doctors = await prisma.doctor.findMany({ where, orderBy: { createdAt: 'asc' } });
-  res.json(doctors.map(d => doctorOut(d)));
+  const [doctors, docSlugs] = await Promise.all([prisma.doctor.findMany({ where, orderBy: { createdAt: 'asc' } }), slugs.mapFor(prisma, 'doctor')]);
+  res.json(doctors.map(d => ({ ...doctorOut(d), slug: docSlugs.get(d.id) })));
 }));
 
 // NB: /api/doctors/me/* routes are registered before /api/doctors/:id below.
@@ -673,6 +822,7 @@ app.patch('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, res
   }
   if (Array.isArray(workingDays)) data.workingDays = [...new Set(workingDays.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort().join(',');
   if (req.body && req.body.offersVideo !== undefined) data.offersVideo = !!req.body.offersVideo;
+  if (req.body && req.body.offersHomeVisit !== undefined) data.offersHomeVisit = !!req.body.offersHomeVisit;
   if (req.body && req.body.country !== undefined) data.country = canonicalCountry(req.body.country);
   if (req.body && req.body.city !== undefined) data.city = String(req.body.city || '').trim().slice(0, 80);
   const start = data.workStart || existing.workStart, end = data.workEnd || existing.workEnd;
@@ -732,7 +882,7 @@ app.get('/api/admin/doctors/:id/calendar', perm('doctors.view'), wrap(async (req
   const now = clinicNow();
   const canLinks = staffCan(req, 'appointments.book');
   const apptView = a => ({
-    id: a.id, time: a.time, status: a.status, reason: a.reason, visitType: a.visitType || 'in_person',
+    id: a.id, time: a.time, status: a.status, reason: a.reason, visitType: a.visitType || 'in_person', visitAddress: a.visitAddress || '',
     ...(canLinks && a.status !== 'cancelled' && videoLinks(a) ? { videoPatientLink: videoLinks(a).patient, videoDoctorLink: videoLinks(a).doctor } : {}),
     patient: a.patient ? { id: a.patient.id, patientId: displayPatientId(a.patient.phoneKey), name: a.patient.name, phone: a.patient.phone, email: hasRealEmail(a.patient.email) ? a.patient.email : '', isGuest: a.patient.isGuest } : null
   });
@@ -777,20 +927,32 @@ app.delete('/api/admin/doctors/:id', perm('doctors.manage'), wrap(async (req, re
 
 // Shared by logged-in and guest bookings. Saves the appointment, then sends
 // the Brevo emails (and SMTP doctor notification, if configured).
-async function createBooking({ patient, doctorId, date, time, reason, honeypot, visitType }) {
+// `byStaff`: reception booking for a patient — not blocked when a visit type
+// is paused or switched off for online booking (Admin → Appointments).
+async function createBooking({ patient, doctorId, date, time, reason, honeypot, visitType, visitAddress, byStaff = false }) {
   if (!doctorId || !date || !time) throw new HttpError(400, 'Doctor, date and time are required.');
   const doctor = await prisma.doctor.findUnique({ where: { id: String(doctorId) }, include: { department: true } });
   if (!doctor || !doctor.active) throw new HttpError(404, 'Doctor not found.');
-  const isVideo = visitType === 'video';
+  const type = visits.typeOf(visitType);
+  const isVideo = type === 'video', isHome = type === 'home';
+  if (!byStaff) {
+    const st = visits.status(await visits.load(prisma));
+    if (!st[type].available) {
+      throw new HttpError(409, `${visits.labelOf(type)} bookings are ${st[type].off ? 'not available' : 'paused'} right now. Please choose another type of visit, or call or WhatsApp us.`);
+    }
+  }
   if (isVideo && !video.isConfigured()) throw new HttpError(400, 'Video appointments are not available yet. Please book an in-clinic visit.');
   if (isVideo && !doctor.offersVideo) throw new HttpError(400, `${doctor.name} doesn't offer video appointments. Please choose an in-clinic visit or another doctor.`);
+  if (isHome && !doctor.offersHomeVisit) throw new HttpError(400, `${doctor.name} doesn't do home visits. Please choose another doctor or a clinic visit.`);
+  const address = isHome ? String(visitAddress || '').replace(/\r/g, '').trim().slice(0, 500) : '';
+  if (isHome && address.replace(/\s/g, '').length < 8) throw new HttpError(400, 'Please enter the full address for the home visit (building, street, area and city).');
   if (!generateSlots(doctor, date).includes(time)) throw new HttpError(400, 'That time is not available. Please pick another slot.');
   let appt;
   try {
     appt = await prisma.appointment.create({
       data: {
         id: newId('appt'), patientId: patient.id, doctorId: doctor.id, date, time, reason: String(reason || '').slice(0, 2000), status: 'confirmed',
-        visitType: isVideo ? 'video' : 'in_person',
+        visitType: type, visitAddress: address,
         ...(isVideo ? { videoPatientKey: video.newKey(), videoDoctorKey: video.newKey() } : {})
       }
     });
@@ -801,16 +963,16 @@ async function createBooking({ patient, doctorId, date, time, reason, honeypot, 
   const departmentName = doctor.department && doctor.department.name;
   const links = videoLinks(appt);
   // In-clinic visits: tell the patient where we are.
-  const loc = isVideo ? null : clinicLocation.publicLocation((await settings.getAll()).location);
+  const loc = type === 'in_person' ? clinicLocation.publicLocation((await settings.getAll()).location) : null;
   let emailSent = false;
   if (brevo.isConfigured() && !honeypot) {
     // Brevo: template auto-reply to the patient + notification to the clinic.
     const r = await brevo.sendBookingEmails({
       name: patient.name, email: patient.email, phone: patient.phone,
       date: formatWhen(date, time),
-      service: [departmentName, doctor.name].filter(Boolean).join(' — ') + (links ? ' (video call)' : ''),
+      service: [departmentName, doctor.name].filter(Boolean).join(' — ') + (links ? ' (video call)' : isHome ? ' (home visit)' : ''),
       message: reason || '',
-      videoLink: links && links.patient, doctorName: doctor.name, location: loc
+      videoLink: links && links.patient, doctorName: doctor.name, location: loc, homeAddress: address
     });
     emailSent = r.autoReply;
   }
@@ -825,8 +987,8 @@ async function createBooking({ patient, doctorId, date, time, reason, honeypot, 
 }
 
 app.post('/api/appointments', auth(['patient']), formLimiter, wrap(async (req, res) => {
-  const { doctorId, date, time, reason, website, visitType } = req.body || {};
-  res.json(await createBooking({ patient: req.account, doctorId, date, time, reason, honeypot: website, visitType }));
+  const { doctorId, date, time, reason, website, visitType, visitAddress } = req.body || {};
+  res.json(await createBooking({ patient: req.account, doctorId, date, time, reason, honeypot: website, visitType, visitAddress }));
 }));
 
 // Book without an account: name + email + phone. Re-uses the patient record
@@ -902,7 +1064,7 @@ app.post('/api/appointments/guest', guestLimiter, wrap(async (req, res) => {
   if (!isEmail(email) || email.length > 254) throw new HttpError(400, 'Please enter a valid email address so we can send your confirmation.');
   if (!normalizePhone(phone)) throw new HttpError(400, 'Please enter a valid mobile number so the clinic can reach you.');
   const patient = await findOrCreatePatient({ name, email, phone });
-  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000), visitType: b.visitType });
+  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000), visitType: b.visitType, visitAddress: str(b.visitAddress, 500) });
   res.json({ ...out, patientId: displayPatientId(patient.phoneKey) });
 }));
 
@@ -915,7 +1077,7 @@ app.post('/api/admin/appointments', perm('appointments.book'), wrap(async (req, 
   const email = normEmail(b.email);
   if (!name) throw new HttpError(400, "Please enter the patient's full name.");
   const patient = await findOrCreatePatient({ name, email: email || '', phone: str(b.phone, 40), allowNoEmail: true, updateGuest: true });
-  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000), visitType: b.visitType });
+  const out = await createBooking({ patient, doctorId: b.doctorId, date: str(b.date, 10), time: str(b.time, 5), reason: str(b.reason, 2000), visitType: b.visitType, visitAddress: str(b.visitAddress, 500), byStaff: true });
   res.json({ ...out, patient: patientOut(patient), bookedBy: req.account.name });
 }));
 
@@ -1400,7 +1562,7 @@ async function sendCampaignNow(id, fromStatus = 'draft') {
     for (let i = 0; i < rows.length; i += 200) await prisma.campaignRecipient.createMany({ data: rows.slice(i, i + 200) });
     const recipients = people.map((p, i) => ({
       email: p.email, name: p.name, clickUrl: c.buttonUrl ? `${SITE_URL()}/api/r/${rows[i].token}` : '',
-      unsubUrl: `${SITE_URL()}/unsubscribe.html?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`,
+      unsubUrl: `${SITE_URL()}/unsubscribe?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`,
       oneClickUrl: `${SITE_URL()}/api/unsubscribe/one-click?p=${encodeURIComponent(p.id)}&k=${encodeURIComponent(p.key)}`
     }));
     result = await marketing.sendCampaign(c, recipients, await campaignEmailOpts(c));
@@ -1805,6 +1967,10 @@ app.patch('/api/admin/settings', perm('settings.manage'), wrap(async (req, res) 
   for (const k of ['phone', 'whatsapp', 'contactEmail']) {
     if (body[k] !== undefined) await settings.setKey(k, String(body[k]).trim());
   }
+  if (body.floatingButtons !== undefined) {
+    const fb = body.floatingButtons || {};
+    await settings.setKey('floatingButtons', { call: fb.call !== false, whatsapp: fb.whatsapp !== false });
+  }
   if (body.location !== undefined) {
     let loc;
     try { loc = clinicLocation.normalize(body.location); } catch (e) { throw new HttpError(e.status || 400, e.message); }
@@ -1853,7 +2019,9 @@ app.get('/api/team', wrap(async (req, res) => {
     prisma.doctor.findMany({ where: { active: true }, orderBy: { createdAt: 'asc' } }),
     prisma.teamMember.findMany({ orderBy: teamOrder })
   ]);
-  res.json({ doctors: doctors.map(d => doctorOut(d, { includeEmail: false })), staffMembers: members.map(teamOut) });
+  const docSlugs = slugs.slugMap(doctors), teamSlugs = slugs.slugMap(members);
+  res.json({ doctors: doctors.map(d => ({ ...doctorOut(d, { includeEmail: false }), slug: docSlugs.get(d.id) })),
+    staffMembers: members.map(m => ({ ...teamOut(m), slug: teamSlugs.get(m.id) })) });
 }));
 
 app.get('/api/team-members', wrap(async (req, res) => {
@@ -1915,14 +2083,21 @@ async function profileOut(type, o) {
     experienceYears: o.experienceYears || 0, certificates: certs.map(certOut)
   };
   if (type === 'doctor') return { ...base, title: o.specialty, specialty: o.specialty, department: o.department ? { id: o.department.id, name: o.department.name } : null,
-    offersVideo: !!o.offersVideo, workingDays: parseDays(o.workingDays), workingHours: { start: o.workStart, end: o.workEnd },
+    offersVideo: !!o.offersVideo, offersHomeVisit: !!o.offersHomeVisit, workingDays: parseDays(o.workingDays), workingHours: { start: o.workStart, end: o.workEnd },
     country: o.country || '', city: o.city || '' };
   return { ...base, title: o.role, role: o.role };
 }
 
+// :id may be the ID or the slug (/doctors/dr-amina-farouk, /team/sara-khan).
 app.get('/api/profiles/:type/:id', wrap(async (req, res) => {
-  const o = await findProfileOwner(req.params.type, req.params.id, { publicOnly: true });
-  res.json(await profileOut(req.params.type, o));
+  const kind = req.params.type === 'doctor' ? 'doctor' : req.params.type === 'team' ? 'team' : null;
+  if (!kind) throw new HttpError(404, 'Profile not found.');
+  const id = await slugs.resolveId(prisma, kind, req.params.id);
+  const o = await findProfileOwner(req.params.type, id, { publicOnly: true });
+  const out = await profileOut(req.params.type, o);
+  out.slug = (await slugs.mapFor(prisma, kind)).get(o.id);
+  if (out.department) out.department.slug = (await slugs.mapFor(prisma, 'department')).get(out.department.id);
+  res.json(out);
 }));
 
 // Public: a certificate file (image or PDF) shown on a profile.
@@ -2041,12 +2216,15 @@ app.get('/api/health', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// Health Insights (blog) pages, sitemap.xml and robots.txt — see src/blog.js.
+require('./blog')(app, { prisma, wrap, perm, HttpError, newId, siteContent });
+
 // Unknown API routes → JSON 404.
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
 
 // Unknown page → home page (nice for old/direct links).
 app.get('*', (req, res, next) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'), err => { if (err) next(); });
+  res.sendFile(path.join(__dirname, '..', 'public', 'index' + '.html'), err => { if (err) next(); });
 });
 
 // Errors → clean JSON.

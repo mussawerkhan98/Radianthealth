@@ -47,6 +47,8 @@ async function notifyBooking({ appointment, doctor, patient, departmentName, ski
     `Patient: ${patient.name} (${patient.email}${patient.phone ? ', ' + patient.phone : ''})\n` +
     `Doctor: ${doctor.name}${departmentName ? ' — ' + departmentName : ''}\n` +
     `When: ${when}\n` +
+    (appointment.visitType === 'video' ? 'Visit: Video call\n' : '') +
+    (appointment.visitType === 'home' ? `Visit: Home visit\nAddress: ${appointment.visitAddress}\n` : '') +
     (appointment.reason ? `Reason: ${appointment.reason}\n` : '');
   await Promise.all([
     send({ to: [skipDoctor ? null : doctor.email, ...cfg.notifyEmails], subject: `New appointment: ${patient.name} — ${when}`, text: staffText }),

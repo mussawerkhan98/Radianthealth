@@ -2,81 +2,189 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Contact Us — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Call, email or message us on WhatsApp. Find our clinic and get directions.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="contact">
+<body data-page="contact" data-seo="contact" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-directions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 22 12 12 22 2 12z"/><path d="M9 13v-2h5M12 8.5 14.5 11 12 13.5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="hero" style="padding-bottom:2vh;">
+<main class="sx">
+
+<section class="sx-page-hero">
   <div class="container">
-    <span class="eyebrow">Contact Us</span>
-    <h1>We'd love to <em>hear</em> from you</h1>
-    <p class="lead">Call, message us on WhatsApp, or send a note below — our front desk team will get back to you.</p>
+    <ol class="sx-crumbs"><li><a href="/">Home</a></li><li>Contact</li></ol>
+    <span class="sx-eyebrow">Contact us</span>
+    <h1 data-c="contact.heroTitle">We'd love to <em>hear</em> from you</h1>
+    <p class="sx-lead" data-c="contact.heroLead">Call, message us on WhatsApp, or send a note below — our front desk team will get back to you.</p>
   </div>
 </section>
 
-<section class="section">
+<section class="sx-section">
   <div class="container">
-    <div class="grid grid-3" style="margin-bottom:2.5rem;">
-      <a href="tel:+971543397906" id="callCard" class="card" style="text-align:center; text-decoration:none; color:inherit;">
-        <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">Call Us</h3>
-        <p id="phoneText" style="margin:0;">+971 54 339 7906</p>
+    <div class="sx-contact-cards">
+      <a href="tel:+971543397906" id="callCard" class="sx-contact-card">
+        <span class="sx-card-icon"><svg width="22" height="22"><use href="#i-phone"/></svg></span>
+        <small>Call us</small>
+        <b id="phoneText">+971 54 339 7906</b>
+        <span>Helpline &amp; appointments</span>
       </a>
-      <a href="https://wa.me/971543397906" id="whatsappCard" target="_blank" rel="noopener" class="card" style="text-align:center; text-decoration:none; color:inherit;">
-        <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">WhatsApp</h3>
-        <p style="margin:0;">Chat with our team</p>
+      <a href="https://wa.me/971543397906" id="whatsappCard" target="_blank" rel="noopener" class="sx-contact-card wa">
+        <span class="sx-card-icon green"><svg width="22" height="22"><use href="#i-chat"/></svg></span>
+        <small>WhatsApp</small>
+        <b>Chat with our team</b>
+        <span>Usually the fastest way to reach us</span>
       </a>
-      <a href="mailto:hello@radianthealthalliance.com" id="emailCard" class="card" style="text-align:center; text-decoration:none; color:inherit;">
-        <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">Email</h3>
-        <p id="emailText" style="margin:0;">hello@radianthealthalliance.com</p>
+      <a href="mailto:hello@radianthealthalliance.com" id="emailCard" class="sx-contact-card">
+        <span class="sx-card-icon amber"><svg width="22" height="22"><use href="#i-mail"/></svg></span>
+        <small>Email</small>
+        <b id="emailText">hello@radianthealthalliance.com</b>
+        <span>For non-urgent questions</span>
       </a>
     </div>
+  </div>
+</section>
 
-    <div class="card form-card" style="padding:2rem;">
-      <h3 style="text-align:center;">Send Us a Message</h3>
+<section class="sx-section sx-alt">
+  <div class="container sx-layout">
+    <div class="sx-card">
+      <span class="sx-card-icon"><svg width="22" height="22"><use href="#i-send"/></svg></span>
+      <h2 class="sx-card-title">Send us a message</h2>
+      <p class="sx-card-sub">Tell us how we can help and we'll reply by email. Please don't include urgent medical issues — call us instead.</p>
       <div id="formAlert" class="alert"></div>
       <form id="contactForm">
-        <div class="form-group">
-          <label for="name">Name</label>
-          <input type="text" id="name" required>
-        </div>
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" required>
+        <div class="sx-2col">
+          <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required autocomplete="email">
+          </div>
         </div>
         <div class="form-group">
           <label for="message">Message</label>
-          <textarea id="message" required></textarea>
+          <textarea id="message" required rows="6"></textarea>
         </div>
-        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Send Message</button>
+        <button type="submit" class="sx-btn sx-btn-blue sx-btn-block" id="submitBtn">Send Message</button>
       </form>
+    </div>
+
+    <aside class="sx-aside">
+      <!-- Opening hours: Admin → Website Content → Contact page (hidden when empty) -->
+      <div class="sx-card" id="hoursCard" hidden>
+        <span class="sx-card-icon amber"><svg width="22" height="22"><use href="#i-clock"/></svg></span>
+        <h2 class="sx-card-title">Opening hours</h2>
+        <ul class="sx-hours" id="hoursList"></ul>
+      </div>
+      <!-- Location: Admin → Site Settings (hidden until an address is set) -->
+      <div class="sx-card" id="locationCard" hidden>
+        <span class="sx-card-icon green"><svg width="22" height="22"><use href="#i-pin"/></svg></span>
+        <h2 class="sx-card-title">Visit our clinic</h2>
+        <p class="sx-card-sub" id="locAddress" style="white-space:pre-line;"></p>
+        <div class="sx-map" id="locMap" hidden style="min-height:220px; margin-bottom:1rem;"></div>
+        <a class="sx-btn sx-btn-white sx-btn-block" id="locLink" target="_blank" rel="noopener" hidden><svg width="18" height="18"><use href="#i-directions"/></svg>Get directions</a>
+      </div>
+      <div class="sx-card">
+        <span class="sx-card-icon"><svg width="22" height="22"><use href="#i-phone"/></svg></span>
+        <h2 class="sx-card-title">Need an appointment?</h2>
+        <p class="sx-card-sub">Book online in under two minutes — no account needed.</p>
+        <a class="sx-btn sx-btn-bronze sx-btn-block" href="/book">Book Appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- FAQ: Admin → Website Content → FAQs -->
+<section class="sx-section" id="faqSection">
+  <div class="container sx-split sx-split-top">
+    <div>
+      <span class="sx-eyebrow">Patient guide</span>
+      <h2 class="sx-h2">Questions, <em class="bronze">answered</em></h2>
+      <p class="sx-p">Can't find what you're looking for? Our front desk is happy to help on WhatsApp.</p>
+    </div>
+    <div class="sx-faq" id="faqList">
+      <details open><summary>How do I book an appointment?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary><p>Use our online booking: choose a department and doctor, pick an available time, and enter your details. You can also call or message us on WhatsApp.</p></details>
+      <details><summary>Do I need an account to book?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary><p>No — you can book as a guest. A free account lets you see upcoming and past visits and your medical history in the patient portal.</p></details>
+      <details><summary>How do I cancel or reschedule?<svg width="18" height="18"><use href="#i-chevron"/></svg></summary><p>Log in to your patient portal to cancel an upcoming appointment, or message our front desk and we'll help you reschedule.</p></details>
     </div>
   </div>
 </section>
 
+</main>
+
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
+  const escC = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   (async function () {
     try {
       const s = await API.get('/api/settings');
       if (s.phone) {
-        document.getElementById('callCard').href = 'tel:' + s.phone;
+        document.getElementById('callCard').href = 'tel:' + s.phone.replace(/\s+/g, '');
         document.getElementById('phoneText').textContent = s.phone;
       }
-      if (s.whatsapp) document.getElementById('whatsappCard').href = 'https://wa.me/' + s.whatsapp;
+      if (s.whatsapp) document.getElementById('whatsappCard').href = 'https://wa.me/' + encodeURIComponent(s.whatsapp);
       if (s.contactEmail) {
         document.getElementById('emailCard').href = 'mailto:' + s.contactEmail;
         document.getElementById('emailText').textContent = s.contactEmail;
       }
+      const loc = s.location;
+      if (loc && (loc.address || loc.embed || loc.link)) {
+        document.getElementById('locationCard').hidden = false;
+        document.getElementById('locAddress').textContent = loc.address || '';
+        if (loc.link) { const a = document.getElementById('locLink'); a.href = loc.link; a.hidden = false; }
+        if (loc.embed) {
+          const box = document.getElementById('locMap');
+          const f = document.createElement('iframe');
+          f.title = 'Map showing Radiant Health Alliance';
+          f.loading = 'lazy';
+          f.referrerPolicy = 'no-referrer-when-downgrade';
+          f.allowFullscreen = true;
+          f.src = loc.embed;
+          f.style.minHeight = '220px';
+          box.appendChild(f);
+          box.hidden = false;
+        }
+      }
     } catch (e) { /* keep defaults already in the HTML */ }
   })();
+
+  // Opening hours + FAQs from Admin → Website Content.
+  CMS.load().then(c => {
+    if (!c) return;
+    const hours = String((c.contact && c.contact.hours) || '').split('\n').map(x => x.trim()).filter(Boolean);
+    if (hours.length) {
+      document.getElementById('hoursList').innerHTML = hours.map(h => `<li>${escC(h)}</li>`).join('');
+      document.getElementById('hoursCard').hidden = false;
+    }
+    if (Array.isArray(c.faqs)) {
+      if (!c.faqs.length) { document.getElementById('faqSection').hidden = true; return; }
+      document.getElementById('faqList').innerHTML = c.faqs.map((f, i) =>
+        `<details${i === 0 ? ' open' : ''}><summary>${escC(f.q)}<svg width="18" height="18"><use href="#i-chevron"/></svg></summary><p>${escC(f.a)}</p></details>`).join('');
+    }
+  });
 
   const form = document.getElementById('contactForm');
   const formAlert = document.getElementById('formAlert');

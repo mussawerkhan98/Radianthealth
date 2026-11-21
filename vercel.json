@@ -3,11 +3,20 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "public",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/index"
-    }
+    },
+    { "source": "/departments/:slug", "destination": "/department" },
+    { "source": "/doctors/:slug", "destination": "/profile" },
+    { "source": "/team/:slug", "destination": "/profile" },
+    { "source": "/blog", "destination": "/api/index" },
+    { "source": "/blog/(.*)", "destination": "/api/index" },
+    { "source": "/sitemap.xml", "destination": "/api/index" },
+    { "source": "/robots.txt", "destination": "/api/index" }
   ],
   "functions": {
     "api/index.js": {

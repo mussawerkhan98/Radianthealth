@@ -2,93 +2,180 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>About Us — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Our mission, approach and promise: compassionate, coordinated care for every member of the family.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="about">
+<body data-page="about" data-seo="about" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="15" rx="2.5"/><path d="M9 3h6v4H9zM8 17c.6-1.6 2.2-2.5 4-2.5s3.4.9 4 2.5"/><circle cx="12" cy="11.5" r="2"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1.4 1.4 0 0 0 2-2"/><path d="m14 14 2.5 2.5a1.4 1.4 0 0 0 2-2l-3.9-3.9a2.8 2.8 0 0 0-4 0l-.9.9a1.4 1.4 0 0 1-2-2l2.8-2.8a5 5 0 0 1 6 -.8l.5.3a3 3 0 0 0 2 .3L21 6"/><path d="m21 15-1 1M3 6l1.5-.5a3 3 0 0 1 2 .2L8 6.5M3 15l5.5 5.5a1.4 1.4 0 0 0 2-2"/></symbol>
+  <symbol id="i-verified" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 14.6 4.4l3.2-.1 1 3 2.6 1.9-1 3.1 1 3-2.6 1.9-1 3-3.2-.1L12 21.5l-2.6-1.9-3.2.1-1-3L2.6 14.8l1-3-1-3.1 2.6-1.9 1-3 3.2.1z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="hero" style="padding-bottom:2vh;">
-  <div class="container">
-    <span class="eyebrow">About Us</span>
-    <h1>Compassionate care, <em>redefining</em> health</h1>
-    <p class="lead">Radiant Health Alliance brings together specialists across ten departments so your family can find the right care in one place — and get stronger together.</p>
+<main class="sx">
+
+<section class="sx-page-hero">
+  <div class="container sx-hero-split">
+    <div>
+      <ol class="sx-crumbs"><li><a href="/">Home</a></li><li>About us</li></ol>
+      <span class="sx-eyebrow">About Radiant Health</span>
+      <h1 data-c="about.heroTitle">Compassionate care, <em>redefining</em> health</h1>
+      <p class="sx-lead" data-c="about.heroLead">Radiant Health Alliance brings together specialists across many departments so your family can find the right care in one place — and get stronger together.</p>
+      <div class="sx-hero-actions">
+        <a href="/book" class="sx-btn sx-btn-bronze"><svg width="20" height="20"><use href="#i-calendar"/></svg>Book a Consultation</a>
+        <a href="/doctors" class="sx-btn sx-btn-white"><svg width="20" height="20"><use href="#i-badge"/></svg>Meet Our Doctors</a>
+      </div>
+    </div>
+    <img class="sx-hero-photo" src="/assets/home/reception.jpg" data-c-src="about.heroImage" alt="Inside Radiant Health Alliance">
   </div>
 </section>
 
-<section class="section">
+<!-- Mission / approach / promise (Admin → Website Content → Values) -->
+<section class="sx-section">
   <div class="container">
-    <div class="grid grid-3">
-      <div class="card">
-        <h3 style="font-size:1.1rem;">Our Mission</h3>
-        <p>To make thoughtful, compassionate healthcare accessible and easy to navigate for every patient who walks through our doors.</p>
-      </div>
-      <div class="card">
-        <h3 style="font-size:1.1rem;">Our Approach</h3>
-        <p>Coordinated care across departments, so your history and treatment plan travel with you between specialists.</p>
-      </div>
-      <div class="card">
-        <h3 style="font-size:1.1rem;">Our Promise</h3>
-        <p>Every patient is treated with dignity, patience, and clear communication — no exceptions.</p>
+    <div class="sx-head">
+      <div>
+        <span class="sx-eyebrow">What we stand for</span>
+        <h2 class="sx-h2">Care built on <em>three</em> commitments</h2>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="section" style="background:#fff;">
-  <div class="container">
-    <div class="section-title">
-      <span class="eyebrow">Our Doctors</span>
-      <h2>The specialists behind your <em>care</em></h2>
-    </div>
-    <div class="grid grid-4" id="teamGrid">
-      <div class="empty-state">Loading team…</div>
+    <div class="sx-why" id="valuesGrid">
+      <div class="sx-value"><span class="sx-value-ic blue"><svg width="20" height="20"><use href="#i-compass"/></svg></span><div><b>Our mission</b><p>Thoughtful, compassionate healthcare that is easy to access, transparent and simple to navigate.</p></div></div>
+      <div class="sx-value"><span class="sx-value-ic amber"><svg width="20" height="20"><use href="#i-handshake"/></svg></span><div><b>Our approach</b><p>Coordinated care, so your history, tests and treatment plans travel with you between specialists.</p></div></div>
+      <div class="sx-value"><span class="sx-value-ic green"><svg width="20" height="20"><use href="#i-verified"/></svg></span><div><b>Our promise</b><p>Every patient is welcomed with dignity, unhurried listening and clear communication.</p></div></div>
     </div>
   </div>
 </section>
 
-<section class="section" id="staffSection" style="display:none;">
-  <div class="container">
-    <div class="section-title">
-      <span class="eyebrow">Our Team</span>
-      <h2>The people who <em>support</em> your visit</h2>
+<!-- Story -->
+<section class="sx-section sx-alt">
+  <div class="container sx-split">
+    <div>
+      <span class="sx-pill-label">Our story</span>
+      <h2 class="sx-h2" data-c="about.storyTitle">Our <em>story</em></h2>
+      <div class="sx-prose" data-c-paras="about.storyText">
+        <p>We started Radiant Health Alliance with a simple idea: getting good care should not be complicated.</p>
+        <p>Today our doctors work side by side across departments, sharing your history so every visit picks up where the last one left off.</p>
+      </div>
     </div>
-    <div class="grid grid-4" id="staffGrid"></div>
+    <img class="sx-hero-photo" src="/assets/home/consultation.jpg" data-c-src="about.storyImage" alt="A consultation room at Radiant Health Alliance" loading="lazy">
   </div>
 </section>
+
+<!-- Doctors -->
+<section class="sx-section">
+  <div class="container">
+    <div class="sx-head">
+      <div>
+        <span class="sx-eyebrow">Our doctors</span>
+        <h2 class="sx-h2" data-c="about.teamTitle">The specialists behind your <em>care</em></h2>
+        <p class="sx-p" data-c="about.teamLead">Experienced doctors and a caring front-desk team, working together for you.</p>
+      </div>
+      <a href="/doctors" class="sx-link">All doctors <svg width="16" height="16"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="sx-docs" id="teamGrid"><div class="empty-state">Loading team…</div></div>
+  </div>
+</section>
+
+<!-- Non-doctor team (Admin → Team Page) -->
+<section class="sx-section sx-alt" id="staffSection" style="display:none;">
+  <div class="container">
+    <div class="sx-head">
+      <div>
+        <span class="sx-eyebrow">Our team</span>
+        <h2 class="sx-h2">The people who <em>support</em> your visit</h2>
+      </div>
+    </div>
+    <div class="sx-team" id="staffGrid"></div>
+  </div>
+</section>
+
+<section class="sx-section sx-tight">
+  <div class="container">
+    <div class="sx-cta">
+      <span class="sx-cta-ic"><svg width="24" height="24"><use href="#i-heart"/></svg></span>
+      <h2>Ready to consult with a specialist?</h2>
+      <p>Online booking takes under two minutes. No waiting on hold, no paperwork.</p>
+      <div class="sx-cta-actions">
+        <a href="/book" class="sx-btn sx-btn-bronze">Book Appointment Now</a>
+        <a href="/contact" class="sx-btn sx-btn-glass"><svg width="18" height="18"><use href="#i-chat"/></svg>Contact Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   const escP = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const arrowP = '<svg width="16" height="16"><use href="#i-arrow"/></svg>';
+
+  // Values come from Admin → Website Content (shared with the home page).
+  const VALUE_ICONS = [['blue', 'i-compass'], ['amber', 'i-handshake'], ['green', 'i-verified']];
+  CMS.load().then(c => {
+    if (!c || !Array.isArray(c.values) || !c.values.length) return;
+    document.getElementById('valuesGrid').innerHTML = c.values.map((v, i) => {
+      const [tone, icon] = VALUE_ICONS[i % VALUE_ICONS.length];
+      return `<div class="sx-value"><span class="sx-value-ic ${tone}"><svg width="20" height="20"><use href="#${icon}"/></svg></span><div><b>${escP(v.title)}</b><p>${escP(v.text)}</p></div></div>`;
+    }).join('');
+  });
+
+  function docCard(d) {
+    const profile = `${LINKS.doctor(d)}`;
+    const place = [d.city, d.country].filter(Boolean).join(', ');
+    return `
+      <article class="sx-doc">
+        <a class="sx-doc-photo" href="${profile}" aria-label="View profile of ${escP(d.name)}">
+          ${d.photo ? `<img src="${escP(d.photo)}" alt="${escP(d.name)}" loading="lazy">` : `<span class="initials">${escP(initialsOf(d.name))}</span>`}
+        </a>
+        <div class="sx-doc-body">
+          <span class="sx-doc-spec">${escP(d.specialty)}</span>
+          <h3><a href="${profile}">${escP(d.name)}</a></h3>
+          ${place ? `<small class="sx-doc-place"><svg width="13" height="13"><use href="#i-pin"/></svg>${escP(place)}</small>` : ''}
+          ${d.offersVideo ? '<span class="sx-doc-badge"><svg width="13" height="13"><use href="#i-video"/></svg>Video visits available</span>' : ''}
+          ${d.offersHomeVisit ? '<span class="sx-doc-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home visits</span>' : ''}
+          <div class="sx-doc-actions">
+            <a href="${profile}" class="sx-btn sx-btn-soft">View Bio</a>
+            <a href="/book?doctor=${encodeURIComponent(d.id)}" class="sx-btn sx-btn-blue">Book Visit</a>
+          </div>
+        </div>
+      </article>`;
+  }
+
   (async function () {
     try {
       const team = await API.get('/api/team');
       const grid = document.getElementById('teamGrid');
-      grid.innerHTML = team.doctors.length ? team.doctors.map(d => `
-        <a class="card doctor-card profile-link" href="profile.html?doctor=${encodeURIComponent(d.id)}" aria-label="View profile of ${escP(d.name)}">
-          ${avatarHtml(d)}
-          <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${escP(d.name)}</h3>
-          <div class="doctor-specialty">${escP(d.specialty)}</div>
-          ${doctorLocationHtml(d)}
-          <span class="profile-link-cta" style="display:block;">View profile &rarr;</span>
-        </a>
-      `).join('') : '<div class="empty-state">No doctors added yet.</div>';
+      grid.innerHTML = team.doctors.length ? team.doctors.map(docCard).join('') : '<div class="empty-state">No doctors added yet.</div>';
 
       if (team.staffMembers && team.staffMembers.length) {
         document.getElementById('staffSection').style.display = 'block';
         document.getElementById('staffGrid').innerHTML = team.staffMembers.map(m => `
-          <a class="card doctor-card profile-link" href="profile.html?team=${encodeURIComponent(m.id)}" aria-label="View profile of ${escP(m.name)}">
+          <a class="sx-team-card" href="${LINKS.team(m)}" aria-label="View profile of ${escP(m.name)}">
             ${avatarHtml(m)}
-            <h3 style="font-size:1.0rem; margin-bottom:0.2rem;">${escP(m.name)}</h3>
-            <div class="doctor-specialty">${escP(m.role)}</div>
-            ${m.bio ? `<p style="font-size:0.85rem; margin-top:0.6rem;">${escP(m.bio)}</p>` : ''}
-            <span class="profile-link-cta">View profile &rarr;</span>
+            <b>${escP(m.name)}</b>
+            <small>${escP(m.role)}</small>
+            ${m.bio ? `<p>${escP(m.bio)}</p>` : ''}
           </a>
         `).join('');
       }

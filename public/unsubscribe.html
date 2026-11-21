@@ -2,26 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <title>Email Preferences — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="unsubscribe">
+<body data-page="unsubscribe" class="sx-body">
 <header class="site-header" id="site-header"></header>
-<section class="section">
-  <div class="container">
-    <div class="card" style="max-width:520px; margin:0 auto; padding:2.2rem 2rem; text-align:center;">
-      <h2 id="usTitle" style="margin-top:0;">Email Preferences</h2>
-      <div id="usBody"><p style="color:var(--ink-soft);">One moment…</p></div>
+<main class="sx">
+  <section class="sx-section">
+    <div class="container">
+      <div class="sx-card sx-center-card">
+        <span class="sx-card-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></svg></span>
+        <h1 id="usTitle">Email preferences</h1>
+        <div id="usBody"><p>One moment…</p></div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+</main>
 <footer class="site-footer" id="site-footer"></footer>
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   const q = new URLSearchParams(location.search);
   const p = q.get('p') || '', k = q.get('k') || '';
@@ -35,12 +41,12 @@
       if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
       if (data.subscribed) {
         title.textContent = 'Welcome back';
-        body.innerHTML = '<p>You will receive our offers and health news again.</p><a class="btn btn-primary" href="index.html">Go to our website</a>';
+        body.innerHTML = '<p>You will receive our offers and health news again.</p><a class="sx-btn sx-btn-blue" href="/">Go to our website</a>';
       } else {
         title.textContent = "You're unsubscribed";
         body.innerHTML = '<p>You won\'t receive offers or promotions from Radiant Health Alliance any more.</p>' +
-          '<p style="color:var(--ink-soft); font-size:0.9rem;">You will still get emails about your own appointments.</p>' +
-          '<button class="btn btn-outline" id="usUndo">Unsubscribed by mistake? Subscribe again</button>';
+          '<p style="font-size:0.9rem;">You will still get emails about your own appointments.</p>' +
+          '<button class="sx-btn sx-btn-white" id="usUndo">Unsubscribed by mistake? Subscribe again</button>';
         document.getElementById('usUndo').addEventListener('click', () => setPref(true));
       }
     } catch (err) {

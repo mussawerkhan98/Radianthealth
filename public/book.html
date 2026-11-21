@@ -2,38 +2,68 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Book an Appointment — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Choose a department and doctor, pick a time that works, and you are booked — no account needed.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="book">
+<body data-page="book" data-seo="book" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="hero" style="padding-bottom:2vh;">
+<main class="sx">
+
+<section class="sx-page-hero">
   <div class="container">
-    <span class="eyebrow">Book an Appointment</span>
-    <h1>Let's find you a <em>time</em></h1>
-    <p class="lead">Choose a department and doctor, pick a time that works, and you're booked.</p>
+    <ol class="sx-crumbs"><li><a href="/">Home</a></li><li>Book an appointment</li></ol>
+    <span class="sx-eyebrow">Book an appointment</span>
+    <h1 data-c="book.heroTitle">Let's find you a <em>time</em></h1>
+    <p class="sx-lead" data-c="book.heroLead">Choose a department and doctor, pick a time that works, and you're booked.</p>
   </div>
 </section>
 
-<section class="section">
-  <div class="container">
-    <div class="card form-card" style="padding:2rem;">
-      <p id="loginNotice" style="font-size:0.9rem; color:var(--ink-soft); margin-bottom:1.2rem;"></p>
+<section class="sx-section">
+  <div class="container sx-book">
+    <div class="sx-card">
+      <p id="loginNotice" class="sx-notice"></p>
 
-      <!-- Visit type: only shown when video calls are switched on -->
+      <div class="sx-step-label"><span class="num">1</span>Choose your specialist</div>
+
+      <!-- Type of visit: clinic / home / video. Types can be paused in Admin → Appointments (e.g. at rush hours). -->
       <fieldset id="visitTypeWrap" class="form-group" style="display:none; border:0; padding:0; margin:0 0 1.2rem;">
-        <legend style="font-weight:700; margin-bottom:0.5rem; font-size:0.92rem;">Type of visit</legend>
-        <div class="visit-types">
-          <label class="visit-type"><input type="radio" name="visitType" value="in_person" checked> <span><strong>In clinic</strong><small>Visit us in person</small></span></label>
-          <label class="visit-type"><input type="radio" name="visitType" value="video"> <span><strong>Video call</strong><small>From your phone or computer</small></span></label>
-        </div>
+        <legend style="font-weight:700; margin-bottom:0.5rem; font-size:0.82rem; color:#334155;">Type of visit</legend>
+        <div class="visit-types three" id="visitTypes"></div>
+        <p id="visitPauseNote" class="visit-pause-note" style="display:none;"></p>
         <p id="videoNote" style="display:none; font-size:0.82rem; color:var(--ink-soft); margin:0.5rem 0 0;">Only doctors who offer video appointments are shown. You'll get a private video link by email.</p>
+        <p id="homeNote" style="display:none; font-size:0.82rem; color:var(--ink-soft); margin:0.5rem 0 0;">Only doctors who do home visits are shown. The doctor comes to the address you give below.</p>
       </fieldset>
+
+      <div class="sx-2col">
+        <div class="form-group">
+          <label for="deptSelect">Department</label>
+          <select id="deptSelect"><option value="">Choose a department…</option></select>
+        </div>
+        <div class="form-group">
+          <label for="doctorSelect">Doctor</label>
+          <select id="doctorSelect"><option value="">Choose a doctor…</option></select>
+        </div>
+      </div>
+
+      <div class="form-group" id="homeAddressWrap" style="display:none;">
+        <label for="homeAddress">Address for the home visit</label>
+        <textarea id="homeAddress" maxlength="500" rows="3" autocomplete="street-address" placeholder="Villa / apartment number, building, street, area, city — plus any directions for the doctor"></textarea>
+      </div>
 
       <!-- Clinic location: shown for in-clinic visits when set in Admin → Site Settings -->
       <div id="clinicLocation" class="clinic-location" style="display:none;">
@@ -46,26 +76,18 @@
         <iframe id="clinicMapFrame" title="Map showing Radiant Health Alliance" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
       </div>
 
-      <div class="form-group">
-        <label for="deptSelect">Department</label>
-        <select id="deptSelect"><option value="">Choose a department…</option></select>
-      </div>
-
-      <div class="form-group">
-        <label for="doctorSelect">Doctor</label>
-        <select id="doctorSelect"><option value="">Choose a doctor…</option></select>
-      </div>
-
+      <div class="sx-step-label"><span class="num">2</span>Pick a date &amp; time</div>
       <div class="form-group">
         <label for="dateInput">Date</label>
         <input type="date" id="dateInput">
       </div>
 
       <div id="slotsWrap" style="display:none;">
-        <label>Available Times</label>
+        <label>Available times</label>
         <div class="slot-grid" id="slotGrid"></div>
       </div>
 
+      <div class="sx-step-label"><span class="num">3</span>Your details</div>
       <div class="form-group">
         <label for="reasonInput">Reason for visit (optional)</label>
         <textarea id="reasonInput" placeholder="e.g. Annual check-up, follow-up, new symptoms…"></textarea>
@@ -77,15 +99,17 @@
           <label for="guestName">Full name</label>
           <input type="text" id="guestName" autocomplete="name" maxlength="120" required>
         </div>
-        <div class="form-group">
-          <label for="guestEmail">Email</label>
-          <input type="email" id="guestEmail" autocomplete="email" maxlength="254" required placeholder="We'll email your confirmation here">
+        <div class="sx-2col">
+          <div class="form-group">
+            <label for="guestEmail">Email</label>
+            <input type="email" id="guestEmail" autocomplete="email" maxlength="254" required placeholder="We'll email your confirmation here">
+          </div>
+          <div class="form-group">
+            <label for="guestPhone">Mobile number</label>
+            <input type="tel" id="guestPhone" autocomplete="tel" maxlength="40" required placeholder="050 123 4567">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="guestPhone">Mobile number</label>
-          <input type="tel" id="guestPhone" autocomplete="tel" maxlength="40" required placeholder="050 123 4567">
-          <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:0.35rem;">This becomes your Patient ID — use the same number each time you book.</p>
-        </div>
+        <p class="field-hint" style="margin-top:-0.5rem; margin-bottom:1rem;">Your mobile number becomes your Patient ID — use the same number each time you book.</p>
       </div>
 
       <!-- Honeypot: hidden from people, bots tend to fill it in. -->
@@ -96,18 +120,40 @@
 
       <div id="formAlert" class="alert"></div>
 
-      <button class="btn btn-amber btn-block" id="confirmBtn" disabled>Confirm Appointment</button>
+      <button class="sx-btn sx-btn-bronze sx-btn-block" id="confirmBtn" disabled>Confirm Appointment</button>
     </div>
+
+    <aside class="sx-aside">
+      <div class="sx-card">
+        <span class="sx-card-icon"><svg width="22" height="22"><use href="#i-info"/></svg></span>
+        <h2 class="sx-card-title">What happens next</h2>
+        <ol class="sx-next">
+          <li><span class="n">1</span><div><b>Instant confirmation</b>Your time is reserved as soon as you confirm.</div></li>
+          <li><span class="n">2</span><div><b>Email with the details</b>We send your appointment details and, for video visits, a private link.</div></li>
+          <li><span class="n">3</span><div><b>Change of plans?</b>Cancel from your patient portal or message our front desk.</div></li>
+        </ol>
+      </div>
+      <div class="sx-card">
+        <span class="sx-card-icon green"><svg width="22" height="22"><use href="#i-chat"/></svg></span>
+        <h2 class="sx-card-title">Prefer to book by message?</h2>
+        <p class="sx-card-sub">Our front desk can find a time for you on WhatsApp.</p>
+        <a class="sx-btn sx-btn-wa sx-btn-block" id="bookWa" href="https://wa.me/971543397906" target="_blank" rel="noopener"><svg width="18" height="18"><use href="#i-chat"/></svg>WhatsApp us</a>
+      </div>
+      <div class="sx-notice"><svg width="18" height="18" style="flex:0 0 auto; color:var(--navy);"><use href="#i-shield"/></svg><span>Your details are only used to manage your appointment and are shared only with your care team.</span></div>
+    </aside>
   </div>
 </section>
 
+</main>
+
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
   const preselectDoctor = params.get('doctor') || '';
   let departments = [], doctors = [], selectedSlot = null;
+  const escB = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const deptSelect = document.getElementById('deptSelect');
   const doctorSelect = document.getElementById('doctorSelect');
@@ -133,17 +179,18 @@
       loginNotice.textContent = 'Booking as ' + API.user().name + '. Your appointments appear in your dashboard.';
     } else {
       guestFields.style.display = 'block';
-      loginNotice.innerHTML = 'No account needed — just add your details below. Already have an account? <a href="login.html?next=book.html">Log in</a>.';
+      loginNotice.innerHTML = 'No account needed — just add your details below. Already have an account? <a href="/login?next=/book">Log in</a>.';
     }
   }
 
   const visitType = () => (document.querySelector('input[name="visitType"]:checked') || {}).value || 'in_person';
+  const offersType = (d, t) => t === 'video' ? d.offersVideo : t === 'home' ? d.offersHomeVisit : true;
   async function loadDoctorsForDept(deptId, keepSelection) {
-    const video = visitType() === 'video';
-    const doctorsInDept = (deptId ? doctors.filter(d => d.departmentId === deptId) : doctors).filter(d => !video || d.offersVideo);
+    const t = visitType();
+    const doctorsInDept = (deptId ? doctors.filter(d => d.departmentId === deptId) : doctors).filter(d => offersType(d, t));
     const prevValue = keepSelection ? doctorSelect.value : '';
     doctorSelect.innerHTML = '<option value="">Choose a doctor…</option>' +
-      doctorsInDept.map(d => `<option value="${d.id}">${d.name} — ${d.specialty}${d.country ? ` (${[d.city, d.country].filter(Boolean).join(', ')})` : ''}</option>`).join('');
+      doctorsInDept.map(d => `<option value="${escB(d.id)}">${escB(d.name)} — ${escB(d.specialty)}${d.country ? ` (${escB([d.city, d.country].filter(Boolean).join(', '))})` : ''}</option>`).join('');
     if (prevValue && doctorsInDept.find(d => d.id === prevValue)) doctorSelect.value = prevValue;
   }
 
@@ -175,8 +222,9 @@
     }
   }
 
+  let bookingClosed = false; // every type of visit is paused right now
   function updateConfirmState() {
-    confirmBtn.disabled = !(doctorSelect.value && dateInput.value && selectedSlot);
+    confirmBtn.disabled = bookingClosed || !(doctorSelect.value && dateInput.value && selectedSlot);
   }
 
   deptSelect.addEventListener('change', () => { loadDoctorsForDept(deptSelect.value, false); slotsWrap.style.display = 'none'; updateConfirmState(); });
@@ -195,6 +243,13 @@
       website: document.getElementById('websiteInput').value,
       visitType: visitType()
     };
+    if (body.visitType === 'home') {
+      body.visitAddress = document.getElementById('homeAddress').value.trim();
+      if (body.visitAddress.replace(/\s/g, '').length < 8) {
+        document.getElementById('homeAddress').focus();
+        return showAlert(formAlert, 'Please enter the full address for the home visit (building, street, area and city).', 'error');
+      }
+    }
     if (!patient) {
       const name = document.getElementById('guestName').value.trim();
       const email = document.getElementById('guestEmail').value.trim();
@@ -215,13 +270,13 @@
       const locNote = loc && loc.link ? (emailed ? ' We’ve also emailed you directions to the clinic.' : '') : '';
       const videoNote = result && result.visitType === 'video'
         ? (emailed ? ' Your private video link is in a separate email.' : '') + (patient ? ' You can also join from your dashboard.' : '')
-        : '';
+        : result && result.visitType === 'home' ? ' Your doctor will come to the address you gave — our team may call to confirm directions.' : '';
       if (patient) {
         showAlert(formAlert, (emailed
           ? "Thanks! We've emailed you a confirmation." + videoNote + locNote
           : 'Appointment confirmed! (We could not send the confirmation email right now — your booking is saved and shows in your dashboard.)' + videoNote), 'success');
         addDirectionsLink(loc);
-        setTimeout(() => window.location.href = 'patient-dashboard.html', 3500);
+        setTimeout(() => window.location.href = '/patient-dashboard', 3500);
       } else {
         const idNote = result && result.patientId ? ` Your Patient ID is ${result.patientId} (your mobile number).` : '';
         showAlert(formAlert, (emailed
@@ -241,7 +296,7 @@
   let clinicLoc = null;
   function showClinicLocation() {
     const box = document.getElementById('clinicLocation');
-    if (!clinicLoc || visitType() === 'video') { box.style.display = 'none'; return; }
+    if (!clinicLoc || visitType() !== 'in_person') { box.style.display = 'none'; return; }
     document.getElementById('clinicAddress').textContent = clinicLoc.address || '';
     const notes = document.getElementById('clinicNotes');
     notes.textContent = clinicLoc.notes || ''; notes.style.display = clinicLoc.notes ? '' : 'none';
@@ -262,29 +317,83 @@
     formAlert.appendChild(a);
   }
 
-  (async function () {
-    setupMode();
-    departments = await API.get('/api/departments');
-    deptSelect.innerHTML = '<option value="">Choose a department…</option>' +
-      departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-    doctors = await API.get('/api/doctors');
-    // Show the visit-type choice if video calls are on and any doctor offers them.
-    try {
-      const st = await API.get('/api/settings');
-      clinicLoc = st.location || null;
-      showClinicLocation();
-      if (st.videoEnabled && doctors.some(d => d.offersVideo)) {
-        document.getElementById('visitTypeWrap').style.display = 'block';
-        if (params.get('visit') === 'video') document.querySelector('input[name="visitType"][value="video"]').checked = true;
-      }
-    } catch (e) { /* in-clinic only */ }
+  // Type of visit. A type is offered when at least one doctor provides it;
+  // the clinic can pause any type for a while (shown greyed out with the time it reopens).
+  const VISIT_TYPES = [
+    { key: 'in_person', label: 'Clinic visit', desc: 'See the doctor at our medical center',
+      icon: '<path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-4h4v4M12 8v4M10 10h4"/>' },
+    { key: 'home', label: 'Home visit', desc: 'A doctor comes to your home',
+      icon: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>' },
+    { key: 'video', label: 'Video call', desc: 'From your phone or computer',
+      icon: '<rect x="2" y="6" width="14" height="12" rx="2.5"/><path d="m16 10 6-3.5v11L16 14"/>' }
+  ];
+  const VISIT_ALIASES = { clinic: 'in_person', 'in-clinic': 'in_person', in_person: 'in_person', home: 'home', video: 'video' };
+  function untilText(iso, tz) {
+    const d = new Date(iso), opts = { timeZone: tz || undefined, hour: 'numeric', minute: '2-digit', hour12: true };
+    const day = x => new Intl.DateTimeFormat('en-CA', { timeZone: tz || undefined }).format(x);
+    if (day(d) !== day(new Date())) opts.weekday = 'short';
+    try { return new Intl.DateTimeFormat('en-US', opts).format(d); } catch (e) { return d.toLocaleTimeString(); }
+  }
+  function renderVisitTypes(st) {
+    const status = st.visits || {};
+    const offered = VISIT_TYPES.filter(t =>
+      t.key === 'in_person' ? true :
+      t.key === 'video' ? st.videoEnabled && doctors.some(d => d.offersVideo) :
+      doctors.some(d => d.offersHomeVisit));
+    const isOpen = t => !status[t.key] || status[t.key].available !== false;
+    const open = offered.filter(isOpen);
+    const wrap = document.getElementById('visitTypeWrap');
+    const note = document.getElementById('visitPauseNote');
+    bookingClosed = !open.length;
+    if (offered.length < 2 && open.length === offered.length) { wrap.style.display = 'none'; return; }
+    const wanted = VISIT_ALIASES[params.get('visit')] || '';
+    const pick = (open.find(t => t.key === wanted) || open[0] || {}).key;
+    document.getElementById('visitTypes').innerHTML = offered.map(t => {
+      const s = status[t.key] || {}, avail = isOpen(t);
+      const flag = avail ? '' : `<em class="vt-status">${s.pausedUntil ? 'Paused · back ' + escB(untilText(s.pausedUntil, st.timeZone)) : 'Not available right now'}</em>`;
+      return `<label class="visit-type${avail ? '' : ' is-paused'}"${avail ? '' : ' aria-disabled="true"'}>
+        <input type="radio" name="visitType" value="${t.key}"${t.key === pick ? ' checked' : ''}${avail ? '' : ' disabled'}>
+        <span class="vt-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${t.icon}</svg></span>
+        <span><strong>${t.label}</strong><small>${t.desc}</small>${flag}</span></label>`;
+    }).join('');
+    const phone = st.phone || '', wa = String(st.whatsapp || '').replace(/\D/g, '');
+    const contact = `${phone ? `<a href="tel:${escB(phone)}">call us</a>` : 'call us'}${wa ? ` or <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp us</a>` : ''}`;
+    const paused = offered.filter(t => !isOpen(t));
+    if (paused.length) {
+      const msg = status.message ? escB(status.message) + ' ' : '';
+      note.innerHTML = `<svg width="18" height="18" style="flex:0 0 auto;"><use href="#i-info"/></svg><span>${msg}${bookingClosed
+        ? `Online booking is paused right now because we're very busy. Please ${contact} and our team will fit you in.`
+        : `${paused.map(t => t.label).join(' and ')} ${paused.length > 1 ? 'are' : 'is'} paused right now. For urgent help, ${contact}.`}</span>`;
+      note.style.display = 'flex';
+    } else note.style.display = 'none';
+    wrap.style.display = 'block';
     document.querySelectorAll('input[name="visitType"]').forEach(r => r.addEventListener('change', () => {
-      document.getElementById('videoNote').style.display = visitType() === 'video' ? 'block' : 'none';
+      showVisitExtras();
       showClinicLocation();
       loadDoctorsForDept(deptSelect.value, true);
       loadSlots();
     }));
-    document.getElementById('videoNote').style.display = visitType() === 'video' ? 'block' : 'none';
+    updateConfirmState();
+  }
+  function showVisitExtras() {
+    const t = visitType();
+    document.getElementById('videoNote').style.display = t === 'video' ? 'block' : 'none';
+    document.getElementById('homeNote').style.display = t === 'home' ? 'block' : 'none';
+    document.getElementById('homeAddressWrap').style.display = t === 'home' ? 'block' : 'none';
+  }
+
+  (async function () {
+    setupMode();
+    departments = await API.get('/api/departments');
+    deptSelect.innerHTML = '<option value="">Choose a department…</option>' +
+      departments.map(d => `<option value="${escB(d.id)}">${escB(d.name)}</option>`).join('');
+    doctors = await API.get('/api/doctors');
+    const st = await getSiteSettings();
+    clinicLoc = st.location || null;
+    if (st.whatsapp) document.getElementById('bookWa').href = 'https://wa.me/' + encodeURIComponent(st.whatsapp);
+    renderVisitTypes(st);
+    showVisitExtras();
+    showClinicLocation();
 
     if (preselectDoctor) {
       const doc = doctors.find(d => d.id === preselectDoctor);

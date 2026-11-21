@@ -59,6 +59,7 @@ model Doctor {
   workingDays        String          @default("1,2,3,4,5") // comma-separated, 0 = Sunday
   active             Boolean         @default(true) // "deleted" doctors are deactivated so history is kept
   offersVideo        Boolean         @default(false) // can be booked for video appointments
+  offersHomeVisit    Boolean         @default(false) // can be booked for home visits
   country            String          @default("") // where the doctor is based (remote doctors work from many countries)
   city               String          @default("")
   // Public profile (Admin → profile editor; shown on profile.html)
@@ -117,7 +118,8 @@ model Appointment {
   time            String // HH:MM
   reason          String   @default("")
   status          String   @default("confirmed") // "confirmed" | "cancelled"
-  visitType       String   @default("in_person") // "in_person" | "video"
+  visitType       String   @default("in_person") // "in_person" | "home" | "video"
+  visitAddress    String   @default("") // home visits: where the doctor goes
   // Video visits: secret keys in the patient's and doctor's join links, and
   // the Daily.co room (created the first time someone joins).
   videoPatientKey String   @default("")
@@ -287,4 +289,40 @@ model CampaignRecipient {
   createdAt    DateTime  @default(now())
 
   @@index([campaignId])
+}
+
+// Images uploaded in Admin → Website Content and Admin → Blog (cover photos,
+// inline article images, page photos). Served at /api/media/<id>.
+model MediaAsset {
+  id        String   @id
+  data      Bytes
+  mime      String
+  size      Int      @default(0)
+  name      String   @default("")
+  createdAt DateTime @default(now())
+}
+
+// Blog / Health Insights articles. Public pages are rendered on the server at
+// /blog and /blog/<slug> so search engines see the full text.
+model BlogPost {
+  id              String    @id
+  slug            String    @unique
+  title           String
+  excerpt         String    @default("")
+  markdown        String    @default("") // article body (simple Markdown)
+  coverUrl        String    @default("")  // /api/media/<id> or assets/…
+  coverAlt        String    @default("")
+  category        String    @default("")
+  tags            String    @default("")  // comma separated
+  authorName      String    @default("")
+  authorDoctorId  String    @default("")  // optional link to a doctor profile
+  metaTitle       String    @default("")
+  metaDescription String    @default("")
+  status          String    @default("draft") // draft | published
+  featured        Boolean   @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, publishedAt])
 }

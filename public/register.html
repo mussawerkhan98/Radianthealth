@@ -2,68 +2,93 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Create Account — Radiant Health Alliance</title>
-<link rel="icon" href="assets/logo.png">
+<meta name="description" content="Create a free patient account to manage your appointments and medical history.">
+<link rel="icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/pages.css">
 </head>
-<body data-page="register">
+<body data-page="register" class="sx-body">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></symbol>
+</svg>
 
 <header class="site-header" id="site-header"></header>
 
-<section class="section">
-  <div class="container">
-    <div class="card form-card" style="padding:2.4rem;">
-      <h2 style="text-align:center;">Create Your Patient Account</h2>
-      <p style="text-align:center; margin-bottom:1.6rem;">Register once to book appointments and view your medical history.</p>
+<main class="sx">
+  <div class="container sx-auth">
+    <div class="sx-auth-panel">
+      <div>
+        <span class="sx-eyebrow light">Free patient account</span>
+        <h2>Register once, <em>book in seconds</em></h2>
+        <p>Your account keeps your visits and history in one secure place.</p>
+      </div>
+      <ul class="sx-auth-list">
+        <li><svg width="18" height="18"><use href="#i-check-circle"/></svg>Book faster — your details are filled in for you</li>
+        <li><svg width="18" height="18"><use href="#i-check-circle"/></svg>See upcoming appointments and cancel online</li>
+        <li><svg width="18" height="18"><use href="#i-check-circle"/></svg>Your medical history from every visit, in one timeline</li>
+      </ul>
+    </div>
+
+    <div class="sx-card sx-auth-card">
+      <span class="sx-card-icon amber"><svg width="22" height="22"><use href="#i-user-plus"/></svg></span>
+      <h1>Create your account</h1>
+      <p class="sx-card-sub">Register once to book appointments and view your medical history.</p>
 
       <div id="formAlert" class="alert"></div>
 
       <form id="registerForm">
         <div class="form-group">
-          <label for="name">Full Name</label>
+          <label for="name">Full name</label>
           <input type="text" id="name" required autocomplete="name">
         </div>
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" required autocomplete="email">
+        <div class="sx-2col">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="phone">Mobile number</label>
+            <input type="tel" id="phone" placeholder="050 123 4567" autocomplete="tel" required>
+          </div>
+        </div>
+        <p class="field-hint" style="margin-top:-0.5rem; margin-bottom:1rem;">Your mobile number is your Patient ID at the clinic.</p>
+        <div class="sx-2col">
+          <div class="form-group">
+            <label for="dob">Date of birth</label>
+            <input type="date" id="dob">
+          </div>
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select id="gender">
+              <option value="">Prefer not to say</option>
+              <option>Female</option>
+              <option>Male</option>
+              <option>Other</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
-          <label for="phone">Mobile Number</label>
-          <input type="tel" id="phone" placeholder="050 123 4567" autocomplete="tel" required>
-          <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:0.35rem;">Your mobile number is your Patient ID at the clinic.</p>
-        </div>
-        <div class="form-group">
-          <label for="dob">Date of Birth</label>
-          <input type="date" id="dob">
-        </div>
-        <div class="form-group">
-          <label for="gender">Gender</label>
-          <select id="gender">
-            <option value="">Prefer not to say</option>
-            <option>Female</option>
-            <option>Male</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">Password (at least 8 characters)</label>
           <input type="password" id="password" required minlength="8" autocomplete="new-password">
         </div>
-        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Create Account</button>
+        <button type="submit" class="sx-btn sx-btn-bronze sx-btn-block" id="submitBtn">Create Account</button>
       </form>
 
-      <p style="text-align:center; margin-top:1.4rem; font-size:0.9rem;">
-        Already have an account? <a href="login.html">Log in</a>
-      </p>
+      <p class="sx-auth-foot">Already have an account? <a href="/login">Log in</a></p>
     </div>
   </div>
-</section>
+</main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="js/app.js"></script>
+<script src="/js/app.js"></script>
 <script>
   const form = document.getElementById('registerForm');
   const formAlert = document.getElementById('formAlert');
@@ -84,7 +109,7 @@
         password: document.getElementById('password').value
       });
       API.setSession(token, user);
-      window.location.href = 'patient-dashboard.html';
+      window.location.href = '/patient-dashboard';
     } catch (err) {
       showAlert(formAlert, err.message, 'error');
       submitBtn.disabled = false;

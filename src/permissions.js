@@ -6,6 +6,7 @@ const PERMISSIONS = [
   { key: 'appointments.view',   group: 'Appointments', label: 'See all appointments' },
   { key: 'appointments.book',   group: 'Appointments', label: 'Book appointments for patients and re-send doctor invites' },
   { key: 'appointments.cancel', group: 'Appointments', label: 'Cancel appointments' },
+  { key: 'visits.manage',       group: 'Appointments', label: 'Pause or switch off clinic visits, home visits or video calls for online booking (e.g. at rush hours)' },
   { key: 'patients.view',       group: 'Patients',     label: 'Search patients and see contact details and visit history' },
   { key: 'patients.edit',       group: 'Patients',     label: 'Edit patient details (name, phone, email, date of birth, gender)' },
   { key: 'patients.delete',     group: 'Patients',     label: 'Delete patients permanently (with their appointments, reports and files)' },
@@ -16,6 +17,8 @@ const PERMISSIONS = [
   { key: 'directory.manage',    group: 'Website',      label: 'Edit departments and the Team page' },
   { key: 'profiles.manage',     group: 'Website',      label: 'Edit public profiles of doctors and team — bio, qualifications, certificates' },
   { key: 'settings.manage',     group: 'Website',      label: 'Site settings and email settings' },
+  { key: 'content.manage',      group: 'Website',      label: 'Edit website texts, photos, FAQs, testimonials and SEO titles' },
+  { key: 'blog.manage',         group: 'Website',      label: 'Write, edit and publish Health Insights (blog) articles' },
   { key: 'marketing.send',      group: 'Marketing',    label: 'Create and send promotion emails to patients' },
   { key: 'staff.manage',        group: 'Staff',        label: 'Manage staff logins, roles and permissions' }
 ];
